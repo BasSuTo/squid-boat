@@ -2556,13 +2556,27 @@ function addRemote(uid, data) {
   const colHex = data.col ? parseInt(data.col.slice(1), 16) || PALETTE[0] : PALETTE[0];
   const av = makeAvatar(colHex); boat.add(av);
   const label = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthWrite: false })); label.scale.set(1.3, 0.28, 1); label.position.y = 2.2; av.add(label);
-  const r = { uid, av, label, line: makeLine(0xffe2b0, 0.75), tx: 0, tz: -6, ty: 2, tyaw: 0, s: 'idle', lx: 0, lz: 0, ld: 0, c: 0, name: data.name || 'เพื่อนร่วมเรือ', bubble: '', bubbleT: 0, col: data.col || '#2f8fd8', seat: -1, plates: [null, null], carry: null, carryProp: null, isl: false };
+  const r = { uid, av, label, line: makeLine(0xffe2b0, 0.75), tx: 0, tz: -6, ty: 2, tyaw: 0, s: 'idle', lx: 0, lz: 0, ld: 0, c: 0, name: data.name || 'เพื่อนร่วมเรือ', bubble: '', bubbleT: 0, col: data.col || '#2f8fd8', seat: -1, plates: [null, null], carry: null, carryProp: null, isl: false, pots: [], potBuoys: [] };
   r.labelTex = () => { const tag = !r.bubbleT && r.carry && CARRY_TAG[r.carry] ? ` · ${CARRY_TAG[r.carry]}` : ''; const txt = r.bubbleT > 0 ? `${r.name}: ${r.bubble}` : r.name + tag; if (r.label.material.map) r.label.material.map.dispose(); r.label.material.map = labelTex(txt, r.bubbleT > 0 ? '#ffd27a' : '#fff'); r.label.material.needsUpdate = true; r.label.scale.set(r.bubbleT > 0 || tag ? 2.2 : 1.3, r.bubbleT > 0 || tag ? 0.46 : 0.28, 1); };
   r.labelTex(); NET.remotes.set(uid, r);
   toast('มีเพื่อนขึ้นเรือมาแล้ว', 'good'); renderPlayers();
   return r;
 }
-function removeRemote(r) { boat.remove(r.av); scene.remove(r.line); r.line.geometry.dispose(); }
+function removeRemote(r) { boat.remove(r.av); scene.remove(r.line); r.line.geometry.dispose(); while (r.potBuoys.length) { const b = r.potBuoys.pop(); scene.remove(b); scene.remove(b.userData.line); } }
+// mirrors a friend's deployed crab-pot buoys into our own scene, purely for visual parity - the friend's pots stay
+// their own inventory (we don't haul or open them), we just see the buoy float where they dropped it and vanish
+// when they collect it, so "friend drops a pot" is visible on both screens like a normal shared-world game.
+function syncRemotePots(r, list) {
+  const same = r.pots.length === list.length && r.pots.every((q, i) => q && list[i] && q.wx === list[i].wx && q.wz === list[i].wz && q.t === list[i].t);
+  if (same) return;
+  r.pots = list;
+  while (r.potBuoys.length) { const b = r.potBuoys.pop(); scene.remove(b); scene.remove(b.userData.line); }
+  for (let i = 0; i < list.length; i++) {
+    const b = makeBuoy(); const m = b.userData.lbl.material; m.map = labelTex(`ลอบปูของ ${r.name}`, '#ffd27a'); m.needsUpdate = true;
+    scene.remove(b.userData.line); b.userData.line.geometry.dispose(); // no rail anchor to draw to for a remote pot, just float the buoy
+    r.potBuoys.push(b);
+  }
+}
 // keeps TABLE[]/plateGs[] (what's visually on each seat) in sync with what friends are currently broadcasting;
 // never touches a seat the local player owns. Only the seat index + dish identity are synced (not bite-by-bite
 // progress - the chopstick animation is first-person/local-only), so friends see each other's dish appear and
@@ -2596,11 +2610,25 @@ function onBoatPeers(all, myUid) {
     const crv = typeof pr.cr === 'string' && CARRY_TAG[pr.cr] ? pr.cr : null;
     setRemoteCarry(r, crv);
     r.isl = !!pr.isl;
+    const potsOf = (arr) => Array.isArray(arr) ? arr.slice(0, 4).filter((q) => q && isFinite(q.wx) && isFinite(q.wz)).map((q) => ({ wx: num(q.wx, -50, 50, 0), wz: num(q.wz, -50, 50, 0), t: num(q.t, 0, 2000, 0), bait: !!q.bait })) : [];
+    syncRemotePots(r, potsOf(pr.pt));
     if (typeof pr.gm === 'number') maxGm = Math.max(maxGm ?? 0, num(pr.gm, 0, 2000, 0));
   }
-  if (!NET.synced && maxGm != null) { NET.synced = true; if (Math.abs(maxGm - gameMin) > 4 && maxGm < 1770) { gameMin = maxGm; toast('ตั้งเวลาให้ตรงกับเพื่อนบนเรือแล้ว'); } }
+  syncClock(maxGm);
   if (!NET.islSynced) { NET.islSynced = true; if (!ISL.on) { for (const r of NET.remotes.values()) if (r.isl) { islandSync(true); break; } } }
   syncRemoteSeats(); renderPlayers();
+}
+// keeps the in-game clock matching between everyone on the same boat: small natural drift (frame timing, lag)
+// is nudged away gently every update, while a bigger gap (someone just joined, or just caught up from a sync
+// event) snaps straight to the furthest-along peer's time. Skipped while on the island (time is frozen there and
+// both sides already forced into it together by islandSync), mid-travel-animation, or once the night has ended,
+// since those are momentary states where the two clocks are expected to disagree briefly.
+function syncClock(maxGm) {
+  if (maxGm == null || nightOver || traveling || ISL.on) return;
+  const diff = maxGm - gameMin;
+  if (Math.abs(diff) < 0.5 || Math.abs(diff) > 90) return;
+  if (Math.abs(diff) > 4) { gameMin = maxGm; if (!NET.synced) { NET.synced = true; toast('ตั้งเวลาให้ตรงกับเพื่อนบนเรือแล้ว'); } }
+  else gameMin += diff * 0.3;
 }
 function onNetEvent(m) {
   if (m.type === 'catch') { const d = m.data || {}; const sp = SP[d.sp]; const kg = num(d.kg, 0, 10, 0); if (!sp) return; toast(`${sp.id === 'sandal' ? 'ได้รองเท้าแตะ' : 'ได้' + sp.name} ${kg.toFixed(2)} กก.`, 'say', m.name); }
@@ -2608,6 +2636,7 @@ function onNetEvent(m) {
   else if (m.type === 'move') { const i = m.data && m.data.spot; if (!Number.isInteger(i) || i < 0 || i >= SPOTS.length) return; travel(i, m.name); }
   else if (m.type === 'gen') { toast('ไฟดับ! เครื่องปั่นไฟเสีย', 'bad', m.name); }
   else if (m.type === 'island') { islandSync(!!(m.data && m.data.on), m.name); }
+  else if (m.type === 'nap') { const mins = num(m.data && m.data.mins, 1, 30, 0); if (mins > 0 && !nightOver) { gameMin += mins; toast(`${m.name} งีบหลับไป ${Math.round(mins)} นาที เวลาเดินไปด้วย`, 'good'); } }
 }
 // keeps everyone docking at / leaving the island together, like one shared boat, instead of each player
 // visiting on their own schedule. Triggered either by a netEmit('island',…) from a peer, or by the one-time
@@ -2671,7 +2700,8 @@ function updateNet(dt) {
     // each own-TABLE dish is broadcast by its seat slot regardless of whether we're sitting there right now, so a
     // friend sees it land on the table the moment cooking finishes - not only once we actually sit down to eat it
     const dishOf = (t) => (t && t.owner === 'local') ? { k: t.k, id: t.id, kg: +t.kg.toFixed(2), q: +t.q.toFixed(2), f: +(t.f || 1).toFixed(2) } : null;
-    update(NET.myRef, { x: +P.x.toFixed(2), z: +P.z.toFixed(2), y: +P.y.toFixed(2), yaw: +P.yaw.toFixed(3), s: st, lx: +lure.x.toFixed(2), lz: +lure.z.toFixed(2), ld: +lure.depth.toFixed(1), c: NIGHT.stats.count, gm: Math.round(gameMin), t: Date.now(), seat: sIdx, p0: dishOf(TABLE[0]), p1: dishOf(TABLE[1]), cr: P.carry || null, isl: ISL.on }).catch(() => {});
+    const potsOut = S.pots.map((q) => ({ wx: +q.wx.toFixed(2), wz: +q.wz.toFixed(2), t: Math.round(q.t), bait: !!q.bait }));
+    update(NET.myRef, { x: +P.x.toFixed(2), z: +P.z.toFixed(2), y: +P.y.toFixed(2), yaw: +P.yaw.toFixed(3), s: st, lx: +lure.x.toFixed(2), lz: +lure.z.toFixed(2), ld: +lure.depth.toFixed(1), c: NIGHT.stats.count, gm: Math.round(gameMin), t: Date.now(), seat: sIdx, p0: dishOf(TABLE[0]), p1: dishOf(TABLE[1]), cr: P.carry || null, isl: ISL.on, pt: potsOut }).catch(() => {});
   }
   for (const r of NET.remotes.values()) {
     // while a peer's island state doesn't match ours (briefly, mid-sync, or if netcode drops a packet), their
@@ -2684,6 +2714,11 @@ function updateNet(dt) {
     if (r.bubbleT > 0) { r.bubbleT -= dt; if (r.bubbleT <= 0) r.labelTex(); }
     if (r.av.visible && (r.s === 'water' || r.s === 'bite' || r.s === 'fight')) { r.line.visible = true; r.av.userData.tip.getWorldPosition(tmp); tmp2.set(r.lx, waveH(r.lx, r.lz, T) - r.ld, r.lz); setLine(r.line, tmp, tmp2, 0.2); }
     else r.line.visible = false;
+    r.pots.forEach((q, i) => {
+      const b = r.potBuoys[i]; if (!b) return; const y = waveH(q.wx, q.wz, T);
+      b.visible = r.av.visible;
+      b.position.set(q.wx, y + 0.06, q.wz); b.rotation.z = Math.sin(T * 1.3 + i) * 0.12; b.userData.flag.rotation.y = Math.sin(T * 3 + i) * 0.4;
+    });
   }
 }
 // =============== tutorial ===============
@@ -3456,7 +3491,7 @@ const _kitchenReset = () => { for (const g of GUIDES) g.cut = false; };
 function napBunk() {
   const room = 1770 - gameMin - 5; if (room < 10) { toast('ใกล้เช้าแล้ว นอนไม่ทันหรอก'); return; }
   const mins = Math.min(30, room); $('fadeTxt').textContent = 'งีบหลับ…'; $('fade').classList.add('on'); traveling = true;
-  setTimeout(() => { gameMin += mins; S.needs.energy = 100; save(); $('fade').classList.remove('on'); traveling = false; toast(`งีบไป ${Math.round(mins)} นาที แรงกลับมาเต็มแล้ว`, 'good'); }, 1800);
+  setTimeout(() => { gameMin += mins; S.needs.energy = 100; save(); $('fade').classList.remove('on'); traveling = false; toast(`งีบไป ${Math.round(mins)} นาที แรงกลับมาเต็มแล้ว`, 'good'); netEmit('nap', { mins: Math.round(mins) }); }, 1800);
 }
 
 // =============== fresh water: bucket, desalinator, tank ===============
