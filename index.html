@@ -2260,6 +2260,19 @@ function openMenu(tab) {
   if (tab) menuTab = tab; $('menu').hidden = false; renderMenu(); setTimeout(() => $('t-' + menuTab).focus(), 30);
 }
 function closeMenu() { menuOpen = false; $('menu').hidden = true; requestLock(); }
+async function exitToStart() {
+  save();
+  if (NET.code) { try { await leaveBoat(true); } catch (e) {} }
+  if (kitchenOpen) { kitchenOpen = false; $('kitchen').hidden = true; K.view = 'list'; K.item = null; K.done = false; }
+  if (chatOpen) closeChat();
+  menuOpen = false; $('menu').hidden = true;
+  if (document.pointerLockElement) document.exitPointerLock();
+  started = false; paused = false; $('pause').hidden = true;
+  $('hud').hidden = true; $('touch').hidden = true;
+  updateAuthUI(); renderBoats();
+  $('start').hidden = false;
+  toast('ออกจากเกมแล้ว กลับหน้าเริ่มต้น');
+}
 $('mClose').addEventListener('click', closeMenu);
 $('menu').addEventListener('click', (e) => { if (e.target.id === 'menu') closeMenu(); });
 for (const t of document.querySelectorAll('.tab')) t.addEventListener('click', () => { menuTab = t.dataset.t; renderMenu(); });
@@ -2400,6 +2413,9 @@ function renderMenu() {
     const dr = el('div', 'joinrow');
     const hb = btn(S.hard ? 'โหมดท้าทาย: เปิด' : 'โหมดท้าทาย: ปิด', () => { S.hard = !S.hard; save(); renderMenu(); }); hb.setAttribute('aria-pressed', String(!!S.hard)); dr.appendChild(hb);
     body.appendChild(dr);
+    body.appendChild(el('h3', '', 'ออกจากเกม'));
+    body.appendChild(el('div', 'hint', 'ความคืบหน้าเซฟไว้แล้วอัตโนมัติ กลับมาเล่นต่อได้ตลอด'));
+    const er = el('div', 'joinrow'); er.appendChild(btn('กลับหน้าเริ่มต้น', () => exitToStart(), 'btn')); body.appendChild(er);
   }
 }
 function afterUpgrade(k) {
