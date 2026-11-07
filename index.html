@@ -2439,7 +2439,7 @@ function afterUpgrade(k) {
 const PALETTE = [0x2f8fd8, 0xd8452f, 0x8f3fd8, 0x2fb37a, 0xd83f8f, 0x3fc7d8];
 const validCode = (c) => typeof c === 'string' && /^[a-z0-9]{4,8}$/.test(c);
 let LOBBY = {};
-const NET = { fbUser: null, code: null, playersRef: null, eventsRef: null, myRef: null, lobbyMeRef: null, remotes: new Map(), push: 0, ready: false, synced: false, joinedAt: 0, subs: [] };
+const NET = { fbUser: null, code: null, playersRef: null, eventsRef: null, myRef: null, lobbyMeRef: null, remotes: new Map(), push: 0, ready: false, synced: false, islSynced: false, joinedAt: 0, subs: [] };
 function netState(txt, ok) { for (const id of ['netState']) { const e = $(id); if (e) { e.textContent = txt; e.classList.toggle('ok', !!ok); } } }
 function netEmit(type, data) {
   if (!NET.eventsRef || !NET.fbUser) return;
@@ -2495,7 +2495,7 @@ async function joinBoat(raw) {
   if (NET.code === code) return;
   await leaveBoat(true);
   try {
-    NET.code = code; NET.synced = false; NET.joinedAt = Date.now();
+    NET.code = code; NET.synced = false; NET.islSynced = false; NET.joinedAt = Date.now();
     const uid = NET.fbUser.uid;
     NET.playersRef = ref(fbDb, `rooms/${code}/players`);
     NET.eventsRef = ref(fbDb, `rooms/${code}/events`);
@@ -2525,12 +2525,13 @@ async function leaveBoat(silent) {
   for (const r of NET.remotes.values()) removeRemote(r); NET.remotes.clear(); syncRemoteSeats();
   $('players').hidden = true; if (!silent) { toast('ออกจากเรือออนไลน์แล้ว'); netState('เข้าสู่ระบบแล้ว พร้อมเล่นออนไลน์', true); } renderBoats(); if (menuOpen) renderMenu();
 }
+const CARRY_TAG = { bucket: '🪣 ถือถังน้ำ', sea: '🪣 ตักน้ำทะเล', pot: '🦀 ถือลอบปู', fuel: '⛽ ถือแกลลอนน้ำมัน' };
 function addRemote(uid, data) {
   const colHex = data.col ? parseInt(data.col.slice(1), 16) || PALETTE[0] : PALETTE[0];
   const av = makeAvatar(colHex); boat.add(av);
   const label = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthWrite: false })); label.scale.set(1.3, 0.28, 1); label.position.y = 2.2; av.add(label);
-  const r = { uid, av, label, line: makeLine(0xffe2b0, 0.75), tx: 0, tz: -6, ty: 2, tyaw: 0, s: 'idle', lx: 0, lz: 0, ld: 0, c: 0, name: data.name || 'เพื่อนร่วมเรือ', bubble: '', bubbleT: 0, col: data.col || '#2f8fd8', seat: -1, pd: null };
-  r.labelTex = () => { const txt = r.bubbleT > 0 ? `${r.name}: ${r.bubble}` : r.name; if (r.label.material.map) r.label.material.map.dispose(); r.label.material.map = labelTex(txt, r.bubbleT > 0 ? '#ffd27a' : '#fff'); r.label.material.needsUpdate = true; r.label.scale.set(r.bubbleT > 0 ? 2.4 : 1.3, r.bubbleT > 0 ? 0.52 : 0.28, 1); };
+  const r = { uid, av, label, line: makeLine(0xffe2b0, 0.75), tx: 0, tz: -6, ty: 2, tyaw: 0, s: 'idle', lx: 0, lz: 0, ld: 0, c: 0, name: data.name || 'เพื่อนร่วมเรือ', bubble: '', bubbleT: 0, col: data.col || '#2f8fd8', seat: -1, pd: null, carry: null, isl: false };
+  r.labelTex = () => { const tag = !r.bubbleT && r.carry && CARRY_TAG[r.carry] ? ` · ${CARRY_TAG[r.carry]}` : ''; const txt = r.bubbleT > 0 ? `${r.name}: ${r.bubble}` : r.name + tag; if (r.label.material.map) r.label.material.map.dispose(); r.label.material.map = labelTex(txt, r.bubbleT > 0 ? '#ffd27a' : '#fff'); r.label.material.needsUpdate = true; r.label.scale.set(r.bubbleT > 0 || tag ? 2.2 : 1.3, r.bubbleT > 0 || tag ? 0.46 : 0.28, 1); };
   r.labelTex(); NET.remotes.set(uid, r);
   toast('มีเพื่อนขึ้นเรือมาแล้ว', 'good'); renderPlayers();
   return r;
@@ -2563,9 +2564,13 @@ function onBoatPeers(all, myUid) {
     r.seat = (pr.seat === 0 || pr.seat === 1) ? pr.seat : -1;
     const rd = pr.pd;
     r.pd = (rd && (rd.k === 'sashimi' || rd.k === 'crab') && typeof rd.id === 'string' && SP[rd.id]) ? { k: rd.k, id: rd.id, kg: num(rd.kg, 0.01, 10, 0.3), q: num(rd.q, 0, 1.5, 1), f: num(rd.f, 0.5, 1.5, 1) } : null;
+    const crv = typeof pr.cr === 'string' && CARRY_TAG[pr.cr] ? pr.cr : null;
+    if (crv !== r.carry) { r.carry = crv; if (!r.bubbleT) r.labelTex(); }
+    r.isl = !!pr.isl;
     if (typeof pr.gm === 'number') maxGm = Math.max(maxGm ?? 0, num(pr.gm, 0, 2000, 0));
   }
   if (!NET.synced && maxGm != null) { NET.synced = true; if (Math.abs(maxGm - gameMin) > 4 && maxGm < 1770) { gameMin = maxGm; toast('ตั้งเวลาให้ตรงกับเพื่อนบนเรือแล้ว'); } }
+  if (!NET.islSynced) { NET.islSynced = true; if (!ISL.on) { for (const r of NET.remotes.values()) if (r.isl) { islandSync(true); break; } } }
   syncRemoteSeats(); renderPlayers();
 }
 function onNetEvent(m) {
@@ -2573,6 +2578,25 @@ function onNetEvent(m) {
   else if (m.type === 'chat') { const i = m.data && m.data.i; if (!Number.isInteger(i) || i < 0 || i >= EMOTES.length) return; toast(EMOTES[i], 'say', m.name); const r = NET.remotes.get(m.by); if (r) { r.bubble = EMOTES[i]; r.bubbleT = 4; r.labelTex(); } }
   else if (m.type === 'move') { const i = m.data && m.data.spot; if (!Number.isInteger(i) || i < 0 || i >= SPOTS.length) return; travel(i, m.name); }
   else if (m.type === 'gen') { toast('ไฟดับ! เครื่องปั่นไฟเสีย', 'bad', m.name); }
+  else if (m.type === 'island') { islandSync(!!(m.data && m.data.on), m.name); }
+}
+// keeps everyone docking at / leaving the island together, like one shared boat, instead of each player
+// visiting on their own schedule. Triggered either by a netEmit('island',…) from a peer, or by the one-time
+// catch-up check in onBoatPeers for someone who just joined a room where a peer is already ashore.
+function islandSync(on, who) {
+  if (on) {
+    if (ISL.on || traveling) return;
+    if (kitchenOpen) { kitchenOpen = false; $('kitchen').hidden = true; K.view = 'list'; K.item = null; K.done = false; }
+    if (menuOpen) { menuOpen = false; $('menu').hidden = true; }
+    if (P.seated) standUp();
+    primaryHeld = false; st = 'idle'; fish = null; landing = null;
+    toast(who ? `${who} พาเรือเข้าเทียบท่าที่เกาะลอยใจแล้ว กำลังตามไปด้วย…` : 'เพื่อนพาเรือเข้าเทียบท่าที่เกาะลอยใจแล้ว กำลังตามไปด้วย…', 'good');
+    dockIsland();
+  } else {
+    if (!ISL.on || traveling) return;
+    toast(who ? `${who} ออกเรือจากเกาะแล้ว กำลังออกเรือตามไปด้วย…` : 'เพื่อนออกเรือจากเกาะแล้ว กำลังออกเรือตามไปด้วย…', 'good');
+    leaveIsland();
+  }
 }
 function renderPlayers() {
   const box = $('pList'); if (!box) return; box.textContent = '';
@@ -2616,15 +2640,18 @@ function updateNet(dt) {
     NET.push = 0.15;
     const sIdx = mySeatIdx(), sT = sIdx >= 0 ? TABLE[sIdx] : null;
     const pd = sT ? { k: sT.k, id: sT.id, kg: +sT.kg.toFixed(2), q: +sT.q.toFixed(2), f: +(sT.f || 1).toFixed(2) } : null;
-    update(NET.myRef, { x: +P.x.toFixed(2), z: +P.z.toFixed(2), y: +P.y.toFixed(2), yaw: +P.yaw.toFixed(3), s: st, lx: +lure.x.toFixed(2), lz: +lure.z.toFixed(2), ld: +lure.depth.toFixed(1), c: NIGHT.stats.count, gm: Math.round(gameMin), t: Date.now(), seat: sIdx, pd }).catch(() => {});
+    update(NET.myRef, { x: +P.x.toFixed(2), z: +P.z.toFixed(2), y: +P.y.toFixed(2), yaw: +P.yaw.toFixed(3), s: st, lx: +lure.x.toFixed(2), lz: +lure.z.toFixed(2), ld: +lure.depth.toFixed(1), c: NIGHT.stats.count, gm: Math.round(gameMin), t: Date.now(), seat: sIdx, pd, cr: P.carry || null, isl: ISL.on }).catch(() => {});
   }
   for (const r of NET.remotes.values()) {
+    // while a peer's island state doesn't match ours (briefly, mid-sync, or if netcode drops a packet), their
+    // position is in a different coordinate space than our boat - hide them instead of showing a broken position
+    r.av.visible = r.isl === ISL.on;
     const mv = Math.hypot(r.tx - r.av.position.x, r.tz - r.av.position.z) > 0.04 ? 1 : 0;
     const k = Math.min(1, dt * 8); r.av.position.x += (r.tx - r.av.position.x) * k; r.av.position.z += (r.tz - r.av.position.z) * k; r.av.position.y += (r.ty - r.av.position.y) * k;
     let dy = r.tyaw - r.av.rotation.y; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); r.av.rotation.y += dy * k;
     const rod = r.av.userData.rod; rod.rotation.x = r.s === 'charge' ? 1.3 : r.s === 'fight' ? 0.9 + Math.sin(T * 20) * 0.05 : 0.55; animPerson(r.av, dt, { walk: mv, arms: mv ? 'swing' : 'hold' });
     if (r.bubbleT > 0) { r.bubbleT -= dt; if (r.bubbleT <= 0) r.labelTex(); }
-    if (r.s === 'water' || r.s === 'bite' || r.s === 'fight') { r.line.visible = true; r.av.userData.tip.getWorldPosition(tmp); tmp2.set(r.lx, waveH(r.lx, r.lz, T) - r.ld, r.lz); setLine(r.line, tmp, tmp2, 0.2); }
+    if (r.av.visible && (r.s === 'water' || r.s === 'bite' || r.s === 'fight')) { r.line.visible = true; r.av.userData.tip.getWorldPosition(tmp); tmp2.set(r.lx, waveH(r.lx, r.lz, T) - r.ld, r.lz); setLine(r.line, tmp, tmp2, 0.2); }
     else r.line.visible = false;
   }
 }
@@ -4128,7 +4155,9 @@ function islandInteractions(list) {
   list.push({ pos: { x: 2.4, z: 0.1 }, r: 1.4, label: 'ออกเรือคืนต่อไป', act: leaveIsland });
 }
 function dockIsland() {
+  if (ISL.on || traveling) return;
   $('summary').hidden = true; $('fadeTxt').textContent = 'พี่ชัยพาเรือเข้าเทียบท่าที่เกาะลอยใจ…'; $('fade').classList.add('on'); traveling = true; sfx('engine');
+  netEmit('island', { on: true });
   setTimeout(() => {
     ISL.on = true; islandG.visible = true; nightOver = false; gameMin = 1440 + 8.5 * 60; lampsOn = false; lampText();
     for (const f of fleet) f.g.visible = false;
@@ -4139,8 +4168,9 @@ function dockIsland() {
   }, 2600);
 }
 function leaveIsland() {
-  if (!ISL.on) return;
+  if (!ISL.on || traveling) return;
   $('fadeTxt').textContent = 'ออกจากเกาะ… มุ่งหน้าสู่จุดตกหมึก'; $('fade').classList.add('on'); traveling = true; sfx('engine');
+  netEmit('island', { on: false });
   setTimeout(() => {
     ISL.on = false; islandG.visible = false; for (const f of fleet) f.g.visible = true;
     if (P.zone === 'land') { P.zone = 'deck'; P.x = 2.0; P.z = 0.1; }
