@@ -1944,7 +1944,7 @@ function interactables() {
   list.push({ pos: CRATE, r: 1.8, label: `เปิดกล่องหมึกพี่ชัย (${S.crewBox.length} ตัว)`, act: openCrate });
   list.push({ pos: new V3(0.6, 0, 3.6), r: 1.5, label: A.radio ? 'ปิดวิทยุ' : 'เปิดวิทยุ', act: toggleRadio });
   list.push({ pos: new V3(-0.45, 0, 6.45), r: 1.2, lvl: 1, in: true, label: ISL.on ? 'จับพวงมาลัย: ออกเรือคืนต่อไป' : 'จับพวงมาลัย: ย้ายจุดตกหมึก', act: () => ISL.on ? leaveIsland() : openMenu('map') });
-  for (const [i, se] of SEATS.entries()) { const t = TABLE[i]; const lbl = t && t.owner !== 'local' ? 'มีเพื่อนนั่งกินอยู่' : t ? 'นั่งลงกินที่โต๊ะ' : 'นั่งที่โต๊ะ'; list.push({ pos: { x: se.x + 0.85, z: se.z }, r: 1.0, in: true, label: lbl, act: () => sitDown(i) }); }
+  for (const [i, se] of SEATS.entries()) { const t = TABLE[i]; const occupied = [...NET.remotes.values()].some((r) => r.seat === i); const lbl = occupied ? 'มีเพื่อนนั่งกินอยู่' : t ? 'นั่งลงกินที่โต๊ะ' : 'นั่งที่โต๊ะ'; list.push({ pos: { x: se.x + 0.85, z: se.z }, r: 1.0, in: true, label: lbl, act: () => sitDown(i) }); }
   list.push({ pos: new V3(-0.1, 0, 8.7), r: 1.3, in: true, label: 'เปิดครัว: ทำซาชิมิหมึก หรือต้มปู', act: openKitchen });
   list.push({ pos: new V3(1.75, 0, 7.3), r: 1.25, in: true, label: 'ค้างไว้: งีบบนเตียง 30 นาที', hold: 1.6, act: napBunk });
   return list;
@@ -2526,11 +2526,37 @@ async function leaveBoat(silent) {
   $('players').hidden = true; if (!silent) { toast('ออกจากเรือออนไลน์แล้ว'); netState('เข้าสู่ระบบแล้ว พร้อมเล่นออนไลน์', true); } renderBoats(); if (menuOpen) renderMenu();
 }
 const CARRY_TAG = { bucket: '🪣 ถือถังน้ำ', sea: '🪣 ตักน้ำทะเล', pot: '🦀 ถือลอบปู', fuel: '⛽ ถือแกลลอนน้ำมัน' };
+// small hand-held props for OTHER players' avatars (third-person), separate from the camera-attached first-person
+// ones (bucket/potHand/fuelHand) used for our own view - those are parented to the camera so they never show up
+// on a third-person model at all.
+function buildCarryProp(kind) {
+  const g = new THREE.Group();
+  if (kind === 'bucket' || kind === 'sea') {
+    const bk = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.082, 0.2, 14, 1, true), std(0xe0731c, 0.5, 0, { side: THREE.DoubleSide })); g.add(bk);
+    const bot = new THREE.Mesh(new THREE.CircleGeometry(0.082, 14), std(0xe0731c, 0.5, 0)); bot.rotation.x = -Math.PI / 2; bot.position.y = -0.095; g.add(bot);
+    const hd = new THREE.Mesh(new THREE.TorusGeometry(0.1, 0.007, 6, 16, Math.PI), M.steel); hd.position.y = 0.095; g.add(hd);
+    if (kind === 'sea') { const w = new THREE.Mesh(new THREE.CircleGeometry(0.082, 14), std(0x1d5a78, 0.05, 0.2)); w.rotation.x = -Math.PI / 2; w.position.y = 0.05; g.add(w); }
+  } else if (kind === 'pot') {
+    g.add(makeCage(0.26));
+  } else if (kind === 'fuel') {
+    const can = std(0xc0281e, 0.45, 0.2); const b = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.19, 0.075), can); g.add(b);
+    const h = new THREE.Mesh(new THREE.TorusGeometry(0.032, 0.009, 6, 12, Math.PI), M.dark); h.position.set(0, 0.105, 0); g.add(h);
+  }
+  g.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  return g;
+}
+function setRemoteCarry(r, kind) {
+  if (r.carry === kind) return;
+  r.carry = kind;
+  if (r.carryProp) { r.av.userData.arms[1].el.remove(r.carryProp); r.carryProp = null; }
+  if (kind) { r.carryProp = buildCarryProp(kind); r.carryProp.position.set(0.02, -0.33, 0.03); r.av.userData.arms[1].el.add(r.carryProp); }
+  if (!r.bubbleT) r.labelTex();
+}
 function addRemote(uid, data) {
   const colHex = data.col ? parseInt(data.col.slice(1), 16) || PALETTE[0] : PALETTE[0];
   const av = makeAvatar(colHex); boat.add(av);
   const label = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthWrite: false })); label.scale.set(1.3, 0.28, 1); label.position.y = 2.2; av.add(label);
-  const r = { uid, av, label, line: makeLine(0xffe2b0, 0.75), tx: 0, tz: -6, ty: 2, tyaw: 0, s: 'idle', lx: 0, lz: 0, ld: 0, c: 0, name: data.name || 'เพื่อนร่วมเรือ', bubble: '', bubbleT: 0, col: data.col || '#2f8fd8', seat: -1, pd: null, carry: null, isl: false };
+  const r = { uid, av, label, line: makeLine(0xffe2b0, 0.75), tx: 0, tz: -6, ty: 2, tyaw: 0, s: 'idle', lx: 0, lz: 0, ld: 0, c: 0, name: data.name || 'เพื่อนร่วมเรือ', bubble: '', bubbleT: 0, col: data.col || '#2f8fd8', seat: -1, plates: [null, null], carry: null, carryProp: null, isl: false };
   r.labelTex = () => { const tag = !r.bubbleT && r.carry && CARRY_TAG[r.carry] ? ` · ${CARRY_TAG[r.carry]}` : ''; const txt = r.bubbleT > 0 ? `${r.name}: ${r.bubble}` : r.name + tag; if (r.label.material.map) r.label.material.map.dispose(); r.label.material.map = labelTex(txt, r.bubbleT > 0 ? '#ffd27a' : '#fff'); r.label.material.needsUpdate = true; r.label.scale.set(r.bubbleT > 0 || tag ? 2.2 : 1.3, r.bubbleT > 0 || tag ? 0.46 : 0.28, 1); };
   r.labelTex(); NET.remotes.set(uid, r);
   toast('มีเพื่อนขึ้นเรือมาแล้ว', 'good'); renderPlayers();
@@ -2541,11 +2567,14 @@ function removeRemote(r) { boat.remove(r.av); scene.remove(r.line); r.line.geome
 // never touches a seat the local player owns. Only the seat index + dish identity are synced (not bite-by-bite
 // progress - the chopstick animation is first-person/local-only), so friends see each other's dish appear and
 // disappear as they sit/finish, but each eats at their own pace.
+// Dish visibility (TABLE[i]/plateGs[i]) is driven by who has a dish PLACED at that seat - independent of whether
+// they're currently sitting there, so a friend sees your dish appear the moment you finish cooking, not only once
+// you sit down. r.plates[i] is broadcast straight from each player's own TABLE[i] ownership (see updateNet).
 function syncRemoteSeats() {
   for (let i = 0; i < SEATS.length; i++) {
     const cur = TABLE[i]; if (cur && cur.owner === 'local') continue;
     let owner = null, pd = null;
-    for (const [uid, r] of NET.remotes) { if (r.seat === i && r.pd) { owner = uid; pd = r.pd; break; } }
+    for (const [uid, r] of NET.remotes) { if (r.plates && r.plates[i]) { owner = uid; pd = r.plates[i]; break; } }
     if (!owner) { if (cur) { plateGs[i].visible = false; TABLE[i] = null; } continue; }
     if (cur && cur.owner === owner && cur.k === pd.k && cur.id === pd.id && Math.abs(cur.kg - pd.kg) < 0.01 && Math.abs(cur.q - pd.q) < 0.01) continue;
     buildPlateInto(plateGs[i], pd); TABLE[i] = Object.assign({}, pd, { owner }); plateGs[i].visible = true;
@@ -2562,10 +2591,10 @@ function onBoatPeers(all, myUid) {
     r.s = ['idle', 'charge', 'flying', 'water', 'bite', 'fight', 'landing'].includes(pr.s) ? pr.s : 'idle';
     r.lx = num(pr.lx, -200, 200, 0); r.lz = num(pr.lz, -200, 200, 0); r.ld = num(pr.ld, 0, 50, 0); r.c = num(pr.c, 0, 999, 0);
     r.seat = (pr.seat === 0 || pr.seat === 1) ? pr.seat : -1;
-    const rd = pr.pd;
-    r.pd = (rd && (rd.k === 'sashimi' || rd.k === 'crab') && typeof rd.id === 'string' && SP[rd.id]) ? { k: rd.k, id: rd.id, kg: num(rd.kg, 0.01, 10, 0.3), q: num(rd.q, 0, 1.5, 1), f: num(rd.f, 0.5, 1.5, 1) } : null;
+    const parseDish = (rd) => (rd && (rd.k === 'sashimi' || rd.k === 'crab') && typeof rd.id === 'string' && SP[rd.id]) ? { k: rd.k, id: rd.id, kg: num(rd.kg, 0.01, 10, 0.3), q: num(rd.q, 0, 1.5, 1), f: num(rd.f, 0.5, 1.5, 1) } : null;
+    r.plates = [parseDish(pr.p0), parseDish(pr.p1)];
     const crv = typeof pr.cr === 'string' && CARRY_TAG[pr.cr] ? pr.cr : null;
-    if (crv !== r.carry) { r.carry = crv; if (!r.bubbleT) r.labelTex(); }
+    setRemoteCarry(r, crv);
     r.isl = !!pr.isl;
     if (typeof pr.gm === 'number') maxGm = Math.max(maxGm ?? 0, num(pr.gm, 0, 2000, 0));
   }
@@ -2638,9 +2667,11 @@ function updateNet(dt) {
   NET.push -= dt;
   if (NET.push <= 0) {
     NET.push = 0.15;
-    const sIdx = mySeatIdx(), sT = sIdx >= 0 ? TABLE[sIdx] : null;
-    const pd = sT ? { k: sT.k, id: sT.id, kg: +sT.kg.toFixed(2), q: +sT.q.toFixed(2), f: +(sT.f || 1).toFixed(2) } : null;
-    update(NET.myRef, { x: +P.x.toFixed(2), z: +P.z.toFixed(2), y: +P.y.toFixed(2), yaw: +P.yaw.toFixed(3), s: st, lx: +lure.x.toFixed(2), lz: +lure.z.toFixed(2), ld: +lure.depth.toFixed(1), c: NIGHT.stats.count, gm: Math.round(gameMin), t: Date.now(), seat: sIdx, pd, cr: P.carry || null, isl: ISL.on }).catch(() => {});
+    const sIdx = mySeatIdx();
+    // each own-TABLE dish is broadcast by its seat slot regardless of whether we're sitting there right now, so a
+    // friend sees it land on the table the moment cooking finishes - not only once we actually sit down to eat it
+    const dishOf = (t) => (t && t.owner === 'local') ? { k: t.k, id: t.id, kg: +t.kg.toFixed(2), q: +t.q.toFixed(2), f: +(t.f || 1).toFixed(2) } : null;
+    update(NET.myRef, { x: +P.x.toFixed(2), z: +P.z.toFixed(2), y: +P.y.toFixed(2), yaw: +P.yaw.toFixed(3), s: st, lx: +lure.x.toFixed(2), lz: +lure.z.toFixed(2), ld: +lure.depth.toFixed(1), c: NIGHT.stats.count, gm: Math.round(gameMin), t: Date.now(), seat: sIdx, p0: dishOf(TABLE[0]), p1: dishOf(TABLE[1]), cr: P.carry || null, isl: ISL.on }).catch(() => {});
   }
   for (const r of NET.remotes.values()) {
     // while a peer's island state doesn't match ours (briefly, mid-sync, or if netcode drops a packet), their
@@ -3891,7 +3922,7 @@ const chopOffset = () => new V3(0, 0, -0.25).applyEuler(chop.rotation);
 function placeChop(target) { chop.position.copy(target).sub(chopOffset()); }
 function sitDown(i) {
   const se = SEATS[i]; if (!se) return;
-  if (TABLE[i] && TABLE[i].owner !== 'local') { toast('ที่นั่งนี้มีเพื่อนนั่งอยู่', 'bad'); return; }
+  for (const r of NET.remotes.values()) if (r.seat === i) { toast('ที่นั่งนี้มีเพื่อนนั่งอยู่', 'bad'); return; }
   P.seated = se; P.x = se.x; P.z = se.z; P.yaw = se.yaw; P.pitch = -1.0; chop.visible = true; placeChop(CHOP_REST);
   toast(TABLE[i] ? 'นั่งแล้ว · กด E หรือคลิกเพื่อคีบกินทีละคำ · เดินเพื่อลุก' : 'นั่งพักแล้ว · เดินเพื่อลุก', 'good');
 }
