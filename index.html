@@ -550,9 +550,11 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js';
-import { getDatabase, ref, set, update, remove, onDisconnect, onValue, onChildAdded, onChildRemoved, push } from 'https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js';
+// Firebase is loaded lazily (dynamic import) instead of a static top-level import so the 3D scene below can start
+// building immediately without waiting on gstatic.com network fetches first — this noticeably cuts the time to
+// enter the game, especially on slow mobile connections. Anything that touches Firebase awaits fbReady first.
+let initializeApp, getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut, getDatabase, ref, set, update, remove, onDisconnect, onValue, onChildAdded, onChildRemoved, push;
+let fbApp, fbAuth, fbDb, googleProvider;
 const firebaseConfig = {
   apiKey: "AIzaSyBw_twIXfLYj2pb75Pn9D40KIeFgVx2Lpg",
   authDomain: "squid-boat.firebaseapp.com",
@@ -562,10 +564,17 @@ const firebaseConfig = {
   messagingSenderId: "768664830283",
   appId: "1:768664830283:web:49b6b03a37b4959746e8ce"
 };
-const fbApp = initializeApp(firebaseConfig);
-const fbAuth = getAuth(fbApp);
-const fbDb = getDatabase(fbApp);
-const googleProvider = new GoogleAuthProvider();
+const fbReady = (async () => {
+  const [appMod, authMod, dbMod] = await Promise.all([
+    import('https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js'),
+    import('https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js'),
+    import('https://www.gstatic.com/firebasejs/10.13.2/firebase-database.js'),
+  ]);
+  ({ initializeApp } = appMod);
+  ({ getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut } = authMod);
+  ({ getDatabase, ref, set, update, remove, onDisconnect, onValue, onChildAdded, onChildRemoved, push } = dbMod);
+  fbApp = initializeApp(firebaseConfig); fbAuth = getAuth(fbApp); fbDb = getDatabase(fbApp); googleProvider = new GoogleAuthProvider();
+})();
 
 const $ = (id) => document.getElementById(id);
 const V3 = THREE.Vector3;
@@ -2426,6 +2435,7 @@ function updateAuthUI() {
   renderBoats(); if (menuOpen) renderMenu();
 }
 async function googleSignIn() {
+  await fbReady;
   try { await signInWithPopup(fbAuth, googleProvider); }
   catch (e) {
     const code = e && e.code;
@@ -2433,8 +2443,9 @@ async function googleSignIn() {
     else if (code !== 'auth/popup-closed-by-user' && code !== 'auth/cancelled-popup-request') toast('เข้าสู่ระบบไม่ได้ ลองใหม่อีกครั้ง', 'bad');
   }
 }
-async function googleSignOut() { await leaveBoat(true); try { await signOut(fbAuth); } catch (e) {} }
-function netInit() {
+async function googleSignOut() { await fbReady; await leaveBoat(true); try { await signOut(fbAuth); } catch (e) {} }
+async function netInit() {
+  await fbReady;
   onAuthStateChanged(fbAuth, (u) => { NET.fbUser = u; NET.ready = !!u; updateAuthUI(); });
   onValue(ref(fbDb, 'lobby'), (snap) => { LOBBY = snap.val() || {}; renderBoats(); }, () => {});
 }
