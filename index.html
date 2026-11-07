@@ -2817,7 +2817,11 @@ function bossWin() {
 }
 function finishStory() {
   S.story.done = true; S.money += 30000; S.title = 'ผู้พิชิตทะเลลึก'; DT.boss = false; endDark(); save();
-  nightOver = true; primaryHeld = false; if (document.pointerLockElement) document.exitPointerLock(); $('ending').hidden = false;
+  nightOver = true; primaryHeld = false; if (document.pointerLockElement) document.exitPointerLock();
+  if (kitchenOpen) { kitchenOpen = false; $('kitchen').hidden = true; K.view = 'list'; K.item = null; K.done = false; }
+  if (menuOpen) { menuOpen = false; $('menu').hidden = true; }
+  if (chatOpen) { chatOpen = false; $('chat').hidden = true; }
+  $('ending').hidden = false;
 }
 $('endClose').addEventListener('click', () => { $('ending').hidden = true; nightOver = false; requestLock(); });
 function updateBoss(dt) {
