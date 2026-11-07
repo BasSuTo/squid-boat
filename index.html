@@ -957,7 +957,9 @@ for (const sx of [-1.82, -1.18]) { cylBetween(new V3(sx, 2.0, 2.15), new V3(sx, 
   for (const sx of [-2.25, 2.25]) rail(new V3(sx, ry, 3.92), new V3(sx, ry, 5.4));
   for (const [x, z] of [[-2.25, 3.92], [2.25, 3.92], [-2.25, 5.4], [2.25, 5.4], [0.5, 3.92]]) rail(new V3(x, UP_Y, z), new V3(x, ry, z)); }
 // galley / mess room
-const plateG = new THREE.Group(); plateG.visible = false;
+const plateGs = [new THREE.Group(), new THREE.Group()];
+const PLATE_POS = [new V3(-0.95, 2.79, 5.85), new V3(-0.95, 2.79, 6.55)];
+plateGs.forEach((g, i) => { g.visible = false; g.position.copy(PLATE_POS[i]); boat.add(g); });
 {
   box(1.3, 0.05, 0.8, woodM, -0.9, 2.76, 6.2); for (const [x, z] of [[-1.48, 5.88], [-0.32, 5.88], [-1.48, 6.52], [-0.32, 6.52]]) box(0.05, 0.74, 0.05, woodD, x, 2.38, z);
   box(1.3, 0.42, 0.34, woodD, -0.9, 2.21, 5.5); box(1.3, 0.42, 0.34, woodD, -0.9, 2.21, 6.9);
@@ -966,14 +968,7 @@ const plateG = new THREE.Group(); plateG.visible = false;
   const sauce = new THREE.Mesh(new THREE.CircleGeometry(0.052, 16), std(0x7fa83a, 0.25, 0)); sauce.rotation.x = -Math.PI / 2; sauce.position.set(-0.55, 2.826, 6.05); boat.add(sauce);
   for (let i = 0; i < 7; i++) { const d = new THREE.Mesh(new THREE.SphereGeometry(0.007, 6, 4), std(i % 3 ? 0xd8321e : 0x3f7a22, 0.4, 0)); d.position.set(-0.55 + rand(-0.03, 0.03), 2.829, 6.05 + rand(-0.03, 0.03)); boat.add(d); }
   box(0.05, 0.16, 0.05, std(0xd03a22, 0.3, 0), -1.4, 2.86, 6.4); box(0.04, 0.12, 0.04, std(0x2d1a0c, 0.3, 0), -1.32, 2.84, 6.42);
-  // sashimi plate (appears after cooking)
-  plateG.position.set(-0.95, 2.79, 6.15); boat.add(plateG);
-  const plate = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.14, 0.015, 24), whiteP); plateG.add(plate);
-  const ice = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.012, 20), std(0xdff2ff, 0.1, 0, { transparent: true, opacity: 0.7 })); ice.position.y = 0.012; plateG.add(ice);
-  const slice = std(0xf6ece6, 0.22, 0, { emissive: 0x2a1a18, emissiveIntensity: 0.2 });
-  for (let i = 0; i < 8; i++) { const sl = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.008, 0.032), slice); const a = -0.9 + i * 0.26; sl.position.set(Math.cos(a) * 0.05, 0.024 + i * 0.002, Math.sin(a) * 0.05); sl.rotation.y = -a; plateG.add(sl); }
-  for (let i = 0; i < 6; i++) { const lf = new THREE.Mesh(new THREE.SphereGeometry(0.018, 6, 4), std(0x6fbf4a, 0.6, 0)); lf.scale.y = 0.3; lf.position.set(rand(-0.1, 0.1), 0.022, rand(0.06, 0.11)); plateG.add(lf); }
-  const lime = new THREE.Mesh(new THREE.SphereGeometry(0.025, 10, 8, 0, Math.PI), std(0x9ccf3a, 0.4, 0)); lime.position.set(0.1, 0.03, -0.06); plateG.add(lime);
+  // 2 sashimi/crab plates (appear after cooking; each tied to its own seat so friends can eat together)
   // counter along the bow wall
   box(4.3, 0.9, 0.6, woodD, 0, 2.45, 9.28); box(4.3, 0.04, 0.64, std(0x9aa0a4, 0.35, 0.6), 0, 2.92, 9.27);
   box(0.42, 0.02, 0.3, std(0xd8c49a, 0.7, 0), -0.1, 2.95, 9.2); box(0.18, 0.008, 0.03, M.steel, 0.05, 2.97, 9.12);
@@ -1922,7 +1917,7 @@ const toLocalDist = (p) => Math.hypot(P.x - p.x, P.z - p.z);
 function interactables() {
   const list = [];
   if (BOIL.active) { list.push({ pos: { x: P.x, z: P.z }, r: 1, in: true, label: boilLabel(), act: boilAction3D }); return list; }
-  if (P.seated) { list.push({ pos: { x: P.x, z: P.z }, r: 1, in: true, label: plateFood && plateFood.pieces.length ? `กินคำต่อไป (เหลือ ${Math.ceil(plateFood.pieces.length / plateFood.per)} คำ) · เดินเพื่อลุก` : 'ลุกขึ้น', act: () => { if (plateFood && plateFood.pieces.length) biteNext(); else standUp(); } }); return list; }
+  if (P.seated) { const myT = TABLE[mySeatIdx()]; list.push({ pos: { x: P.x, z: P.z }, r: 1, in: true, label: myT && myT.pieces.length ? `กินคำต่อไป (เหลือ ${Math.ceil(myT.pieces.length / myT.per)} คำ) · เดินเพื่อลุก` : 'ลุกขึ้น', act: () => { if (myT && myT.pieces.length) biteNext(); else standUp(); } }); return list; }
   islandInteractions(list);
   if (gen.broken && !gen.repairing) list.push({ pos: GEN, r: 1.9, label: gen.prog > 0 ? `ซ่อมเครื่องปั่นไฟต่อ (${Math.round(gen.prog * 100)}%)` : 'ซ่อมเครื่องปั่นไฟ', act: startRepair });
   waterInteractions(list); potInteractions(list); fuelInteractions(list);
@@ -1935,7 +1930,7 @@ function interactables() {
   list.push({ pos: CRATE, r: 1.8, label: `เปิดกล่องหมึกพี่ชัย (${S.crewBox.length} ตัว)`, act: openCrate });
   list.push({ pos: new V3(0.6, 0, 3.6), r: 1.5, label: A.radio ? 'ปิดวิทยุ' : 'เปิดวิทยุ', act: toggleRadio });
   list.push({ pos: new V3(-0.45, 0, 6.45), r: 1.2, lvl: 1, in: true, label: ISL.on ? 'จับพวงมาลัย: ออกเรือคืนต่อไป' : 'จับพวงมาลัย: ย้ายจุดตกหมึก', act: () => ISL.on ? leaveIsland() : openMenu('map') });
-  for (const [i, se] of SEATS.entries()) list.push({ pos: { x: se.x + 0.85, z: se.z }, r: 1.0, in: true, label: plateFood ? 'นั่งลงกินที่โต๊ะ' : 'นั่งที่โต๊ะ', act: () => sitDown(i) });
+  for (const [i, se] of SEATS.entries()) { const t = TABLE[i]; const lbl = t && t.owner !== 'local' ? 'มีเพื่อนนั่งกินอยู่' : t ? 'นั่งลงกินที่โต๊ะ' : 'นั่งที่โต๊ะ'; list.push({ pos: { x: se.x + 0.85, z: se.z }, r: 1.0, in: true, label: lbl, act: () => sitDown(i) }); }
   list.push({ pos: new V3(-0.1, 0, 8.7), r: 1.3, in: true, label: 'เปิดครัว: ทำซาชิมิหมึก หรือต้มปู', act: openKitchen });
   list.push({ pos: new V3(1.75, 0, 7.3), r: 1.25, in: true, label: 'ค้างไว้: งีบบนเตียง 30 นาที', hold: 1.6, act: napBunk });
   return list;
@@ -2499,7 +2494,7 @@ async function joinBoat(raw) {
     await set(NET.lobbyMeRef, true);
     onDisconnect(NET.lobbyMeRef).remove();
     NET.subs.push(onChildAdded(NET.playersRef, (snap) => { if (snap.key === uid) return; if (!NET.remotes.has(snap.key)) addRemote(snap.key, snap.val() || {}); }));
-    NET.subs.push(onChildRemoved(NET.playersRef, (snap) => { if (snap.key === uid) return; const r = NET.remotes.get(snap.key); if (r) { removeRemote(r); NET.remotes.delete(snap.key); toast(`${r.name || 'เพื่อน'} ออกจากเรือแล้ว`); renderPlayers(); } }));
+    NET.subs.push(onChildRemoved(NET.playersRef, (snap) => { if (snap.key === uid) return; const r = NET.remotes.get(snap.key); if (r) { removeRemote(r); NET.remotes.delete(snap.key); syncRemoteSeats(); toast(`${r.name || 'เพื่อน'} ออกจากเรือแล้ว`); renderPlayers(); } }));
     NET.subs.push(onValue(NET.playersRef, (snap) => onBoatPeers(snap.val() || {}, uid)));
     NET.subs.push(onChildAdded(NET.eventsRef, (snap) => { const m = snap.val(); if (!m || m.by === uid || m.t < NET.joinedAt) return; onNetEvent(m); }));
     netState(`อยู่บนเรือ ${code.toUpperCase()} · บอกรหัสนี้ให้เพื่อน`, true);
@@ -2513,20 +2508,34 @@ async function leaveBoat(silent) {
   try { if (NET.myRef) await remove(NET.myRef); } catch (e) {}
   try { if (NET.lobbyMeRef) await remove(NET.lobbyMeRef); } catch (e) {}
   NET.code = null; NET.playersRef = null; NET.eventsRef = null; NET.myRef = null; NET.lobbyMeRef = null;
-  for (const r of NET.remotes.values()) removeRemote(r); NET.remotes.clear();
+  for (const r of NET.remotes.values()) removeRemote(r); NET.remotes.clear(); syncRemoteSeats();
   $('players').hidden = true; if (!silent) { toast('ออกจากเรือออนไลน์แล้ว'); netState('เข้าสู่ระบบแล้ว พร้อมเล่นออนไลน์', true); } renderBoats(); if (menuOpen) renderMenu();
 }
 function addRemote(uid, data) {
   const colHex = data.col ? parseInt(data.col.slice(1), 16) || PALETTE[0] : PALETTE[0];
   const av = makeAvatar(colHex); boat.add(av);
   const label = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthWrite: false })); label.scale.set(1.3, 0.28, 1); label.position.y = 2.2; av.add(label);
-  const r = { uid, av, label, line: makeLine(0xffe2b0, 0.75), tx: 0, tz: -6, ty: 2, tyaw: 0, s: 'idle', lx: 0, lz: 0, ld: 0, c: 0, name: data.name || 'เพื่อนร่วมเรือ', bubble: '', bubbleT: 0, col: data.col || '#2f8fd8' };
+  const r = { uid, av, label, line: makeLine(0xffe2b0, 0.75), tx: 0, tz: -6, ty: 2, tyaw: 0, s: 'idle', lx: 0, lz: 0, ld: 0, c: 0, name: data.name || 'เพื่อนร่วมเรือ', bubble: '', bubbleT: 0, col: data.col || '#2f8fd8', seat: -1, pd: null };
   r.labelTex = () => { const txt = r.bubbleT > 0 ? `${r.name}: ${r.bubble}` : r.name; if (r.label.material.map) r.label.material.map.dispose(); r.label.material.map = labelTex(txt, r.bubbleT > 0 ? '#ffd27a' : '#fff'); r.label.material.needsUpdate = true; r.label.scale.set(r.bubbleT > 0 ? 2.4 : 1.3, r.bubbleT > 0 ? 0.52 : 0.28, 1); };
   r.labelTex(); NET.remotes.set(uid, r);
   toast('มีเพื่อนขึ้นเรือมาแล้ว', 'good'); renderPlayers();
   return r;
 }
 function removeRemote(r) { boat.remove(r.av); scene.remove(r.line); r.line.geometry.dispose(); }
+// keeps TABLE[]/plateGs[] (what's visually on each seat) in sync with what friends are currently broadcasting;
+// never touches a seat the local player owns. Only the seat index + dish identity are synced (not bite-by-bite
+// progress - the chopstick animation is first-person/local-only), so friends see each other's dish appear and
+// disappear as they sit/finish, but each eats at their own pace.
+function syncRemoteSeats() {
+  for (let i = 0; i < SEATS.length; i++) {
+    const cur = TABLE[i]; if (cur && cur.owner === 'local') continue;
+    let owner = null, pd = null;
+    for (const [uid, r] of NET.remotes) { if (r.seat === i && r.pd) { owner = uid; pd = r.pd; break; } }
+    if (!owner) { if (cur) { plateGs[i].visible = false; TABLE[i] = null; } continue; }
+    if (cur && cur.owner === owner && cur.k === pd.k && cur.id === pd.id && Math.abs(cur.kg - pd.kg) < 0.01 && Math.abs(cur.q - pd.q) < 0.01) continue;
+    buildPlateInto(plateGs[i], pd); TABLE[i] = Object.assign({}, pd, { owner }); plateGs[i].visible = true;
+  }
+}
 const num = (v, a, b, d) => (typeof v === 'number' && isFinite(v) ? clamp(v, a, b) : d);
 function onBoatPeers(all, myUid) {
   let maxGm = null;
@@ -2537,10 +2546,13 @@ function onBoatPeers(all, myUid) {
     r.tx = num(pr.x, -4, 4, 0); r.tz = num(pr.z, -12, 12, -6); r.ty = num(pr.y, 1.5, 6, 2); r.tyaw = num(pr.yaw, -1e4, 1e4, 0);
     r.s = ['idle', 'charge', 'flying', 'water', 'bite', 'fight', 'landing'].includes(pr.s) ? pr.s : 'idle';
     r.lx = num(pr.lx, -200, 200, 0); r.lz = num(pr.lz, -200, 200, 0); r.ld = num(pr.ld, 0, 50, 0); r.c = num(pr.c, 0, 999, 0);
+    r.seat = (pr.seat === 0 || pr.seat === 1) ? pr.seat : -1;
+    const rd = pr.pd;
+    r.pd = (rd && (rd.k === 'sashimi' || rd.k === 'crab') && typeof rd.id === 'string' && SP[rd.id]) ? { k: rd.k, id: rd.id, kg: num(rd.kg, 0.01, 10, 0.3), q: num(rd.q, 0, 1.5, 1), f: num(rd.f, 0.5, 1.5, 1) } : null;
     if (typeof pr.gm === 'number') maxGm = Math.max(maxGm ?? 0, num(pr.gm, 0, 2000, 0));
   }
   if (!NET.synced && maxGm != null) { NET.synced = true; if (Math.abs(maxGm - gameMin) > 4 && maxGm < 1770) { gameMin = maxGm; toast('ตั้งเวลาให้ตรงกับเพื่อนบนเรือแล้ว'); } }
-  renderPlayers();
+  syncRemoteSeats(); renderPlayers();
 }
 function onNetEvent(m) {
   if (m.type === 'catch') { const d = m.data || {}; const sp = SP[d.sp]; const kg = num(d.kg, 0, 10, 0); if (!sp) return; toast(`${sp.id === 'sandal' ? 'ได้รองเท้าแตะ' : 'ได้' + sp.name} ${kg.toFixed(2)} กก.`, 'say', m.name); }
@@ -2587,7 +2599,9 @@ function updateNet(dt) {
   NET.push -= dt;
   if (NET.push <= 0) {
     NET.push = 0.15;
-    update(NET.myRef, { x: +P.x.toFixed(2), z: +P.z.toFixed(2), y: +P.y.toFixed(2), yaw: +P.yaw.toFixed(3), s: st, lx: +lure.x.toFixed(2), lz: +lure.z.toFixed(2), ld: +lure.depth.toFixed(1), c: NIGHT.stats.count, gm: Math.round(gameMin), t: Date.now() }).catch(() => {});
+    const sIdx = mySeatIdx(), sT = sIdx >= 0 ? TABLE[sIdx] : null;
+    const pd = sT ? { k: sT.k, id: sT.id, kg: +sT.kg.toFixed(2), q: +sT.q.toFixed(2), f: +(sT.f || 1).toFixed(2) } : null;
+    update(NET.myRef, { x: +P.x.toFixed(2), z: +P.z.toFixed(2), y: +P.y.toFixed(2), yaw: +P.yaw.toFixed(3), s: st, lx: +lure.x.toFixed(2), lz: +lure.z.toFixed(2), ld: +lure.depth.toFixed(1), c: NIGHT.stats.count, gm: Math.round(gameMin), t: Date.now(), seat: sIdx, pd }).catch(() => {});
   }
   for (const r of NET.remotes.values()) {
     const mv = Math.hypot(r.tx - r.av.position.x, r.tz - r.av.position.z) > 0.04 ? 1 : 0;
@@ -3201,7 +3215,6 @@ function updateNeeds(dt) {
 const needMul = () => S.needs.energy <= 0 ? 0.5 : S.needs.energy < 20 ? 0.75 : 1;
 
 // =============== food: sashimi with nam jim seafood ===============
-let plateFood = null;
 let kitchenOpen = false;
 const K = { view: 'list', item: null, src: null, cuts: [], dots: [], drag: null, trail: [], trailT: 0, judge: '', judgeCls: '', done: false };
 const KW = 800, KH = 450, KCY = 225;
@@ -3337,7 +3350,7 @@ function doCut(gx, err) {
   showJudge();
 }
 function showJudge() { const j = $('kJudge'); if (j) { j.textContent = K.judge; j.className = K.judgeCls; } }
-function autoCut() { if (K.done) { finishKitchen(plateFood ? 'pack' : 'eat'); return; } const g = GUIDES.find((q) => !q.cut); if (g) doCut(guideScreenX(g), 12); }
+function autoCut() { if (K.done) { finishKitchen(myActivePlate() ? 'pack' : 'eat'); return; } const g = GUIDES.find((q) => !q.cut); if (g) doCut(guideScreenX(g), 12); }
 function hookBoard(cv) {
   const pos = (e) => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * KW / r.width, (e.clientY - r.top) * KH / r.height]; };
   cv.addEventListener('pointerdown', (e) => { if (K.done) return; e.preventDefault(); cv.setPointerCapture(e.pointerId); K.drag = [pos(e)]; K.trail = [pos(e)]; K.trailT = 1; });
@@ -3358,7 +3371,11 @@ function finishKitchen(mode) {
   const q = isCrab ? (K.boil ? K.boil.q : 1) : kitchenScore();
   const dish = { k: isCrab ? 'crab' : 'sashimi', id: it.id, kg: it.kg, q, f: K.src === S.tub || K.src === S.crewBox ? it.f : Math.max(0.85, it.f) };
   if (mode === 'pack') { if (S.dishes.length >= DISH_CAP) { toast(`กล่องอาหารเต็ม ${DISH_CAP} กล่องแล้ว ไปขายที่เกาะก่อน`, 'bad'); return; } S.dishes.push(dish); save(); toast(`ใส่${dishName(dish)}ลงกล่องแล้ว ขายที่ร้านป้าแดงได้ราว ${baht(dishValue(dish))}`, 'good'); }
-  else { if (plateFood) { toast('มีจานรออยู่บนโต๊ะแล้ว กินให้หมดก่อน หรือใส่กล่องแทน', 'bad'); return; } setPlate(dish); toast(`${dishName(dish)}วางบนโต๊ะแล้ว ไปนั่งที่โต๊ะแล้วกด E เพื่อกิน`, 'good'); if (crew.visible && q > 1.1) setTimeout(() => crewSay(isCrab ? 'ต้มสุกกำลังดีเลย เนื้อหวานแน่' : 'โห หั่นสวยกว่าพี่อีก'), 900); }
+  else {
+    if (myActivePlate()) { toast('มีจานรออยู่บนโต๊ะแล้ว กินให้หมดก่อน หรือใส่กล่องแทน', 'bad'); return; }
+    if (!placeDishOnTable(dish)) { toast('โต๊ะเต็ม เพื่อนนั่งกินอยู่ทั้งสองที่แล้ว ลองใส่กล่องขายก่อนนะ', 'bad'); return; }
+    toast(`${dishName(dish)}วางบนโต๊ะแล้ว ไปนั่งที่โต๊ะแล้วกด E เพื่อกิน`, 'good'); if (crew.visible && q > 1.1) setTimeout(() => crewSay(isCrab ? 'ต้มสุกกำลังดีเลย เนื้อหวานแน่' : 'โห หั่นสวยกว่าพี่อีก'), 900);
+  }
   sfx('click'); boilStop(); K.done = false; K.item = null; K.boil = null; kitchenOpen = false; $('kitchen').hidden = true; requestLock();
   for (const g of GUIDES) g.cut = false;
 }
@@ -3770,11 +3787,16 @@ function dishValue(d) { const sp = SP[d.id], m = NIGHT ? NIGHT.market[d.id] : 1;
 function dishGain(d) { return (d.k === 'crab' ? clamp(22 + d.kg * 40, 22, 65) : clamp(28 + d.kg * 45, 28, 75)) * (0.6 + 0.4 * d.f) * (d.q || 1); }
 const SEATS = [{ x: -0.9, z: 5.42, yaw: Math.PI }, { x: -0.9, z: 6.98, yaw: 0 }];
 const BOWL = new V3(-0.55, 2.86, 6.05);
+// TABLE[i] = null, or a dish-like object for seat i's plate. owner is 'local' (full with pieces/per/n for the
+// bite-by-bite eat animation) or a remote player's uid (just enough fields to render the dish, synced over the net).
+const TABLE = [null, null];
+function myActivePlate() { for (const t of TABLE) if (t && t.owner === 'local') return t; return null; }
+function mySeatIdx() { return P.seated ? SEATS.indexOf(P.seated) : -1; }
 const sliceTex = (() => { const c = document.createElement('canvas'); c.width = 128; c.height = 48; const x = c.getContext('2d'); const g = x.createLinearGradient(0, 0, 0, 48); g.addColorStop(0, '#f2d8d2'); g.addColorStop(0.18, '#fbf6f2'); g.addColorStop(0.82, '#fbf6f2'); g.addColorStop(1, '#e9c7bf'); x.fillStyle = g; x.fillRect(0, 0, 128, 48); x.strokeStyle = 'rgba(200,170,160,.45)'; x.lineWidth = 1; for (let i = 6; i < 128; i += 7) { x.beginPath(); x.moveTo(i, 4); x.lineTo(i - 3, 44); x.stroke(); } const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })();
 const sliceMat = new THREE.MeshPhysicalMaterial({ map: sliceTex, color: 0xd9d2cc, roughness: 0.35, clearcoat: 0.35, clearcoatRoughness: 0.3, sheen: 0.3, sheenColor: new THREE.Color(0xffe8e8), transparent: true, opacity: 0.94 });
 const cookedTex = (() => { const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d'); x.fillStyle = '#e2552c'; x.fillRect(0, 0, 128, 128); for (let i = 0; i < 260; i++) { x.fillStyle = Math.random() < 0.5 ? 'rgba(255,190,120,.5)' : 'rgba(150,30,10,.4)'; x.beginPath(); x.arc(Math.random() * 128, Math.random() * 128, 1 + Math.random() * 3, 0, 7); x.fill(); } const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })();
 const cookedMat = new THREE.MeshPhysicalMaterial({ map: cookedTex, roughness: 0.35, clearcoat: 0.7 }), meatMat = std(0xf7efe6, 0.5, 0);
-function setPlate(d) {
+function buildPlateInto(plateG, d) {
   while (plateG.children.length) plateG.remove(plateG.children[0]);
   const whiteP2 = std(0xbdb8b0, 0.6, 0);
   plateG.add(new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.15, 0.016, 32), whiteP2));
@@ -3799,7 +3821,16 @@ function setPlate(d) {
     pieces.push(...[top, ...inner.userData.claws.map((c) => c.g), ...inner.userData.legs.map((l) => l.g)].filter(Boolean));
   }
   plateG.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
-  const per = d.k === 'crab' ? Math.ceil(pieces.length / 4) : 1; plateFood = Object.assign({}, d, { pieces, per, n: Math.ceil(pieces.length / per) }); plateG.visible = true;
+  const per = d.k === 'crab' ? Math.ceil(pieces.length / 4) : 1;
+  return { pieces, per, n: Math.ceil(pieces.length / per) };
+}
+// places a freshly cooked dish into the first free seat slot (so it's visible on the table right away, even before
+// sitting down); returns false if both seats already have a plate (one of our own, or a friend's).
+function placeDishOnTable(d) {
+  const i = TABLE.findIndex((t) => !t); if (i === -1) return false;
+  const built = buildPlateInto(plateGs[i], d);
+  TABLE[i] = Object.assign({}, d, { owner: 'local', pieces: built.pieces, per: built.per, n: built.n });
+  plateGs[i].visible = true; return true;
 }
 const chop = new THREE.Group(), chopTip = new THREE.Object3D(); chop.visible = false; camera.add(chop);
 { const wood = std(0xc9a46c, 0.6, 0); for (const sx of [-1, 1]) { const st2 = new THREE.Mesh(new THREE.CylinderGeometry(0.0022, 0.0042, 0.25, 8), wood); st2.rotation.x = -Math.PI / 2; st2.position.set(sx * 0.005, 0, -0.125); chop.add(st2); } chopTip.position.set(0, 0, -0.25); chop.add(chopTip); chop.rotation.set(-0.55, 0.25, 0.1); }
@@ -3808,13 +3839,16 @@ const EAT = { busy: false, t: 0, piece: null, attached: false, start: new V3() }
 const chopOffset = () => new V3(0, 0, -0.25).applyEuler(chop.rotation);
 function placeChop(target) { chop.position.copy(target).sub(chopOffset()); }
 function sitDown(i) {
-  const se = SEATS[i]; if (!se) return; P.seated = se; P.x = se.x; P.z = se.z; P.yaw = se.yaw; P.pitch = -1.0; chop.visible = true; placeChop(CHOP_REST);
-  toast(plateFood ? 'นั่งแล้ว · กด E หรือคลิกเพื่อคีบกินทีละคำ · เดินเพื่อลุก' : 'นั่งพักแล้ว · เดินเพื่อลุก', 'good');
+  const se = SEATS[i]; if (!se) return;
+  if (TABLE[i] && TABLE[i].owner !== 'local') { toast('ที่นั่งนี้มีเพื่อนนั่งอยู่', 'bad'); return; }
+  P.seated = se; P.x = se.x; P.z = se.z; P.yaw = se.yaw; P.pitch = -1.0; chop.visible = true; placeChop(CHOP_REST);
+  toast(TABLE[i] ? 'นั่งแล้ว · กด E หรือคลิกเพื่อคีบกินทีละคำ · เดินเพื่อลุก' : 'นั่งพักแล้ว · เดินเพื่อลุก', 'good');
 }
 function standUp() { P.seated = null; chop.visible = false; P.x = 0.08; P.pitch = 0; }
 function biteNext() {
-  if (EAT.busy) return; if (!plateFood || !plateFood.pieces.length) { standUp(); return; }
-  const piece = plateFood.pieces.pop(); for (let i = 1; i < plateFood.per && plateFood.pieces.length; i++) { const ex = plateFood.pieces.pop(); if (ex.parent) ex.parent.remove(ex); } EAT.busy = true; EAT.t = 0; EAT.piece = piece; EAT.attached = false; EAT.start.copy(chop.position); P.pitch = clamp(P.pitch, -1.25, -0.55);
+  const idx = mySeatIdx(), t = TABLE[idx];
+  if (EAT.busy) return; if (!t || !t.pieces.length) { standUp(); return; }
+  const piece = t.pieces.pop(); for (let i = 1; i < t.per && t.pieces.length; i++) { const ex = t.pieces.pop(); if (ex.parent) ex.parent.remove(ex); } EAT.busy = true; EAT.t = 0; EAT.piece = piece; EAT.attached = false; EAT.start.copy(chop.position); P.pitch = clamp(P.pitch, -1.25, -0.55);
 }
 function updateEat(dt) {
   if (!P.seated) return;
@@ -3837,18 +3871,18 @@ function updateEat(dt) {
   placeChop(target);
   if (t > 1.85) {
     if (pc.parent) pc.parent.remove(pc); EAT.busy = false; sfx('eat');
-    const per = dishGain(plateFood) / plateFood.n; S.needs.food = Math.min(100, S.needs.food + per);
-    if (!plateFood.pieces.length) finishMeal();
+    const idx = mySeatIdx(), tb = TABLE[idx];
+    if (tb) { const per = dishGain(tb) / tb.n; S.needs.food = Math.min(100, S.needs.food + per); if (!tb.pieces.length) finishMeal(idx); }
   }
 }
-function finishMeal() {
-  const d = plateFood; S.needs.energy = Math.min(100, S.needs.energy + 15); S.needs.water = Math.max(0, S.needs.water - 6); save();
-  plateG.visible = false; plateFood = null;
+function finishMeal(idx) {
+  const d = TABLE[idx]; if (!d) return; S.needs.energy = Math.min(100, S.needs.energy + 15); S.needs.water = Math.max(0, S.needs.water - 6); save();
+  plateGs[idx].visible = false; TABLE[idx] = null;
   toast(`กิน${dishName(d)}จิ้มน้ำจิ้มซีฟู้ดหมดจานแล้ว อิ่มมาก! อาหาร +${Math.round(dishGain(d))} · เผ็ดจนคอแห้งนิดหน่อย`, 'good');
   if (crew.visible) setTimeout(() => crewSay(pickOne(['ของสดๆ จิ้มน้ำจิ้มซีฟู้ดนี่แหละ ของดีชาวเรือ', 'แบ่งพี่บ้างดิ 555', 'น้ำจิ้มพี่ตำเองนะ เด็ดมั้ยล่ะ'])), 1200);
 }
 function addFinishButtons(row) {
-  row.appendChild(btn(plateFood ? 'มีจานบนโต๊ะแล้ว' : 'จัดจานกินที่โต๊ะ', () => finishKitchen('eat'), 'btn pri', !!plateFood));
+  row.appendChild(btn(myActivePlate() ? 'มีจานบนโต๊ะแล้ว' : 'จัดจานกินที่โต๊ะ', () => finishKitchen('eat'), 'btn pri', !!myActivePlate()));
   const it = K.item, isCrab = it && SP[it.id].shape === 'crab';
   const preview = it ? dishValue({ k: isCrab ? 'crab' : 'sashimi', id: it.id, kg: it.kg, q: isCrab ? (K.boil ? K.boil.q : 1) : kitchenScore(), f: it.f }) : 0;
   row.appendChild(btn(`ใส่กล่องไว้ขาย (ราว ${baht(preview)})`, () => finishKitchen('pack'), 'btn', S.dishes.length >= DISH_CAP));
@@ -3856,7 +3890,7 @@ function addFinishButtons(row) {
 
 // ---- crab boiling ----
 function pickCrab(it, src) {
-  if (plateFood && S.dishes.length >= DISH_CAP) { toast('มีจานบนโต๊ะแล้ว และกล่องอาหารก็เต็ม กินหรือขายก่อนนะ', 'bad'); return; }
+  if (myActivePlate() && S.dishes.length >= DISH_CAP) { toast('มีจานบนโต๊ะแล้ว และกล่องอาหารก็เต็ม กินหรือขายก่อนนะ', 'bad'); return; }
   src.splice(src.indexOf(it), 1); rebuildTub(); rebuildCrate(); save();
   K.item = it; K.src = src; K.view = 'list'; kitchenOpen = false; $('kitchen').hidden = true;
   K.boil = { p: 0, on: false, done: false, q: 1, label: '', t: 0, drop: 0, lift: 0 };
@@ -3874,10 +3908,10 @@ function boilStop() {
   if (K.boil && K.boil.mesh) { boat.remove(K.boil.mesh); K.boil.mesh = null; }
   for (const b of BOIL.bubbles) b.visible = false;
 }
-function boilLabel() { const b = K.boil; if (!b) return ''; return b.done ? (plateFood ? 'ใส่กล่องไว้ขาย' : 'จัดจานไปกินที่โต๊ะ · กด F ใส่กล่องไว้ขาย') : b.on ? 'ตักปูขึ้น (ดูสีปูกับเข็มให้อยู่ในโซนเขียว)' : 'ใส่ปูลงหม้อ'; }
+function boilLabel() { const b = K.boil; if (!b) return ''; return b.done ? (myActivePlate() ? 'ใส่กล่องไว้ขาย' : 'จัดจานไปกินที่โต๊ะ · กด F ใส่กล่องไว้ขาย') : b.on ? 'ตักปูขึ้น (ดูสีปูกับเข็มให้อยู่ในโซนเขียว)' : 'ใส่ปูลงหม้อ'; }
 function boilAction3D() {
   const b = K.boil; if (!b) return;
-  if (b.done) { if (b.lift < 0.6) return; finishKitchen(plateFood ? 'pack' : 'eat'); return; }
+  if (b.done) { if (b.lift < 0.6) return; finishKitchen(myActivePlate() ? 'pack' : 'eat'); return; }
   if (!b.on) { b.on = true; b.drop = 0; return; }
   if (b.p < 0.12) return;
   b.done = true; b.on = false; b.lift = 0;
@@ -3887,7 +3921,7 @@ function boilAction3D() {
 }
 function boilCancel() {
   const b = K.boil; if (!b) return;
-  if (b.done) { finishKitchen(plateFood ? 'pack' : 'eat'); return; }
+  if (b.done) { finishKitchen(myActivePlate() ? 'pack' : 'eat'); return; }
   if (b.on) { boilAction3D(); return; }
   K.src.push(K.item); rebuildTub(); rebuildCrate(); save(); boilStop(); K.item = null; K.boil = null; toast('เก็บปูคืนที่เดิมแล้ว');
 }
@@ -3921,7 +3955,7 @@ function renderBoilHud(onlyNeedle) {
   $('boilNeedle').style.left = clamp(b.p / 1.3, 0, 1) * 100 + '%';
   if (onlyNeedle) { $('boilTxt').textContent = b.done ? b.label : b.on ? (b.p < 0.45 ? 'ปูยังดิ้นอยู่… สีเริ่มเปลี่ยน' : b.p < 0.88 ? 'เริ่มแดงแล้ว รออีกนิด' : b.p <= 1.06 ? 'สีส้มแดงสวย ตักได้เลย!' : 'นานไปแล้ว รีบตัก!') : 'ปูดิ้นอยู่ในมือ น้ำเดือดแล้ว'; return; }
   const row = $('boilBtns'); row.textContent = '';
-  if (b.done) { row.appendChild(btn(plateFood ? 'มีจานบนโต๊ะแล้ว' : '[1] จัดจานกินที่โต๊ะ', () => finishKitchen('eat'), plateFood ? 'btn' : 'btn pri', !!plateFood)); row.appendChild(btn(`[F] ใส่กล่องไว้ขาย (ราว ${baht(dishValue({ k: 'crab', id: K.item.id, kg: K.item.kg, q: b.q, f: K.item.f }))})`, () => finishKitchen('pack'), plateFood ? 'btn pri' : 'btn', S.dishes.length >= DISH_CAP)); row.appendChild(el('div', 'hint', 'คลิกปุ่ม หรือกดคีย์ในวงเล็บก็ได้')); }
+  if (b.done) { row.appendChild(btn(myActivePlate() ? 'มีจานบนโต๊ะแล้ว' : '[1] จัดจานกินที่โต๊ะ', () => finishKitchen('eat'), myActivePlate() ? 'btn' : 'btn pri', !!myActivePlate())); row.appendChild(btn(`[F] ใส่กล่องไว้ขาย (ราว ${baht(dishValue({ k: 'crab', id: K.item.id, kg: K.item.kg, q: b.q, f: K.item.f }))})`, () => finishKitchen('pack'), myActivePlate() ? 'btn pri' : 'btn', S.dishes.length >= DISH_CAP)); row.appendChild(el('div', 'hint', 'คลิกปุ่ม หรือกดคีย์ในวงเล็บก็ได้')); }
   renderBoilHud(true);
 }
 function renderBoil(body) {
@@ -3935,7 +3969,7 @@ function renderBoil(body) {
   drawBoil();
 }
 function boilAction() {
-  const b = K.boil; if (!b || b.done) { if (b && b.done) finishKitchen(plateFood ? 'pack' : 'eat'); return; }
+  const b = K.boil; if (!b || b.done) { if (b && b.done) finishKitchen(myActivePlate() ? 'pack' : 'eat'); return; }
   if (!b.on) { b.on = true; burst({ freq: 500, q: 0.6, dur: 0.6, vol: 0.3 }); renderKitchen(); return; }
   b.done = true; b.on = false;
   const p = b.p; if (p >= 0.88 && p <= 1.06) { b.q = 1.15; b.label = 'สุกกำลังดี เนื้อหวานฉ่ำ!'; } else if ((p >= 0.75 && p < 0.88) || (p > 1.06 && p <= 1.2)) { b.q = 1.0; b.label = 'สุกพอใช้'; } else if (p < 0.75) { b.q = 0.7; b.label = 'ยังไม่ค่อยสุก'; } else { b.q = 0.8; b.label = 'สุกเกินไป เนื้อแข็ง'; }
