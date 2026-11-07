@@ -2,6 +2,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kanit:wght@500;600;700&family=Sarabun:wght@400;500;600;700&display=swap">
 <style>
+/* Defensive reset: without this, [hidden] can be overridden by this file's own display:flex/block rules on the
+   same elements (#kitchen, .screen, etc.), since author CSS normally beats the UA's [hidden]{display:none}. This
+   was previously masked by the Claude Artifact host's own reset styles; standalone, it must be explicit. */
+[hidden]{display:none!important}
 /* Layout: full-bleed 3D view; HUD pinned to corners like a ship sim; menus are a tabbed logbook panel */
 :root{
   --ink:#eef3f6; --mute:#a9bac6; --panel:rgba(6,13,19,.66); --solid:#0b151d; --line:rgba(255,255,255,.14);
