@@ -1960,7 +1960,12 @@ function updateUse(dt) {
   $('useTxt').textContent = curUse.label; $('useBar').hidden = !curUse.hold;
   if (curUse.hold) { if (useHeld) { useT += dt; if (Math.random() < dt * 4) (curUse.tick || (() => sfx('tick')))(); } else useT = Math.max(0, useT - dt * 2); $('useFill').style.width = clamp(useT / curUse.hold * 100, 0, 100) + '%'; if (useT >= curUse.hold) { useT = 0; useHeld = false; curUse.act(); } }
 }
-function fixGen(byCrew) { gen.broken = false; gen.repairing = false; gen.prog = 0; gen.check = null; $('skill').hidden = true; gen.t = rand(320, 620); lampsOn = true; lampText(); sfx('click'); tone(60, 1.2, 0.2, 'sawtooth'); if (byCrew !== true) { toast('ซ่อมเครื่องปั่นไฟเรียบร้อย ไฟกลับมาแล้ว', 'good'); questEvent('gen'); } }
+function fixGen(byCrew) { gen.broken = false; gen.repairing = false; gen.prog = 0; gen.check = null; $('skill').hidden = true; gen.t = rand(320, 620); lampsOn = true; lampText(); sfx('click'); tone(60, 1.2, 0.2, 'sawtooth'); if (byCrew !== true) { toast('ซ่อมเครื่องปั่นไฟเรียบร้อย ไฟกลับมาแล้ว', 'good'); questEvent('gen'); netEmit('genFix', {}); } }
+// mirror the generator breaking/getting fixed onto a peer's own gen state (not just a toast), so "ไฟดับ"/"ไฟมา"
+// actually matches on both screens. Guarded so the state only ever flips once per real change - applying it a
+// second time (e.g. a duplicate/late event) is a no-op, same pattern as islandSync.
+function remoteGenBreak() { if (gen.broken) return; gen.broken = true; gen.prog = 0; lampText(); }
+function remoteGenFix() { if (!gen.broken) return; gen.broken = false; gen.repairing = false; gen.prog = 0; gen.check = null; $('skill').hidden = true; gen.t = rand(320, 620); lampsOn = true; lampText(); }
 function updateGen(dt) {
   if (!started || !lampsOn || night < 0.5 || gen.broken || S.fuel <= 0 || ISL.on) return;
   gen.t -= dt * (hasCurse('gen') ? 3 : 1) * (DT.on ? 1.5 : 1); if (gen.t <= 0) { gen.broken = true; gen.prog = 0; lampText(); sfx('sputter'); toast('ไฟดับ! เครื่องปั่นไฟที่กราบซ้ายเสีย', 'bad'); netEmit('gen', {}); setTimeout(() => { if (gen.broken) crewSay('ไปซ่อมเครื่องปั่นไฟหน่อย กด E แล้วกดตอนเข็มเข้าโซนนะ'); }, 2500); }
@@ -2596,7 +2601,7 @@ function syncRemoteSeats() {
 }
 const num = (v, a, b, d) => (typeof v === 'number' && isFinite(v) ? clamp(v, a, b) : d);
 function onBoatPeers(all, myUid) {
-  let maxGm = null;
+  let maxGm = null, minFl = null, peerGenBroken = false;
   for (const [uid, pr] of Object.entries(all)) {
     if (uid === myUid || typeof pr.x !== 'number') continue;
     const r = NET.remotes.get(uid) || addRemote(uid, pr);
@@ -2613,10 +2618,23 @@ function onBoatPeers(all, myUid) {
     const potsOf = (arr) => Array.isArray(arr) ? arr.slice(0, 4).filter((q) => q && isFinite(q.wx) && isFinite(q.wz)).map((q) => ({ wx: num(q.wx, -50, 50, 0), wz: num(q.wz, -50, 50, 0), t: num(q.t, 0, 2000, 0), bait: !!q.bait })) : [];
     syncRemotePots(r, potsOf(pr.pt));
     if (typeof pr.gm === 'number') maxGm = Math.max(maxGm ?? 0, num(pr.gm, 0, 2000, 0));
+    if (typeof pr.fl === 'number') minFl = Math.min(minFl ?? 100, num(pr.fl, 0, 100, 100));
+    if (pr.gb) peerGenBroken = true;
   }
   syncClock(maxGm);
+  syncFuel(minFl);
+  if (peerGenBroken) remoteGenBreak();
   if (!NET.islSynced) { NET.islSynced = true; if (!ISL.on) { for (const r of NET.remotes.values()) if (r.isl) { islandSync(true); break; } } }
   syncRemoteSeats(); renderPlayers();
+}
+// keeps the shared generator's fuel tank reading close between everyone on the boat: natural drain is deterministic
+// on both sides so the two should barely drift, this just irons out small timing/lag differences. A gain from
+// refueling is already pushed instantly as its own 'fuel' event, so this only ever nudges gently, never jumps up.
+function syncFuel(minFl) {
+  if (minFl == null || ISL.on) return;
+  const diff = minFl - S.fuel;
+  if (diff >= -0.3) return; // peer reads the same or higher - nothing to catch down to
+  S.fuel = Math.max(0, S.fuel + Math.max(diff, -2) * 0.3);
 }
 // keeps the in-game clock matching between everyone on the same boat: small natural drift (frame timing, lag)
 // is nudged away gently every update, while a bigger gap (someone just joined, or just caught up from a sync
@@ -2634,7 +2652,9 @@ function onNetEvent(m) {
   if (m.type === 'catch') { const d = m.data || {}; const sp = SP[d.sp]; const kg = num(d.kg, 0, 10, 0); if (!sp) return; toast(`${sp.id === 'sandal' ? 'ได้รองเท้าแตะ' : 'ได้' + sp.name} ${kg.toFixed(2)} กก.`, 'say', m.name); }
   else if (m.type === 'chat') { const i = m.data && m.data.i; if (!Number.isInteger(i) || i < 0 || i >= EMOTES.length) return; toast(EMOTES[i], 'say', m.name); const r = NET.remotes.get(m.by); if (r) { r.bubble = EMOTES[i]; r.bubbleT = 4; r.labelTex(); } }
   else if (m.type === 'move') { const i = m.data && m.data.spot; if (!Number.isInteger(i) || i < 0 || i >= SPOTS.length) return; travel(i, m.name); }
-  else if (m.type === 'gen') { toast('ไฟดับ! เครื่องปั่นไฟเสีย', 'bad', m.name); }
+  else if (m.type === 'gen') { remoteGenBreak(); toast('ไฟดับ! เครื่องปั่นไฟเสีย', 'bad', m.name); }
+  else if (m.type === 'genFix') { remoteGenFix(); toast('ซ่อมเครื่องปั่นไฟเรียบร้อยแล้ว ไฟกลับมาแล้ว', 'good', m.name); }
+  else if (m.type === 'fuel') { const amt = num(m.data && m.data.amt, 1, 100, 0); if (amt > 0) { S.fuel = Math.min(100, S.fuel + amt); fuelWarned = false; save(); lampText(); toast(`${m.name} เติมน้ำมันเครื่องปั่นไฟแล้ว ตอนนี้ ${Math.ceil(S.fuel)}%`, 'good'); } }
   else if (m.type === 'island') { islandSync(!!(m.data && m.data.on), m.name); }
   else if (m.type === 'nap') { const mins = num(m.data && m.data.mins, 1, 30, 0); if (mins > 0 && !nightOver) { gameMin += mins; toast(`${m.name} งีบหลับไป ${Math.round(mins)} นาที เวลาเดินไปด้วย`, 'good'); } }
 }
@@ -2701,7 +2721,7 @@ function updateNet(dt) {
     // friend sees it land on the table the moment cooking finishes - not only once we actually sit down to eat it
     const dishOf = (t) => (t && t.owner === 'local') ? { k: t.k, id: t.id, kg: +t.kg.toFixed(2), q: +t.q.toFixed(2), f: +(t.f || 1).toFixed(2) } : null;
     const potsOut = S.pots.map((q) => ({ wx: +q.wx.toFixed(2), wz: +q.wz.toFixed(2), t: Math.round(q.t), bait: !!q.bait }));
-    update(NET.myRef, { x: +P.x.toFixed(2), z: +P.z.toFixed(2), y: +P.y.toFixed(2), yaw: +P.yaw.toFixed(3), s: st, lx: +lure.x.toFixed(2), lz: +lure.z.toFixed(2), ld: +lure.depth.toFixed(1), c: NIGHT.stats.count, gm: Math.round(gameMin), t: Date.now(), seat: sIdx, p0: dishOf(TABLE[0]), p1: dishOf(TABLE[1]), cr: P.carry || null, isl: ISL.on, pt: potsOut }).catch(() => {});
+    update(NET.myRef, { x: +P.x.toFixed(2), z: +P.z.toFixed(2), y: +P.y.toFixed(2), yaw: +P.yaw.toFixed(3), s: st, lx: +lure.x.toFixed(2), lz: +lure.z.toFixed(2), ld: +lure.depth.toFixed(1), c: NIGHT.stats.count, gm: Math.round(gameMin), t: Date.now(), seat: sIdx, p0: dishOf(TABLE[0]), p1: dishOf(TABLE[1]), cr: P.carry || null, isl: ISL.on, pt: potsOut, fl: +S.fuel.toFixed(1), gb: gen.broken }).catch(() => {});
   }
   for (const r of NET.remotes.values()) {
     // while a peer's island state doesn't match ours (briefly, mid-sync, or if netcode drops a packet), their
@@ -3870,7 +3890,7 @@ function fuelInteractions(list) {
   if (P.carry === 'fuel') list.push({ pos: GEN, r: 1.9, label: `ค้างไว้: เติมน้ำมันเครื่องปั่นไฟ (ตอนนี้ ${Math.ceil(S.fuel)}%)`, hold: 1.8, tick: () => burst({ freq: 420, q: 0.8, dur: 0.2, vol: 0.08, type: 'lowpass' }), act: refuel });
 }
 function refuel() {
-  const wasEmpty = S.fuel <= 0; S.fuel = Math.min(100, S.fuel + 35); setCarry(null); fuelWarned = false; save(); sfx('pour'); lampText();
+  const wasEmpty = S.fuel <= 0; S.fuel = Math.min(100, S.fuel + 35); setCarry(null); fuelWarned = false; save(); sfx('pour'); lampText(); netEmit('fuel', { amt: 35 });
   toast(`เติมน้ำมันแล้ว ตอนนี้ ${Math.ceil(S.fuel)}% · แกลลอนเหลือ ${S.fuelStock}`, 'good');
   if (wasEmpty && !gen.broken) { tone(60, 1.2, 0.2, 'sawtooth'); if (lampAuto || lampsOn) lampsOn = true; lampText(); }
 }
