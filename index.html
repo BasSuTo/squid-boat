@@ -3350,7 +3350,7 @@ function doCut(gx, err) {
   showJudge();
 }
 function showJudge() { const j = $('kJudge'); if (j) { j.textContent = K.judge; j.className = K.judgeCls; } }
-function autoCut() { if (K.done) { finishKitchen(myActivePlate() ? 'pack' : 'eat'); return; } const g = GUIDES.find((q) => !q.cut); if (g) doCut(guideScreenX(g), 12); }
+function autoCut() { if (K.done) { finishKitchen(canAddDish({ k: 'sashimi' }) ? 'eat' : 'pack'); return; } const g = GUIDES.find((q) => !q.cut); if (g) doCut(guideScreenX(g), 12); }
 function hookBoard(cv) {
   const pos = (e) => { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * KW / r.width, (e.clientY - r.top) * KH / r.height]; };
   cv.addEventListener('pointerdown', (e) => { if (K.done) return; e.preventDefault(); cv.setPointerCapture(e.pointerId); K.drag = [pos(e)]; K.trail = [pos(e)]; K.trailT = 1; });
@@ -3372,7 +3372,7 @@ function finishKitchen(mode) {
   const dish = { k: isCrab ? 'crab' : 'sashimi', id: it.id, kg: it.kg, q, f: K.src === S.tub || K.src === S.crewBox ? it.f : Math.max(0.85, it.f) };
   if (mode === 'pack') { if (S.dishes.length >= DISH_CAP) { toast(`กล่องอาหารเต็ม ${DISH_CAP} กล่องแล้ว ไปขายที่เกาะก่อน`, 'bad'); return; } S.dishes.push(dish); save(); toast(`ใส่${dishName(dish)}ลงกล่องแล้ว ขายที่ร้านป้าแดงได้ราว ${baht(dishValue(dish))}`, 'good'); }
   else {
-    if (myActivePlate()) { toast('มีจานรออยู่บนโต๊ะแล้ว กินให้หมดก่อน หรือใส่กล่องแทน', 'bad'); return; }
+    if (!canAddDish(dish)) { toast(isCrab ? 'มีจานปูรออยู่บนโต๊ะแล้ว กินให้หมดก่อน หรือใส่กล่องแทน' : 'วางจานหมึกไว้ครบ 2 จานแล้ว กินให้หมดก่อน หรือใส่กล่องแทน', 'bad'); return; }
     if (!placeDishOnTable(dish)) { toast('โต๊ะเต็ม เพื่อนนั่งกินอยู่ทั้งสองที่แล้ว ลองใส่กล่องขายก่อนนะ', 'bad'); return; }
     toast(`${dishName(dish)}วางบนโต๊ะแล้ว ไปนั่งที่โต๊ะแล้วกด E เพื่อกิน`, 'good'); if (crew.visible && q > 1.1) setTimeout(() => crewSay(isCrab ? 'ต้มสุกกำลังดีเลย เนื้อหวานแน่' : 'โห หั่นสวยกว่าพี่อีก'), 900);
   }
@@ -3791,6 +3791,15 @@ const BOWL = new V3(-0.55, 2.86, 6.05);
 // bite-by-bite eat animation) or a remote player's uid (just enough fields to render the dish, synced over the net).
 const TABLE = [null, null];
 function myActivePlate() { for (const t of TABLE) if (t && t.owner === 'local') return t; return null; }
+function localPlateCount() { return TABLE.filter((t) => t && t.owner === 'local').length; }
+// squid/sashimi plates can stack up to 2 (one per seat, so you can cook ahead and eat at your own pace) - crab stays
+// at 1 plate at a time as before.
+function canAddDish(dish) {
+  const mine = myActivePlate();
+  if (dish.k === 'crab') return !mine;
+  if (mine && mine.k === 'crab') return false;
+  return localPlateCount() < 2;
+}
 function mySeatIdx() { return P.seated ? SEATS.indexOf(P.seated) : -1; }
 const sliceTex = (() => { const c = document.createElement('canvas'); c.width = 128; c.height = 48; const x = c.getContext('2d'); const g = x.createLinearGradient(0, 0, 0, 48); g.addColorStop(0, '#f2d8d2'); g.addColorStop(0.18, '#fbf6f2'); g.addColorStop(0.82, '#fbf6f2'); g.addColorStop(1, '#e9c7bf'); x.fillStyle = g; x.fillRect(0, 0, 128, 48); x.strokeStyle = 'rgba(200,170,160,.45)'; x.lineWidth = 1; for (let i = 6; i < 128; i += 7) { x.beginPath(); x.moveTo(i, 4); x.lineTo(i - 3, 44); x.stroke(); } const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; })();
 const sliceMat = new THREE.MeshPhysicalMaterial({ map: sliceTex, color: 0xd9d2cc, roughness: 0.35, clearcoat: 0.35, clearcoatRoughness: 0.3, sheen: 0.3, sheenColor: new THREE.Color(0xffe8e8), transparent: true, opacity: 0.94 });
@@ -3882,7 +3891,8 @@ function finishMeal(idx) {
   if (crew.visible) setTimeout(() => crewSay(pickOne(['ของสดๆ จิ้มน้ำจิ้มซีฟู้ดนี่แหละ ของดีชาวเรือ', 'แบ่งพี่บ้างดิ 555', 'น้ำจิ้มพี่ตำเองนะ เด็ดมั้ยล่ะ'])), 1200);
 }
 function addFinishButtons(row) {
-  row.appendChild(btn(myActivePlate() ? 'มีจานบนโต๊ะแล้ว' : 'จัดจานกินที่โต๊ะ', () => finishKitchen('eat'), 'btn pri', !!myActivePlate()));
+  const blocked = !canAddDish({ k: 'sashimi' });
+  row.appendChild(btn(blocked ? (localPlateCount() >= 2 ? 'วางจานหมึกครบ 2 จานแล้ว' : 'มีจานบนโต๊ะแล้ว') : 'จัดจานกินที่โต๊ะ', () => finishKitchen('eat'), 'btn pri', blocked));
   const it = K.item, isCrab = it && SP[it.id].shape === 'crab';
   const preview = it ? dishValue({ k: isCrab ? 'crab' : 'sashimi', id: it.id, kg: it.kg, q: isCrab ? (K.boil ? K.boil.q : 1) : kitchenScore(), f: it.f }) : 0;
   row.appendChild(btn(`ใส่กล่องไว้ขาย (ราว ${baht(preview)})`, () => finishKitchen('pack'), 'btn', S.dishes.length >= DISH_CAP));
