@@ -559,7 +559,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 // Firebase is loaded lazily (dynamic import) instead of a static top-level import so the 3D scene below can start
 // building immediately without waiting on gstatic.com network fetches first — this noticeably cuts the time to
 // enter the game, especially on slow mobile connections. Anything that touches Firebase awaits fbReady first.
-let initializeApp, getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut, getDatabase, ref, set, update, remove, onDisconnect, onValue, onChildAdded, onChildRemoved, push;
+let initializeApp, getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut, getDatabase, ref, set, update, remove, onDisconnect, onValue, onChildAdded, onChildRemoved, push, get, child;
 let fbApp, fbAuth, fbDb, googleProvider;
 const firebaseConfig = {
   apiKey: "AIzaSyBw_twIXfLYj2pb75Pn9D40KIeFgVx2Lpg",
@@ -578,7 +578,7 @@ const fbReady = (async () => {
   ]);
   ({ initializeApp } = appMod);
   ({ getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, onAuthStateChanged, signOut } = authMod);
-  ({ getDatabase, ref, set, update, remove, onDisconnect, onValue, onChildAdded, onChildRemoved, push } = dbMod);
+  ({ getDatabase, ref, set, update, remove, onDisconnect, onValue, onChildAdded, onChildRemoved, push, get, child } = dbMod);
   fbApp = initializeApp(firebaseConfig); fbAuth = getAuth(fbApp); fbDb = getDatabase(fbApp); googleProvider = new GoogleAuthProvider();
 })();
 
@@ -2444,7 +2444,34 @@ function afterUpgrade(k) {
 const PALETTE = [0x2f8fd8, 0xd8452f, 0x8f3fd8, 0x2fb37a, 0xd83f8f, 0x3fc7d8];
 const validCode = (c) => typeof c === 'string' && /^[a-z0-9]{4,8}$/.test(c);
 let LOBBY = {};
-const NET = { fbUser: null, code: null, playersRef: null, eventsRef: null, myRef: null, lobbyMeRef: null, remotes: new Map(), push: 0, ready: false, synced: false, islSynced: false, joinedAt: 0, subs: [] };
+const NET = { fbUser: null, code: null, playersRef: null, eventsRef: null, myRef: null, lobbyMeRef: null, crewBoxRef: null, remotes: new Map(), push: 0, ready: false, synced: false, islSynced: false, joinedAt: 0, subs: [] };
+// กล่องหมึกของพี่ชัย (the crew's catch crate) is conceptually one shared box on one shared boat, so once on a
+// shared boat it lives in Firebase as the single source of truth instead of each player's own local array -
+// whoever adds or takes something, both screens update from the same list. addToCrewBox/removeFromCrewBox route
+// through Firebase when connected and fall back to a plain local array in solo play. Each synced item carries a
+// hidden `_k` (its Firebase child key) so a specific item can be removed without an index race between players.
+function addToCrewBox(item) {
+  if (NET.crewBoxRef) { push(NET.crewBoxRef, { id: item.id, kg: item.kg, f: item.f != null ? item.f : 1 }).catch(() => {}); }
+  else S.crewBox.push(item);
+}
+function removeFromCrewBox(item) {
+  if (NET.crewBoxRef && item._k) { remove(child(NET.crewBoxRef, item._k)).catch(() => {}); }
+  else { const i = S.crewBox.indexOf(item); if (i >= 0) S.crewBox.splice(i, 1); }
+}
+let crewBoxUnsub = null;
+async function bindCrewBox(code) {
+  NET.crewBoxRef = ref(fbDb, `rooms/${code}/crewBox`);
+  try {
+    const snap = await get(NET.crewBoxRef);
+    if (!snap.exists() && S.crewBox.length) for (const it of S.crewBox.slice()) await push(NET.crewBoxRef, { id: it.id, kg: it.kg, f: it.f != null ? it.f : 1 });
+  } catch (e) {}
+  crewBoxUnsub = onValue(NET.crewBoxRef, (snap) => {
+    const val = snap.val() || {};
+    S.crewBox = Object.entries(val).map(([k, v]) => ({ id: v.id, kg: num(v.kg, 0, 10, 0.1), f: num(v.f, 0.3, 1.5, 1), _k: k })).filter((it) => SP[it.id]);
+    rebuildCrate(); if (kitchenOpen && K.view === 'box') renderKitchen();
+  });
+}
+function unbindCrewBox() { if (crewBoxUnsub) { crewBoxUnsub(); crewBoxUnsub = null; } NET.crewBoxRef = null; }
 function netState(txt, ok) { for (const id of ['netState']) { const e = $(id); if (e) { e.textContent = txt; e.classList.toggle('ok', !!ok); } } }
 function netEmit(type, data) {
   if (!NET.eventsRef || !NET.fbUser) return;
@@ -2516,6 +2543,7 @@ async function joinBoat(raw) {
     NET.subs.push(onChildRemoved(NET.playersRef, (snap) => { if (snap.key === uid) return; const r = NET.remotes.get(snap.key); if (r) { removeRemote(r); NET.remotes.delete(snap.key); syncRemoteSeats(); toast(`${r.name || 'เพื่อน'} ออกจากเรือแล้ว`); renderPlayers(); } }));
     NET.subs.push(onValue(NET.playersRef, (snap) => onBoatPeers(snap.val() || {}, uid)));
     NET.subs.push(onChildAdded(NET.eventsRef, (snap) => { const m = snap.val(); if (!m || m.by === uid || m.t < NET.joinedAt) return; onNetEvent(m); }));
+    bindCrewBox(code);
     netState(`อยู่บนเรือ ${code.toUpperCase()} · บอกรหัสนี้ให้เพื่อน`, true);
     toast(`ขึ้นเรือ ${code.toUpperCase()} แล้ว บอกรหัสนี้ให้เพื่อนเพื่อมาเล่นด้วยกัน`, 'good');
     $('players').hidden = false; $('pCode').textContent = code.toUpperCase(); renderBoats(); renderPlayers(); if (menuOpen) renderMenu();
@@ -2523,6 +2551,7 @@ async function joinBoat(raw) {
 }
 async function leaveBoat(silent) {
   if (!NET.code) return;
+  unbindCrewBox(); // keeps whatever was last in the shared box as our own local one, rather than losing it
   for (const unsub of NET.subs) { try { unsub(); } catch (e) {} } NET.subs = [];
   try { if (NET.myRef) await remove(NET.myRef); } catch (e) {}
   try { if (NET.lobbyMeRef) await remove(NET.lobbyMeRef); } catch (e) {}
@@ -3091,7 +3120,7 @@ function doCrewTask(k) {
   else if (k === 'tub') { if (S.tub.length && S.freezer.length < FREEZE_CAP[S.up.freezer]) { freezeAll(); crewSay('ย้ายเข้าตู้แช่ให้แล้ว รอขายตอนราคาดีนะ'); } else crewSay('ตู้แช่เต็มแล้ว ต้องขายบ้างนะน้อง'); }
   else if (k === 'probe') { if (!measured()) measureWater(); }
   else if (k === 'fuel') { if (S.fuel < 60 && S.fuelStock > 0) { S.fuelStock--; S.fuel = Math.min(100, S.fuel + 35); lampsOn = true; fuelWarned = false; save(); lampText(); sfx('pour'); crewSay('เติมน้ำมันให้แล้ว ไฟมาแล้ว'); } }
-  else if (k === 'box') { crateLid(1.2); if (CREW.holding) { const h = CREW.holding; CREW.holding = null; if (h.mesh.parent) h.mesh.parent.remove(h.mesh); S.crewBox.push({ id: h.id, kg: h.kg, f: 1 }); save(); rebuildCrate(); sfx('thud'); if (!CREW.boxTold) { CREW.boxTold = true; crewSay('ใส่กล่องสีฟ้าตรงนี้นะ น้องเปิดหยิบไปทำกินหรือเอาไปขายได้เลย', 7); } else if (Math.random() < 0.4) crewSay(pickOne(['ใส่กล่องแล้ว', 'อีกตัวแล้ว คืนนี้หมึกเข้าดี', 'กล่องพี่เริ่มหนักแล้วนะ'])); } }
+  else if (k === 'box') { crateLid(1.2); if (CREW.holding) { const h = CREW.holding; CREW.holding = null; if (h.mesh.parent) h.mesh.parent.remove(h.mesh); addToCrewBox({ id: h.id, kg: h.kg, f: 1 }); save(); rebuildCrate(); sfx('thud'); if (!CREW.boxTold) { CREW.boxTold = true; crewSay('ใส่กล่องสีฟ้าตรงนี้นะ น้องเปิดหยิบไปทำกินหรือเอาไปขายได้เลย', 7); } else if (Math.random() < 0.4) crewSay(pickOne(['ใส่กล่องแล้ว', 'อีกตัวแล้ว คืนนี้หมึกเข้าดี', 'กล่องพี่เริ่มหนักแล้วนะ'])); } }
   else if (k[0] === 'h') { const h = holders[+k.slice(1)]; if (h && h.state === 'bite') { landHolder(h); crewSay('ได้แล้ว! ใส่ถังให้แล้วนะ'); } else crewSay('ช้าไปนิด หลุดซะแล้ว'); }
 }
 function crewAI(dt) {
@@ -3374,16 +3403,16 @@ function renderKitchen() {
     if (!S.crewBox.length) { body.appendChild(el('div', 'hint', 'กล่องยังว่างอยู่ พี่ชัยจะตกได้บ่อยตอนกลางคืนที่เปิดไฟ')); return; }
     const cap = TUB_CAP[S.up.tub];
     const row0 = el('div', 'krow');
-    row0.appendChild(btn('ย้ายทั้งหมดเข้าถังของเรา', () => { let n = 0; while (S.crewBox.length && S.tub.length < cap) { S.tub.push(S.crewBox.shift()); n++; } rebuildTub(); rebuildCrate(); save(); toast(n ? `ย้ายเข้าถัง ${n} ตัว` : 'ถังเต็มแล้ว', n ? 'good' : 'bad'); renderKitchen(); }, 'btn pri', S.tub.length >= cap));
+    row0.appendChild(btn('ย้ายทั้งหมดเข้าถังของเรา', () => { let n = 0; for (const it of S.crewBox.slice()) { if (S.tub.length >= cap) break; S.tub.push({ id: it.id, kg: it.kg, f: it.f }); removeFromCrewBox(it); n++; } rebuildTub(); rebuildCrate(); save(); toast(n ? `ย้ายเข้าถัง ${n} ตัว` : 'ถังเต็มแล้ว', n ? 'good' : 'bad'); renderKitchen(); }, 'btn pri', S.tub.length >= cap));
     const tot = Math.round(S.crewBox.reduce((a, b) => a + sellValue(b, false), 0));
-    row0.appendChild(btn(`ขายทั้งกล่อง ${baht(tot)}`, () => { const v = Math.round(S.crewBox.reduce((a, b) => a + sellValue(b, false), 0)); S.crewBox = S.crewBox.filter((it) => SP[it.id].strange); S.money += v; rebuildCrate(); save(); sfx('coin'); toast(`ขายของในกล่องได้ ${baht(v)}`, 'good'); renderKitchen(); }, 'btn', !tot));
+    row0.appendChild(btn(`ขายทั้งกล่อง ${baht(tot)}`, () => { const sellable = S.crewBox.filter((it) => !SP[it.id].strange); const v = Math.round(sellable.reduce((a, b) => a + sellValue(b, false), 0)); for (const it of sellable) removeFromCrewBox(it); S.money += v; rebuildCrate(); save(); sfx('coin'); toast(`ขายของในกล่องได้ ${baht(v)}`, 'good'); renderKitchen(); }, 'btn', !tot));
     body.appendChild(row0);
     for (const it of S.crewBox.slice().sort((a, b) => b.kg - a.kg)) {
       const row = el('div', 'kitem'), d = el('div');
       d.appendChild(el('b', '', `${SP[it.id].name} ${it.kg.toFixed(2)} กก.`));
       const pp = el('p', '', `ความสด ${Math.round(it.f * 100)}% · ขายได้ ${baht(sellValue(it, false))}`); const fb = el('span', 'fresh'), fi = el('i'); fi.style.width = Math.round(it.f * 100) + '%'; fb.appendChild(fi); pp.appendChild(fb); d.appendChild(pp); row.appendChild(d);
-      row.appendChild(btn('ใส่ถังเรา', () => { S.crewBox.splice(S.crewBox.indexOf(it), 1); S.tub.push(it); rebuildTub(); rebuildCrate(); save(); renderKitchen(); }, 'btn', S.tub.length >= cap));
-      row.appendChild(btn('ขาย', () => { const v = Math.round(sellValue(it, false)); S.crewBox.splice(S.crewBox.indexOf(it), 1); S.money += v; rebuildCrate(); save(); sfx('coin'); renderKitchen(); }, 'btn', !sellValue(it, false)));
+      row.appendChild(btn('ใส่ถังเรา', () => { removeFromCrewBox(it); S.tub.push({ id: it.id, kg: it.kg, f: it.f }); rebuildTub(); rebuildCrate(); save(); renderKitchen(); }, 'btn', S.tub.length >= cap));
+      row.appendChild(btn('ขาย', () => { const v = Math.round(sellValue(it, false)); removeFromCrewBox(it); S.money += v; rebuildCrate(); save(); sfx('coin'); renderKitchen(); }, 'btn', !sellValue(it, false)));
       body.appendChild(row);
     }
     return;
@@ -3830,7 +3859,7 @@ function confirmPot() {
     if (!c.keep || c.egg || sp.junk) { rel++; if (c.egg) karma += 1; else if (c.small) karma += 0.5; continue; }
     if (sp.gold) { gold++; S.money += 800; kept++; continue; }
     const it = { id: c.id, kg: c.kg, f: 1 };
-    if (S.tub.length < TUB_CAP[S.up.tub]) { S.tub.push(it); kept++; } else if (S.crewBox.length < CRATE_CAP) { S.crewBox.push(it); toBox++; kept++; } else rel++;
+    if (S.tub.length < TUB_CAP[S.up.tub]) { S.tub.push(it); kept++; } else if (S.crewBox.length < CRATE_CAP) { addToCrewBox(it); toBox++; kept++; } else rel++;
     questEvent('crab'); if (sp.strange && Math.random() < (sp.curse || 0)) setTimeout(() => addCurse('ปูกระดองหน้าคนจ้องมองคุณอยู่ในถัง'), 1500);
   }
   S.crabKarma = Math.min(20, S.crabKarma + karma); rebuildTub(); rebuildCrate(); save();
@@ -3843,7 +3872,7 @@ function confirmPot() {
 function autoCollectPots() {
   let n = 0;
   const all = []; for (const q of S.pots) all.push(...crabsFor(q)); for (const L of LANDED) { all.push(...L.crabs); boat.remove(L.cage); } LANDED.length = 0;
-  for (const c of all) { const sp = SP[c.id]; if (c.egg || c.small || sp.junk || sp.strange || sp.gold) continue; if (S.crewBox.length < CRATE_CAP) { S.crewBox.push({ id: c.id, kg: c.kg, f: 1 }); n++; } }
+  for (const c of all) { const sp = SP[c.id]; if (c.egg || c.small || sp.junk || sp.strange || sp.gold) continue; if (S.crewBox.length < CRATE_CAP) { addToCrewBox({ id: c.id, kg: c.kg, f: 1 }); n++; } }
   S.pots = []; rebuildBuoys(); rebuildPotStack(); rebuildCrate(); save(); return n;
 }
 
