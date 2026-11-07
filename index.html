@@ -2215,6 +2215,8 @@ function sellAll(port) { let v = 0; S.tub = S.tub.filter((it) => { if (SP[it.id]
 function updateFreshness(dm) { const k = (NIGHT.ice ? 0.0003 : 0.0011) * (hasCurse('rot') ? 3 : 1); for (const it of S.tub) it.f = Math.max(0.3, it.f - k * dm); for (const it of S.crewBox) it.f = Math.max(0.3, it.f - 0.0005 * dm); }
 function endNight() {
   nightOver = true; primaryHeld = false; if (document.pointerLockElement) document.exitPointerLock();
+  if (kitchenOpen) { kitchenOpen = false; $('kitchen').hidden = true; K.view = 'list'; K.item = null; K.done = false; }
+  if (menuOpen) { menuOpen = false; $('menu').hidden = true; }
   const potN = S.pots.length ? autoCollectPots() : -1;
   const sold = Math.round(S.tub.concat(S.freezer, S.crewBox).reduce((a, b) => a + sellValue(b, true), 0) + S.dishes.reduce((a, d) => a + dishValue(d), 0));
   $('sumEyebrow').textContent = `เช้าแล้ว · ${nightDate(true)} ตี 5:30 · เอาของไปขายที่เกาะ`; $('sumTitle').textContent = `จบคืนที่ ${S.night}`;
