@@ -3745,7 +3745,6 @@ function makeCage(scale = 1) {
   return g;
 }
 let NET_TEX = null;
-let CRAB_ICON_TEX = null;
 const POTS = new V3(0.42, 0, -10.22), POT_CAP = [2, 3, 4], POT_READY = 90;
 const LANDED = [];
 const potsLeft = () => POT_CAP[S.up.pots] - S.pots.length - LANDED.length - (P.carry === 'pot' ? 1 : 0);
@@ -3821,43 +3820,14 @@ function startHaul(i) {
   const q = S.pots[i]; if (!q || haul) return;
   const crabs = crabsFor(q); S.pots.splice(i, 1); save(); rebuildBuoys();
   const cage = makeCage(1); scene.add(cage);
-  // the netting wraps the cage as a full closed box, so at night with the deck lights not reaching this exact
-  // spot, a crab sitting inside was basically invisible - the cage just looked empty even though it wasn't. A
-  // small warm light fixed to the cage itself keeps whatever's inside visible no matter the time of night.
-  const lamp = new THREE.PointLight(0xffe3b8, 2, 2.8, 2); lamp.position.set(0, 0.4, 0); cage.add(lamp);
-  // kept closer to the middle (was +-0.25, nearly touching the walls) and sized up a bit so the catch reads
-  // clearly as "something is in here" at a glance, rather than true-to-life tiny and easy to miss against the netting.
-  // The lighting/spacing tweaks above still depend on the crab's own material picking up light correctly, which
-  // is hard to be 100% sure of without eyes on a real render - so on top of that, every crab in a landed cage now
-  // self-glows (emissive) a warm orange, which makes it visible regardless of scene lighting, camera angle or
-  // the netting in front of it. A floating glow ring above the cage also marks "there's something to pick up here"
-  // from a distance, so it never again reads as an empty box even before you walk up to it.
+  // a small warm light inside the cage so the catch is still lit at night when the deck lamps don't reach this spot
+  const lamp = new THREE.PointLight(0xffe3b8, 1.4, 2.4, 2); lamp.position.set(0, 0.42, 0); cage.add(lamp);
+  // `turn` must start as a number: liveCrab() adds c.turn * dt to rotation.y every frame, and with it left
+  // undefined that produced NaN on the very first frame - the crab's whole transform became NaN and three.js
+  // silently drew nothing, which is why landed cages always looked empty even though the crabs were in them.
   for (const c of crabs.slice(0, 6)) {
-    const m = makeCatch(SP[c.id], c.kg, true); m.userData.crab = { vx: 0, t: rand(0, 5), ph: rand(0, 6) }; m.position.set(rand(-0.14, 0.14), 0.02, rand(-0.14, 0.14)); m.rotation.y = rand(0, 6.28); m.scale.setScalar(1.4);
-    m.traverse((o) => { if (o.isMesh && o.material) { const mats = Array.isArray(o.material) ? o.material : [o.material]; for (const mt of mats) { if ('emissive' in mt) { mt.emissive = new THREE.Color(0xff8a2a); mt.emissiveIntensity = Math.max(mt.emissiveIntensity || 0, 0.45); } } } });
-    cage.add(m);
-  }
-  if (crabs.length) {
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.018, 8, 20), new THREE.MeshBasicMaterial({ color: 0xffb347, transparent: true, opacity: 0.85 })); ring.rotation.x = Math.PI / 2; ring.position.y = 0.95; ring.userData.spin = true; cage.add(ring); cage.userData.beacon = ring;
-    // The crab's own 3D model sitting inside the closed net box has turned out to still not read as visible to
-    // the player even with the emissive glow and wider net grid from the last fix - whether that's the net's
-    // alpha-cutout faces, the lighting, or something else is hard to pin down without being able to see a real
-    // render. So instead of a fourth guess at *why* the box hides it, this adds something that physically cannot
-    // be hidden by the netting at all: a small drawn crab icon sprite with depthTest/depthWrite off, so it
-    // always draws on top of the cage geometry no matter what's in front of it, bobbing gently above the cage.
-    if (!CRAB_ICON_TEX) {
-      const cv = document.createElement('canvas'); cv.width = cv.height = 64; const x = cv.getContext('2d');
-      x.fillStyle = '#ff8a2a';
-      x.beginPath(); x.ellipse(32, 38, 19, 13, 0, 0, Math.PI * 2); x.fill();
-      x.beginPath(); x.ellipse(13, 26, 7, 7, 0, 0, Math.PI * 2); x.fill();
-      x.beginPath(); x.ellipse(51, 26, 7, 7, 0, 0, Math.PI * 2); x.fill();
-      x.strokeStyle = '#ff8a2a'; x.lineWidth = 3; x.lineCap = 'round';
-      for (const s of [-1, 1]) for (let i = 0; i < 3; i++) { x.beginPath(); x.moveTo(32 + s * 16, 36 + i * 5); x.lineTo(32 + s * 29, 42 + i * 6); x.stroke(); }
-      x.fillStyle = '#2a1708'; x.beginPath(); x.ellipse(27, 34, 2, 2, 0, 0, Math.PI * 2); x.fill(); x.beginPath(); x.ellipse(37, 34, 2, 2, 0, 0, Math.PI * 2); x.fill();
-      CRAB_ICON_TEX = new THREE.CanvasTexture(cv);
-    }
-    const icon = new THREE.Sprite(new THREE.SpriteMaterial({ map: CRAB_ICON_TEX, transparent: true, depthTest: false, depthWrite: false }));
-    icon.scale.set(0.42, 0.42, 1); icon.position.y = 0.72; icon.renderOrder = 999; cage.add(icon); cage.userData.icon = icon;
+    const m = makeCatch(SP[c.id], c.kg, true); m.userData.crab = { vx: 0, turn: 0, t: rand(0.2, 1.2), ph: rand(0, 6) };
+    m.position.set(rand(-0.2, 0.2), 0.02, rand(-0.2, 0.2)); m.rotation.y = rand(0, 6.28); cage.add(m);
   }
   const lin = q.lz < -11 ? [q.lx, -10.75] : [q.lx - Math.sign(q.lx) * 0.75, q.lz];
   const from = new V3(q.wx, waveH(q.wx, q.wz, T) - 1.5, q.wz), to = boat.localToWorld(new V3(lin[0], 2.05, lin[1]));
@@ -3885,10 +3855,10 @@ function updatePots(dt) {
     if (haul) for (const m of haul.cage.children) if (m.userData && m.userData.crab) { animCrab(m.userData.inner, T + m.userData.crab.ph, 1.4); }
   }
   // this used to be nested inside `if (haul)` above, which meant a landed cage only kept animating (legs
-  // moving, icon bobbing) while another pot was actively mid-haul - once the lift finished and `haul` went
+  // moving) while another pot was actively mid-haul - once the lift finished and `haul` went
   // back to null, every cage already sitting on deck froze solid until the next haul started. Moved out here
-  // so a landed cage's crabs keep walking and its icon keeps bobbing for as long as it sits on deck.
-  for (const L of LANDED) { for (const m of L.cage.children) if (m.userData && m.userData.crab) liveCrab(m, dt, 0.32); if (L.cage.userData.icon) L.cage.userData.icon.position.y = 0.72 + Math.sin(T * 3) * 0.06; }
+  // so a landed cage's crabs keep walking for as long as it sits on deck.
+  for (const L of LANDED) for (const m of L.cage.children) if (m.userData && m.userData.crab) liveCrab(m, dt, 0.32);
 }
 function openPotView(crabs, landed) {
   K.landed = landed || null;
@@ -4370,7 +4340,7 @@ function liveCrab(m, dt, half) {
   if (c.t <= 0) { c.t = rand(0.6, 2.4); c.vx = Math.random() < 0.45 ? 0 : rand(-0.12, 0.12); c.turn = rand(-0.8, 0.8); }
   const k = c.vx ? 1.4 : 0.35; m.userData.walkT = (m.userData.walkT || 0) + dt * (c.vx ? 1.6 : 0.4);
   animCrab(m.userData.inner, m.userData.walkT + c.ph, k);
-  m.rotation.y += (c.vx ? 0 : c.turn) * dt * 0.6;
+  m.rotation.y += (c.vx ? 0 : c.turn || 0) * dt * 0.6;
   const dx = Math.cos(m.rotation.y) * c.vx * dt, dz = -Math.sin(m.rotation.y) * c.vx * dt;
   const nx = m.position.x + dx, nz = m.position.z + dz;
   if (Math.abs(nx) < half && Math.abs(nz) < half) { m.position.x = nx; m.position.z = nz; } else c.vx = -c.vx;
