@@ -3809,6 +3809,10 @@ function startHaul(i) {
   const q = S.pots[i]; if (!q || haul) return;
   const crabs = crabsFor(q); S.pots.splice(i, 1); save(); rebuildBuoys();
   const cage = makeCage(1); scene.add(cage);
+  // the netting wraps the cage as a full closed box, so at night with the deck lights not reaching this exact
+  // spot, a crab sitting inside was basically invisible - the cage just looked empty even though it wasn't. A
+  // small warm light fixed to the cage itself keeps whatever's inside visible no matter the time of night.
+  const lamp = new THREE.PointLight(0xffd9a0, 1.1, 2.4, 2); lamp.position.set(0, 0.42, 0); cage.add(lamp);
   for (const c of crabs.slice(0, 6)) { const m = makeCatch(SP[c.id], c.kg, true); m.userData.crab = { vx: 0, t: rand(0, 5), ph: rand(0, 6) }; m.position.set(rand(-0.25, 0.25), 0.02, rand(-0.25, 0.25)); m.rotation.y = rand(0, 6.28); cage.add(m); }
   const lin = q.lz < -11 ? [q.lx, -10.75] : [q.lx - Math.sign(q.lx) * 0.75, q.lz];
   const from = new V3(q.wx, waveH(q.wx, q.wz, T) - 1.5, q.wz), to = boat.localToWorld(new V3(lin[0], 2.05, lin[1]));
