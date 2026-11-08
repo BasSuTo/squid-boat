@@ -1100,7 +1100,13 @@ function holdOk(x, z) {
   if (z > HOLD.zb - 0.18 && z < HOLD.zb + 0.18 && Math.abs(x) > 0.36) return false; // engine-room bulkhead, doorway in the middle
   return !hitAny(x, z, HOLD_OBS, 0.2);
 }
+// Everything below is parented under holdGroup and hidden unless you're actually in the hold (or the hatch is
+// open), instead of always-rendered: ~50 extra meshes for an enclosed room you can only ever see into through
+// one small hatch was adding draw calls on every frame regardless of whether anyone could see them.
+const holdGroup = new THREE.Group(); holdGroup.visible = false; boat.add(holdGroup);
 (function buildHold() {
+  const hbox = (w, h, d, mat, x, y, z) => box(w, h, d, mat, x, y, z, holdGroup);
+  const hcyl = (a, b, r, mat, seg, r2) => cylBetween(a, b, r, mat, holdGroup, seg, r2);
   const { floor: F, ceil: C, z0: Z0, z1: Z1, zb: ZB, xw: XW } = HOLD, H = C - F;
   const plankTex = (base, seam, n) => { const c = document.createElement('canvas'); c.width = c.height = 256; const x = c.getContext('2d'); x.fillStyle = base; x.fillRect(0, 0, 256, 256); const r = rng(31); for (let i = 0; i < 400; i++) { x.fillStyle = `rgba(0,0,0,${r() * 0.07})`; x.fillRect(r() * 256, r() * 256, r() * 60, 1.5); } x.fillStyle = seam; for (let i = 0; i <= n; i++) x.fillRect(0, (i * 256) / n - 1, 256, 2.5); const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; return t; };
   const fT = plankTex('#6b4a2f', 'rgba(20,10,4,.75)', 8); fT.repeat.set(1, 6);
@@ -1108,58 +1114,58 @@ function holdOk(x, z) {
   const floorM = std(0xffffff, 0.85, 0, { map: fT }), wallM = std(0xffffff, 0.8, 0, { map: wT }), beamM = std(0x4e3522, 0.8, 0), ceilM = std(0x5c432c, 0.85, 0);
   const steelH = std(0x7d868c, 0.45, 0.7), plateM = std(0x4f5559, 0.8, 0.25); // low metalness: a shiny plate mirrored the sky as a teal sheen down here
   // shell: floor, ceiling (with the hatch opening) + deck beams, plank lining, bulkheads
-  box(XW * 2, 0.06, Z1 - Z0, floorM, 0, F - 0.03, (Z0 + Z1) / 2);
-  for (const [z0, z1] of [[Z0, -4.0], [-2.0, Z1]]) box(XW * 2, 0.05, z1 - z0, ceilM, 0, C, (z0 + z1) / 2);
-  for (const [x0, x1] of [[-XW, -0.95], [0.95, XW]]) box(x1 - x0, 0.05, 2.0, ceilM, (x0 + x1) / 2, C, -3);
-  for (let z = Z0 + 0.4; z < Z1; z += 0.8) if (z < -4.05 || z > -1.95) box(XW * 2, 0.14, 0.12, beamM, 0, C - 0.09, z);
-  for (const s of [-1, 1]) { box(0.08, H, Z1 - Z0, wallM, s * XW, (C + F) / 2, (Z0 + Z1) / 2); for (let z = Z0 + 0.4; z < Z1; z += 0.8) box(0.1, H, 0.12, beamM, s * (XW - 0.08), (C + F) / 2, z); }
-  box(XW * 2, H, 0.08, wallM, 0, (C + F) / 2, Z1); box(XW * 2, H, 0.08, wallM, 0, (C + F) / 2, Z0);
-  for (const [x0, x1] of [[-XW, -0.5], [0.5, XW]]) box(x1 - x0, H, 0.1, wallM, (x0 + x1) / 2, (C + F) / 2, ZB);
-  box(1.0, C - 1.55, 0.1, wallM, 0, (C + 1.55) / 2, ZB);
-  for (const x of [-0.5, 0.5]) box(0.08, 2.0, 0.14, beamM, x, F + 1.0, ZB); box(1.08, 0.08, 0.14, beamM, 0, 1.55, ZB);
-  box(XW * 2 - 0.1, 0.02, ZB - Z0, plateM, 0, F + 0.005, (Z0 + ZB) / 2);
+  hbox(XW * 2, 0.06, Z1 - Z0, floorM, 0, F - 0.03, (Z0 + Z1) / 2);
+  for (const [z0, z1] of [[Z0, -4.0], [-2.0, Z1]]) hbox(XW * 2, 0.05, z1 - z0, ceilM, 0, C, (z0 + z1) / 2);
+  for (const [x0, x1] of [[-XW, -0.95], [0.95, XW]]) hbox(x1 - x0, 0.05, 2.0, ceilM, (x0 + x1) / 2, C, -3);
+  for (let z = Z0 + 0.4; z < Z1; z += 0.8) if (z < -4.05 || z > -1.95) hbox(XW * 2, 0.14, 0.12, beamM, 0, C - 0.09, z);
+  for (const s of [-1, 1]) { hbox(0.08, H, Z1 - Z0, wallM, s * XW, (C + F) / 2, (Z0 + Z1) / 2); for (let z = Z0 + 0.4; z < Z1; z += 0.8) hbox(0.1, H, 0.12, beamM, s * (XW - 0.08), (C + F) / 2, z); }
+  hbox(XW * 2, H, 0.08, wallM, 0, (C + F) / 2, Z1); hbox(XW * 2, H, 0.08, wallM, 0, (C + F) / 2, Z0);
+  for (const [x0, x1] of [[-XW, -0.5], [0.5, XW]]) hbox(x1 - x0, H, 0.1, wallM, (x0 + x1) / 2, (C + F) / 2, ZB);
+  hbox(1.0, C - 1.55, 0.1, wallM, 0, (C + 1.55) / 2, ZB);
+  for (const x of [-0.5, 0.5]) hbox(0.08, 2.0, 0.14, beamM, x, F + 1.0, ZB); hbox(1.08, 0.08, 0.14, beamM, 0, 1.55, ZB);
+  hbox(XW * 2 - 0.1, 0.02, ZB - Z0, plateM, 0, F + 0.005, (Z0 + ZB) / 2);
   // ladder up to the hatch
-  for (const s of [-0.28, 0.28]) cylBetween(new V3(s, F, -2.75), new V3(s, 2.05, -2.15), 0.03, steelH);
-  for (let i = 1; i < 9; i++) { const u = i / 9; box(0.56, 0.035, 0.035, steelH, 0, F + (2.05 - F) * u, -2.75 + 0.6 * u); }
+  for (const s of [-0.28, 0.28]) hcyl(new V3(s, F, -2.75), new V3(s, 2.05, -2.15), 0.03, steelH);
+  for (let i = 1; i < 9; i++) { const u = i / 9; hbox(0.56, 0.035, 0.035, steelH, 0, F + (2.05 - F) * u, -2.75 + 0.6 * u); }
   // port side: insulated ice/fish bins
   const binM = std(0xe9ecee, 0.45, 0.05), lidM = std(0x2f6fa8, 0.55, 0.1);
-  for (let i = 0; i < 3; i++) { const z = -4.9 + i * 1.35; box(1.0, 0.8, 1.15, binM, -2.25, F + 0.4, z); box(1.04, 0.06, 1.19, lidM, -2.25, F + 0.83, z); }
-  box(0.3, 0.42, 0.3, lidM, -1.5, F + 0.21, -4.9);
+  for (let i = 0; i < 3; i++) { const z = -4.9 + i * 1.35; hbox(1.0, 0.8, 1.15, binM, -2.25, F + 0.4, z); hbox(1.04, 0.06, 1.19, lidM, -2.25, F + 0.83, z); }
+  hbox(0.3, 0.42, 0.3, lidM, -1.5, F + 0.21, -4.9);
   // starboard: crew bunks
   const sheet = std(0xf1efe9, 0.4, 0);
-  for (const [y, col] of [[0.5, 0x3c6e91], [1.45, 0x8a3c2c]]) { box(0.9, 0.08, 2.0, beamM, 2.4, F + y, 0.35); box(0.85, 0.12, 1.94, std(col, 0.9, 0), 2.4, F + y + 0.1, 0.35); box(0.5, 0.1, 0.3, sheet, 2.4, F + y + 0.21, 1.1); }
-  for (const z of [-0.65, 1.35]) box(0.08, H, 0.08, beamM, 1.95, (C + F) / 2, z);
+  for (const [y, col] of [[0.5, 0x3c6e91], [1.45, 0x8a3c2c]]) { hbox(0.9, 0.08, 2.0, beamM, 2.4, F + y, 0.35); hbox(0.85, 0.12, 1.94, std(col, 0.9, 0), 2.4, F + y + 0.1, 0.35); hbox(0.5, 0.1, 0.3, sheet, 2.4, F + y + 0.21, 1.1); }
+  for (const z of [-0.65, 1.35]) hbox(0.08, H, 0.08, beamM, 1.95, (C + F) / 2, z);
   // shelves of gear along the forward bulkhead, a pile of net on the floor
-  for (const y of [0.35, 1.0]) box(2.2, 0.04, 0.4, beamM, -1.1, y, Z1 - 0.25);
-  for (let i = 0; i < 4; i++) box(0.28, 0.38, 0.18, [M.orange, M.blue, M.yellow, M.red][i], -2.0 + i * 0.5, 0.56, Z1 - 0.25);
-  for (let i = 0; i < 3; i++) { const t = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.05, 8, 20), M.rope); t.rotation.x = Math.PI / 2; t.position.set(-1.8 + i * 0.45, 1.06, Z1 - 0.25); boat.add(t); }
-  { const n = new THREE.Mesh(new THREE.SphereGeometry(0.55, 14, 10), std(0x3a6e5a, 0.95, 0)); n.scale.set(1.3, 0.3, 1); n.position.set(0.9, F + 0.12, 0.95); boat.add(n); }
+  for (const y of [0.35, 1.0]) hbox(2.2, 0.04, 0.4, beamM, -1.1, y, Z1 - 0.25);
+  for (let i = 0; i < 4; i++) hbox(0.28, 0.38, 0.18, [M.orange, M.blue, M.yellow, M.red][i], -2.0 + i * 0.5, 0.56, Z1 - 0.25);
+  for (let i = 0; i < 3; i++) { const t = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.05, 8, 20), M.rope); t.rotation.x = Math.PI / 2; t.position.set(-1.8 + i * 0.45, 1.06, Z1 - 0.25); holdGroup.add(t); }
+  { const n = new THREE.Mesh(new THREE.SphereGeometry(0.55, 14, 10), std(0x3a6e5a, 0.95, 0)); n.scale.set(1.3, 0.3, 1); n.position.set(0.9, F + 0.12, 0.95); holdGroup.add(n); }
   // engine room: the boat's main diesel, exhaust, fuel tank, workbench
   const engM = std(0x3f5f4c, 0.5, 0.45), pipeM = std(0x6a6058, 0.7, 0.6);
-  box(1.1, 0.85, 1.8, engM, 0, F + 0.5, -7.4); box(0.8, 0.25, 1.5, std(0x2c3e33, 0.45, 0.5), 0, F + 1.05, -7.4);
-  for (let i = 0; i < 4; i++) box(0.22, 0.1, 0.28, M.red, 0, F + 1.22, -7.95 + i * 0.37);
-  { const fw = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.12, 28), M.dark); fw.rotation.x = Math.PI / 2; fw.position.set(0, F + 0.45, -6.45); boat.add(fw); }
-  cylBetween(new V3(0.45, F + 1.05, -7.8), new V3(0.72, F + 1.6, -7.8), 0.07, pipeM); cylBetween(new V3(0.72, F + 1.6, -7.8), new V3(0.72, C + 0.02, -7.8), 0.07, pipeM);
-  cylBetween(new V3(-XW + 0.15, 1.6, -8.4), new V3(-XW + 0.15, 1.6, -5.7), 0.035, M.red); cylBetween(new V3(-XW + 0.15, 1.45, -8.4), new V3(-XW + 0.15, 1.45, -5.7), 0.03, steelH);
-  box(0.6, 1.0, 0.6, M.red, -2.3, F + 0.5, -8.0);
-  box(1.2, 0.08, 0.6, beamM, 2.2, F + 0.85, -7.6); for (const [x, z] of [[1.7, -7.85], [2.7, -7.85], [1.7, -7.35], [2.7, -7.35]]) box(0.06, 0.85, 0.06, beamM, x, F + 0.42, z);
-  box(0.45, 0.2, 0.25, M.red, 2.0, F + 1.0, -7.6); box(0.2, 0.12, 0.2, M.yellow, 2.5, F + 0.95, -7.5);
+  hbox(1.1, 0.85, 1.8, engM, 0, F + 0.5, -7.4); hbox(0.8, 0.25, 1.5, std(0x2c3e33, 0.45, 0.5), 0, F + 1.05, -7.4);
+  for (let i = 0; i < 4; i++) hbox(0.22, 0.1, 0.28, M.red, 0, F + 1.22, -7.95 + i * 0.37);
+  { const fw = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.12, 28), M.dark); fw.rotation.x = Math.PI / 2; fw.position.set(0, F + 0.45, -6.45); holdGroup.add(fw); }
+  hcyl(new V3(0.45, F + 1.05, -7.8), new V3(0.72, F + 1.6, -7.8), 0.07, pipeM); hcyl(new V3(0.72, F + 1.6, -7.8), new V3(0.72, C + 0.02, -7.8), 0.07, pipeM);
+  hcyl(new V3(-XW + 0.15, 1.6, -8.4), new V3(-XW + 0.15, 1.6, -5.7), 0.035, M.red); hcyl(new V3(-XW + 0.15, 1.45, -8.4), new V3(-XW + 0.15, 1.45, -5.7), 0.03, steelH);
+  hbox(0.6, 1.0, 0.6, M.red, -2.3, F + 0.5, -8.0);
+  hbox(1.2, 0.08, 0.6, beamM, 2.2, F + 0.85, -7.6); for (const [x, z] of [[1.7, -7.85], [2.7, -7.85], [1.7, -7.35], [2.7, -7.35]]) hbox(0.06, 0.85, 0.06, beamM, x, F + 0.42, z);
+  hbox(0.45, 0.2, 0.25, M.red, 2.0, F + 1.0, -7.6); hbox(0.2, 0.12, 0.2, M.yellow, 2.5, F + 0.95, -7.5);
   // bulbs; their lights are only switched on while you're down here (see updateHoldLights)
   const bulbM = new THREE.MeshBasicMaterial({ color: new THREE.Color(3, 2.3, 1.4) });
-  for (const z of [-4.6, -0.6]) { const b = new THREE.Mesh(new THREE.SphereGeometry(0.06, 10, 8), bulbM); b.position.set(0, C - 0.22, z); boat.add(b); cylBetween(new V3(0, C - 0.16, z), new V3(0, C, z), 0.006, M.dark); const L = new THREE.PointLight(0xffc68a, 2.4, 7, 1.6); L.position.set(0, C - 0.3, z); L.visible = false; boat.add(L); HOLD.lights.push(L); }
-  { const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 1.0, 8), new THREE.MeshBasicMaterial({ color: new THREE.Color(2.2, 2.6, 2.8) })); tube.rotation.z = Math.PI / 2; tube.position.set(0, C - 0.12, -7.0); boat.add(tube); const L = new THREE.PointLight(0xd8ecff, 2.2, 6, 1.6); L.position.set(0, C - 0.3, -7.0); L.visible = false; boat.add(L); HOLD.lights.push(L); }
+  for (const z of [-4.6, -0.6]) { const b = new THREE.Mesh(new THREE.SphereGeometry(0.06, 10, 8), bulbM); b.position.set(0, C - 0.22, z); holdGroup.add(b); hcyl(new V3(0, C - 0.16, z), new V3(0, C, z), 0.006, M.dark); const L = new THREE.PointLight(0xffc68a, 2.4, 7, 1.6); L.position.set(0, C - 0.3, z); L.visible = false; holdGroup.add(L); HOLD.lights.push(L); }
+  { const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 1.0, 8), new THREE.MeshBasicMaterial({ color: new THREE.Color(2.2, 2.6, 2.8) })); tube.rotation.z = Math.PI / 2; tube.position.set(0, C - 0.12, -7.0); holdGroup.add(tube); const L = new THREE.PointLight(0xd8ecff, 2.2, 6, 1.6); L.position.set(0, C - 0.3, -7.0); L.visible = false; holdGroup.add(L); HOLD.lights.push(L); }
   // hull plug: an invisible, depth-only footprint of the hull just above the waterline. It's drawn after everything
   // in the hold and before the sea (renderOrder 1 vs the water's 2), so the sea surface never shows through inside
   // the hull - the hold floor sits below the waterline.
   { const sh = new THREE.Shape(), pts = []; for (let i = 0; i <= 48; i++) { const z = -11.9 + 23.6 * i / 48; pts.push([hullHalfW(z) * 0.94, z]); }
     sh.moveTo(pts[0][0], -pts[0][1]); for (const [x, z] of pts) sh.lineTo(x, -z); for (let i = pts.length - 1; i >= 0; i--) sh.lineTo(-pts[i][0], -pts[i][1]);
     const g = new THREE.ShapeGeometry(sh); g.rotateX(-Math.PI / 2);
-    const plug = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ colorWrite: false, side: THREE.DoubleSide })); plug.position.y = 1.0; plug.renderOrder = 1; /* above wave crests inside the hull, still below eye level in the hold (1.17) */ boat.add(plug); }
+    const plug = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ colorWrite: false, side: THREE.DoubleSide })); plug.position.y = 1.0; plug.renderOrder = 1; /* above wave crests inside the hull, still below eye level in the hold (1.17) */ holdGroup.add(plug); }
 })();
 // Point lights add shader work to every lit material, so the hold's 3 lights only exist while you're in it.
 // Changing the light count makes three.js recompile materials (a brief hitch), so it's flipped under the
 // ladder fade where nobody can see the stutter.
-function updateHoldLights() { const want = P.zone === 'hold'; if (HOLD.lit === want) return; HOLD.lit = want; for (const L of HOLD.lights) L.visible = want; }
+function updateHoldLights() { const want = P.zone === 'hold'; holdGroup.visible = want || hatchT > 0.01; if (HOLD.lit === want) return; HOLD.lit = want; for (const L of HOLD.lights) L.visible = want; }
 function climbHold(down) {
   if (P.climbing || !inputOn()) return;
   if (P.carry) { toast('วางของในมือก่อนค่อยปีนบันได'); return; }
@@ -2133,7 +2139,7 @@ function updateHolders(dt) {
     if (h.state === 'idle') {
       h.g.rotation.x = 0.75; if (!started || traveling || ISL.on) continue;
       const r = biteRate(14, 10, false) * 0.35;
-      if (Math.random() < r * dt) { h.state = 'bite'; h.t = rand(180, 300); h.ring = 0; toast(`คันปัก${h.def.side}กิน! ไม่ต้องรีบมาก พี่ชัยช่วยเก็บให้ได้ถ้าช้าไป`, 'good'); }
+      if (Math.random() < r * dt) { h.state = 'bite'; h.t = rand(420, 600); h.ring = 0; toast(`คันปัก${h.def.side}กิน! ไม่ต้องรีบมาก พี่ชัยช่วยเก็บให้ได้ถ้าช้าไป`, 'good'); }
     } else if (h.state === 'bite') {
       h.t -= dt; h.ring -= dt; h.g.rotation.x = 0.6 + Math.sin(T * 30) * 0.08;
       if (h.ring <= 0) { sfx('bell'); h.ring = 0.7; }
@@ -2538,7 +2544,7 @@ function renderMenu() {
 }
 function afterUpgrade(k) {
   if (k === 'pots') { rebuildPotStack(); toast(`มีลอบปู ${POT_CAP[S.up.pots]} ใบแล้ว`, 'good'); }
-  if (k === 'cat') { catG.visible = true; toast('เจ้าส้มมาอยู่บนเรือแล้ว นอนอยู่บนกองอวนใต้ท้องเรือ', 'good'); }
+  if (k === 'cat') { CAT.zone = 'hold'; CAT.path = []; CAT.moveT = rand(40, 90); catG.position.set(CAT_HOLD_SPOT.x, CAT_HOLD_SPOT.y, CAT_HOLD_SPOT.z); catG.rotation.y = -1.2; catG.visible = P.zone === 'hold' || hatchT > 0.01; toast('เจ้าส้มมาอยู่บนเรือแล้ว เดี๋ยวคงเดินขึ้นมาดาดฟ้าให้เห็นหน้าบ้าง', 'good'); }
   if (k === 'pump') toast('ติดตั้งปั๊มน้ำท้องเรือแล้ว จะช่วยสูบน้ำออกเองตอนมีไฟ', 'good');
   if (k === 'holder') { buildHolders(); toast('ติดตั้งที่ปักคันแล้ว ที่' + HOLDER_DEF[S.up.holder - 1].side, 'good'); }
   if (k === 'sonar') { $('sonarBox').hidden = false; document.body.classList.add('hasSonar'); }
@@ -4616,12 +4622,12 @@ function updateEngine(dt) {
 // ---- bilge flooding: rain and storms put water in the hold; it makes the boat roll harder and the engine fail sooner
 const FLOOD = { lvl: 0, warned: 0, lossT: 40 };
 const bilge = new THREE.Mesh(new THREE.PlaneGeometry(HOLD.xw * 2 - 0.12, HOLD.z1 - HOLD.z0 - 0.12), std(0x1d3a3a, 0.15, 0.1));
-bilge.rotation.x = -Math.PI / 2; bilge.position.set(0, HOLD.floor, (HOLD.z0 + HOLD.z1) / 2); bilge.visible = false; boat.add(bilge); // opaque: drawn before the hull plug
+bilge.rotation.x = -Math.PI / 2; bilge.position.set(0, HOLD.floor, (HOLD.z0 + HOLD.z1) / 2); bilge.visible = false; holdGroup.add(bilge); // opaque: drawn before the hull plug
 { // hand pump against the starboard wall
   const body = std(0x2f5f8a, 0.5, 0.3);
-  box(0.35, 0.9, 0.4, body, 2.55, HOLD.floor + 0.45, -3.2); box(0.4, 0.06, 0.45, M.dark, 2.55, HOLD.floor + 0.92, -3.2);
-  cylBetween(new V3(2.55, HOLD.floor + 0.95, -3.2), new V3(2.2, HOLD.floor + 1.3, -3.2), 0.025, M.steel);
-  cylBetween(new V3(2.7, HOLD.floor + 0.3, -3.05), new V3(2.84, HOLD.floor + 1.6, -3.05), 0.04, M.rubber);
+  box(0.35, 0.9, 0.4, body, 2.55, HOLD.floor + 0.45, -3.2, holdGroup); box(0.4, 0.06, 0.45, M.dark, 2.55, HOLD.floor + 0.92, -3.2, holdGroup);
+  cylBetween(new V3(2.55, HOLD.floor + 0.95, -3.2), new V3(2.2, HOLD.floor + 1.3, -3.2), 0.025, M.steel, holdGroup);
+  cylBetween(new V3(2.7, HOLD.floor + 0.3, -3.05), new V3(2.84, HOLD.floor + 1.6, -3.05), 0.04, M.rubber, holdGroup);
   HOLD_OBS.push([2.3, 2.85, -3.45, -2.95]);
 }
 function updateFlood(dt) {
@@ -4668,7 +4674,7 @@ function renderCold(body) {
   }
 }
 const RAT = { on: false, t: rand(220, 420), eatT: 0, ph: 0, catT: rand(400, 700) };
-const ratG = new THREE.Group(); ratG.visible = false; boat.add(ratG);
+const ratG = new THREE.Group(); ratG.visible = false; holdGroup.add(ratG);
 {
   const fur = std(0x5b544c, 0.9, 0), pink = std(0xd99a9a, 0.7, 0);
   const b = new THREE.Mesh(new THREE.SphereGeometry(0.07, 12, 8), fur); b.scale.set(0.8, 0.7, 1.4); b.position.y = 0.05; ratG.add(b);
@@ -4676,7 +4682,7 @@ const ratG = new THREE.Group(); ratG.visible = false; boat.add(ratG);
   for (const s of [-1, 1]) { const e = new THREE.Mesh(new THREE.SphereGeometry(0.02, 8, 6), pink); e.scale.set(1, 1, 0.4); e.position.set(s * 0.03, 0.1, -0.1); ratG.add(e); const ey = new THREE.Mesh(new THREE.SphereGeometry(0.008, 6, 4), eyeMat); ey.position.set(s * 0.022, 0.075, -0.155); ratG.add(ey); }
   const tail = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.008, 0.2, 5), pink); tail.rotation.x = Math.PI / 2 - 0.25; tail.position.set(0, 0.04, 0.17); ratG.add(tail);
 }
-const catG = new THREE.Group(); catG.position.set(2.42, HOLD.floor + 0.66, -0.3); catG.rotation.y = -1.2; /* curled up at the foot of the lower bunk, stays dry when the hold floods */ catG.visible = !!S.up.cat; boat.add(catG);
+const catG = new THREE.Group(); catG.position.set(2.42, HOLD.floor + 0.66, -0.3); catG.rotation.y = -1.2; /* curled up at the foot of the lower bunk, stays dry when the hold floods */ catG.visible = false; boat.add(catG);
 {
   const orange = std(0xd9822b, 0.85, 0), cream = std(0xf3dcb4, 0.85, 0);
   const b = new THREE.Mesh(new THREE.SphereGeometry(0.16, 16, 10), orange); b.scale.set(1.3, 0.6, 1); b.position.y = 0.08; catG.add(b);
@@ -4688,10 +4694,36 @@ const catG = new THREE.Group(); catG.position.set(2.42, HOLD.floor + 0.66, -0.3)
 }
 let petT = 0;
 function petCat() { if (T < petT) { toast('เจ้าส้มหลับปุ๋ยไปแล้ว'); return; } petT = T + 60; tone(rand(700, 900), 0.35, 0.05, 'sine'); toast('เมี้ยว~ เจ้าส้มคลอเคลียมือ หายเหนื่อยไปนิดนึง', 'good'); S.needs.energy = Math.min(100, S.needs.energy + 4); }
+// Cat roaming: wanders between its bunk in the hold and a couple of open-deck spots, walking through the ladder
+// coordinates so it visually climbs up/down like the player does, instead of sitting in one place forever.
+const CAT_HOLD_SPOT = new V3(2.42, HOLD.floor + 0.66, -0.3), CAT_DECK_SPOTS = [new V3(1.3, 2.08, -0.7), new V3(-1.0, 2.08, -1.3)];
+const LADDER_DECK = new V3(0, 0, -1.45);
+const CAT = { zone: 'hold', path: [], moveT: rand(200, 360) };
+function catPlanTrip() {
+  if (CAT.path.length) return;
+  const toDeck = CAT.zone === 'hold', hy = HOLD.floor + 0.08, dy = 2.08;
+  const dest = toDeck ? pickOne(CAT_DECK_SPOTS) : CAT_HOLD_SPOT;
+  CAT.path = toDeck
+    ? [{ x: HOLD_LADDER.x, z: HOLD_LADDER.z, y: hy }, { x: LADDER_DECK.x, z: LADDER_DECK.z, y: dy, zone: 'deck' }, { x: dest.x, z: dest.z, y: dest.y }]
+    : [{ x: LADDER_DECK.x, z: LADDER_DECK.z, y: dy }, { x: HOLD_LADDER.x, z: HOLD_LADDER.z, y: hy, zone: 'hold' }, { x: dest.x, z: dest.z, y: dest.y }];
+}
+function updateCat(dt) {
+  if (!S.up.cat) return;
+  catG.rotation.z = Math.sin(T * 1.2) * 0.015;
+  if (started && !ISL.on && !traveling && !nightOver) {
+    if (CAT.path.length) {
+      const t = CAT.path[0], dx = t.x - catG.position.x, dz = t.z - catG.position.z, d = Math.hypot(dx, dz), sp = 0.75 * dt;
+      if (d <= sp) { catG.position.x = t.x; catG.position.z = t.z; catG.position.y = t.y; if (t.zone) CAT.zone = t.zone; CAT.path.shift(); if (!CAT.path.length) CAT.moveT = rand(260, 480); }
+      else { catG.position.x += dx / d * sp; catG.position.z += dz / d * sp; const want = Math.atan2(-dx, -dz); catG.rotation.y += Math.atan2(Math.sin(want - catG.rotation.y), Math.cos(want - catG.rotation.y)) * Math.min(1, dt * 5); }
+    } else {
+      CAT.moveT -= dt; if (CAT.moveT <= 0) catPlanTrip();
+    }
+  }
+  catG.visible = CAT.zone === 'deck' ? true : (P.zone === 'hold' || hatchT > 0.01);
+}
 function chaseRat() { if (!RAT.on) return; RAT.on = false; ratG.visible = false; RAT.t = rand(300, 520); tone(2600, 0.08, 0.05, 'square'); toast('ไล่หนูหนีไปแล้ว', 'good'); }
 function updateRats(dt) {
   if (RAT.on) { RAT.ph += dt; const z = -3.5 + Math.sin(RAT.ph * 1.3) * 1.6, x = -1.45 + Math.sin(RAT.ph * 2.9) * 0.08; const dz = Math.cos(RAT.ph * 1.3); ratG.position.set(x, Math.max(HOLD.floor + 0.005, bilge.visible ? bilge.position.y - 0.03 : -9), z); /* swims when the hold is flooded */ ratG.rotation.y = dz > 0 ? Math.PI : 0; }
-  catG.rotation.z = Math.sin(T * 1.2) * 0.015;
   if (!started || ISL.on || traveling || nightOver) return;
   if (S.up.cat) {
     if (RAT.on) chaseRat();
@@ -4719,7 +4751,7 @@ function belowDeckInteractions(list) {
   list.push({ pos: new V3(2.15, 0, -3.2), r: 1.1, lvl: 3, in: true, label: FLOOD.lvl > 0.01 ? `ค้างไว้: โยกปั๊มสูบน้ำออก (น้ำ ${Math.round(FLOOD.lvl * 100)}%)` : 'ปั๊มมือสูบน้ำท้องเรือ (ยังไม่มีน้ำ)', hold: FLOOD.lvl > 0.01 ? 0.9 : undefined, act: pumpBilge });
   list.push({ pos: new V3(-1.5, 0, -3.5), r: 1.3, lvl: 3, in: true, label: `เปิดห้องเย็นใต้ท้องเรือ (${S.cold.length}/${COLD_CAP})`, act: openCold });
   if (RAT.on) list.push({ pos: { x: ratG.position.x, z: ratG.position.z }, r: 1.8, lvl: 3, in: true, label: 'ไล่หนู!', act: chaseRat });
-  if (S.up.cat) list.push({ pos: new V3(2.0, 0, -0.35), r: 0.9, lvl: 3, in: true, label: 'ลูบหัวเจ้าส้ม', act: petCat });
+  if (S.up.cat && !CAT.path.length) list.push({ pos: { x: catG.position.x, z: catG.position.z }, r: 0.9, lvl: CAT.zone === 'deck' ? 0 : 3, in: CAT.zone !== 'deck', label: 'ลูบหัวเจ้าส้ม', act: petCat });
 }
 
 // ---- fishing contest: challenge Chai (and everyone in the room joins) - most kg in ~3 minutes wins
@@ -4764,7 +4796,7 @@ function resetBelowDeck() {
   FLOOD.lvl = 0; FLOOD.warned = 0; if (RAT.on) { RAT.on = false; ratG.visible = false; }
   if (rep === eng) { rep = gen; $('skill').hidden = true; }
 }
-function updateBelowDeck(dt) { updateEngine(dt); updateFlood(dt); updateRats(dt); updateContest(dt); }
+function updateBelowDeck(dt) { updateEngine(dt); updateFlood(dt); updateRats(dt); updateCat(dt); updateContest(dt); }
 
 // =============== boot & loop ===============
 setupNight(); resetSchool(); renderQuests(); buildHolders(); lampText();
