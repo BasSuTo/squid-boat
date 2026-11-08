@@ -3789,7 +3789,8 @@ function deployPot() {
 function crabsFor(q) {
   const soak = clamp((gameMin - q.t) / POT_READY, 0, 2), spot = SPOTS[S.spot].id;
   const W = { koh: { bluecrab: 3, mudcrab: 2.2, stonecrab: 1, crucifix: 0.6, hermit: 1 }, deep: { bluecrab: 1.4, crucifix: 2, spanner: 1.4, stonecrab: 1, hermit: 0.6 }, reef: { stonecrab: 3, crucifix: 2, bluecrab: 1, hermit: 1.1 }, front: { bluecrab: 3, crucifix: 1.6, stonecrab: 0.8, hermit: 0.7 } }[spot];
-  const n = Math.min(5, Math.round(rand(0.2, 1.0) * soak * 1.8 * (q.bait ? 1.35 : 1) * (0.55 + 0.45 * night) * (1 + 0.06 * S.crabKarma)));
+  let n = Math.min(5, Math.round(rand(0.2, 1.0) * soak * 1.8 * (q.bait ? 1.35 : 1) * (0.55 + 0.45 * night) * (1 + 0.06 * S.crabKarma)));
+  if (n === 0 && soak >= 1 && Math.random() < 0.75) n = 1; // a fully-soaked pot (waited the full ~1.5h) coming up completely empty felt broken - still possible, just rarer
   const out = [];
   for (let i = 0; i < n; i++) {
     let sp;
