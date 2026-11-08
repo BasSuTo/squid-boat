@@ -1068,7 +1068,7 @@ const deckSpot = new THREE.SpotLight(0xfff4e0, 0, 45, 0.85, 0.6, 1.6); deckSpot.
 const deckSpotT = new THREE.Object3D(); deckSpotT.position.set(0, 2, -5); boat.add(deckSpot, deckSpotT); deckSpot.target = deckSpotT;
 // deck props
 for (const [w, d, x, z] of [[2.2, 0.12, 0, -1.96], [2.2, 0.12, 0, -4.04], [0.12, 1.96, -1.04, -3], [0.12, 1.96, 1.04, -3]]) box(w, 0.34, d, M.steel, x, 2.17, z); // hold hatch coaming
-{ const lid = new THREE.Group(); lid.position.set(0, 2.34, -4.1); lid.rotation.x = -1.9; boat.add(lid); box(1.9, 0.06, 1.9, M.dark, 0, 0, 0.95, lid); for (const s of [-0.7, 0.7]) box(0.08, 0.04, 1.7, M.steel, s, 0.05, 0.95, lid); }
+{ const lid = new THREE.Group(); lid.position.set(0, 2.34, -4.1); lid.rotation.x = -Math.PI / 2; boat.add(lid); box(1.9, 0.06, 1.9, M.dark, 0, 0, 0.95, lid); for (const s of [-0.7, 0.7]) box(0.08, 0.04, 1.7, M.steel, s, 0.05, 0.95, lid); }
 { const mat = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 3.4), M.rubber); mat.rotation.x = -Math.PI / 2; mat.position.set(0, 2.012, -8.0); boat.add(mat); }
 for (const [z, n] of [[-5.05, 3], [-5.65, 2]]) for (let i = 0; i < n; i++) box(0.56, 0.3, 0.44, M.blue, 2.62, 2.16 + i * 0.31, z).rotation.y = rand(-0.05, 0.05);
 const TUB = new V3(2.45, 2.0, -1.2);
