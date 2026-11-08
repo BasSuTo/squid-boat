@@ -3745,6 +3745,7 @@ function makeCage(scale = 1) {
   return g;
 }
 let NET_TEX = null;
+let CRAB_ICON_TEX = null;
 const POTS = new V3(0.42, 0, -10.22), POT_CAP = [2, 3, 4], POT_READY = 90;
 const LANDED = [];
 const potsLeft = () => POT_CAP[S.up.pots] - S.pots.length - LANDED.length - (P.carry === 'pot' ? 1 : 0);
@@ -3836,7 +3837,28 @@ function startHaul(i) {
     m.traverse((o) => { if (o.isMesh && o.material) { const mats = Array.isArray(o.material) ? o.material : [o.material]; for (const mt of mats) { if ('emissive' in mt) { mt.emissive = new THREE.Color(0xff8a2a); mt.emissiveIntensity = Math.max(mt.emissiveIntensity || 0, 0.45); } } } });
     cage.add(m);
   }
-  if (crabs.length) { const ring = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.018, 8, 20), new THREE.MeshBasicMaterial({ color: 0xffb347, transparent: true, opacity: 0.85 })); ring.rotation.x = Math.PI / 2; ring.position.y = 0.95; ring.userData.spin = true; cage.add(ring); cage.userData.beacon = ring; }
+  if (crabs.length) {
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.018, 8, 20), new THREE.MeshBasicMaterial({ color: 0xffb347, transparent: true, opacity: 0.85 })); ring.rotation.x = Math.PI / 2; ring.position.y = 0.95; ring.userData.spin = true; cage.add(ring); cage.userData.beacon = ring;
+    // The crab's own 3D model sitting inside the closed net box has turned out to still not read as visible to
+    // the player even with the emissive glow and wider net grid from the last fix - whether that's the net's
+    // alpha-cutout faces, the lighting, or something else is hard to pin down without being able to see a real
+    // render. So instead of a fourth guess at *why* the box hides it, this adds something that physically cannot
+    // be hidden by the netting at all: a small drawn crab icon sprite with depthTest/depthWrite off, so it
+    // always draws on top of the cage geometry no matter what's in front of it, bobbing gently above the cage.
+    if (!CRAB_ICON_TEX) {
+      const cv = document.createElement('canvas'); cv.width = cv.height = 64; const x = cv.getContext('2d');
+      x.fillStyle = '#ff8a2a';
+      x.beginPath(); x.ellipse(32, 38, 19, 13, 0, 0, Math.PI * 2); x.fill();
+      x.beginPath(); x.ellipse(13, 26, 7, 7, 0, 0, Math.PI * 2); x.fill();
+      x.beginPath(); x.ellipse(51, 26, 7, 7, 0, 0, Math.PI * 2); x.fill();
+      x.strokeStyle = '#ff8a2a'; x.lineWidth = 3; x.lineCap = 'round';
+      for (const s of [-1, 1]) for (let i = 0; i < 3; i++) { x.beginPath(); x.moveTo(32 + s * 16, 36 + i * 5); x.lineTo(32 + s * 29, 42 + i * 6); x.stroke(); }
+      x.fillStyle = '#2a1708'; x.beginPath(); x.ellipse(27, 34, 2, 2, 0, 0, Math.PI * 2); x.fill(); x.beginPath(); x.ellipse(37, 34, 2, 2, 0, 0, Math.PI * 2); x.fill();
+      CRAB_ICON_TEX = new THREE.CanvasTexture(cv);
+    }
+    const icon = new THREE.Sprite(new THREE.SpriteMaterial({ map: CRAB_ICON_TEX, transparent: true, depthTest: false, depthWrite: false }));
+    icon.scale.set(0.42, 0.42, 1); icon.position.y = 0.72; icon.renderOrder = 999; cage.add(icon); cage.userData.icon = icon;
+  }
   const lin = q.lz < -11 ? [q.lx, -10.75] : [q.lx - Math.sign(q.lx) * 0.75, q.lz];
   const from = new V3(q.wx, waveH(q.wx, q.wz, T) - 1.5, q.wz), to = boat.localToWorld(new V3(lin[0], 2.05, lin[1]));
   haul = { t: 0, cage, from, to, crabs, q, lin }; sfx('splash'); spawnSplash(tmp3.set(q.wx, waveH(q.wx, q.wz, T), q.wz), 1.2);
@@ -3860,9 +3882,13 @@ function updatePots(dt) {
       toast(haul.crabs.length ? `ลอบขึ้นมาแล้ว มีปู ${haul.crabs.length} ตัวในกรง เปิดลอบเพื่อเลือกเก็บ` : 'ลอบขึ้นมาแล้ว แต่ว่างเปล่า เปิดลอบแล้วเก็บคืนกองได้', haul.crabs.length ? 'good' : '');
       haul = null; rebuildPotStack();
     }
-    for (const L of LANDED) for (const m of L.cage.children) if (m.userData && m.userData.crab) liveCrab(m, dt, 0.32);
     if (haul) for (const m of haul.cage.children) if (m.userData && m.userData.crab) { animCrab(m.userData.inner, T + m.userData.crab.ph, 1.4); }
   }
+  // this used to be nested inside `if (haul)` above, which meant a landed cage only kept animating (legs
+  // moving, icon bobbing) while another pot was actively mid-haul - once the lift finished and `haul` went
+  // back to null, every cage already sitting on deck froze solid until the next haul started. Moved out here
+  // so a landed cage's crabs keep walking and its icon keeps bobbing for as long as it sits on deck.
+  for (const L of LANDED) { for (const m of L.cage.children) if (m.userData && m.userData.crab) liveCrab(m, dt, 0.32); if (L.cage.userData.icon) L.cage.userData.icon.position.y = 0.72 + Math.sin(T * 3) * 0.06; }
 }
 function openPotView(crabs, landed) {
   K.landed = landed || null;
