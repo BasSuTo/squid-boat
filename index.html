@@ -837,7 +837,7 @@ function waterNormalTex() {
       .replace('#include <color_fragment>', '#include <color_fragment>\n float sss = clamp(vWH * 0.4 + 0.25, 0.0, 1.0); diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(1.5, 2.4, 2.2), sss);\n float fnz = texture2D(normalMap, vGW.xz * 0.07 + vec2(uTime * 0.011, -uTime * 0.008)).r; float foam = smoothstep(0.5, 1.05, vWH + (fnz - 0.5) * 0.6) * smoothstep(0.3, 0.7, fnz); diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.62, 0.7, 0.72), foam * 0.55);')
       .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n float gd = length(vGW.xz - uBoat); totalEmissiveRadiance += uGlowCol * uLamp * (exp(-gd*gd/220.0) * 0.8 + exp(-gd*gd/40.0) * 0.55);');
   };
-  const mesh = new THREE.Mesh(g, m); mesh.frustumCulled = false; mesh.receiveShadow = true; scene.add(mesh);
+  const mesh = new THREE.Mesh(g, m); mesh.frustumCulled = false; mesh.receiveShadow = true; mesh.renderOrder = 2; scene.add(mesh);
 })();
 
 // =============== textures ===============
@@ -917,6 +917,7 @@ const deckMat = new THREE.MeshStandardMaterial({ map: deckTex(), roughness: 0.82
   const sh = new THREE.Shape(), pts = [];
   for (let i = 0; i <= 48; i++) { const z = -11.95 + 23.7 * i / 48; pts.push([hullHalfW(z) * 0.985, z]); }
   sh.moveTo(pts[0][0], -pts[0][1]); for (const [x, z] of pts) sh.lineTo(x, -z); for (let i = pts.length - 1; i >= 0; i--) sh.lineTo(-pts[i][0], -pts[i][1]);
+  const hole = new THREE.Path(); hole.moveTo(-0.95, 2.05); hole.lineTo(0.95, 2.05); hole.lineTo(0.95, 3.95); hole.lineTo(-0.95, 3.95); hole.lineTo(-0.95, 2.05); sh.holes.push(hole); // hold hatch
   const g = new THREE.ShapeGeometry(sh); g.rotateX(-Math.PI / 2);
   const deck = new THREE.Mesh(g, deckMat); deck.position.y = 2.0; boat.add(deck);
 })();
@@ -1064,7 +1065,8 @@ for (const [x, z] of (Q.lights >= 4 ? [[-2.25, -7.5], [2.25, -7.5], [-2.25, -0.8
 const deckSpot = new THREE.SpotLight(0xfff4e0, 0, 45, 0.85, 0.6, 1.6); deckSpot.position.set(0, 9.3, 7.6);
 const deckSpotT = new THREE.Object3D(); deckSpotT.position.set(0, 2, -5); boat.add(deckSpot, deckSpotT); deckSpot.target = deckSpotT;
 // deck props
-box(2.2, 0.34, 2.2, M.steel, 0, 2.17, -3.0); box(1.9, 0.06, 1.9, M.dark, 0, 2.37, -3.0);
+for (const [w, d, x, z] of [[2.2, 0.12, 0, -1.96], [2.2, 0.12, 0, -4.04], [0.12, 1.96, -1.04, -3], [0.12, 1.96, 1.04, -3]]) box(w, 0.34, d, M.steel, x, 2.17, z); // hold hatch coaming
+{ const lid = new THREE.Group(); lid.position.set(0, 2.34, -4.1); lid.rotation.x = -1.9; boat.add(lid); box(1.9, 0.06, 1.9, M.dark, 0, 0, 0.95, lid); for (const s of [-0.7, 0.7]) box(0.08, 0.04, 1.7, M.steel, s, 0.05, 0.95, lid); }
 { const mat = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 3.4), M.rubber); mat.rotation.x = -Math.PI / 2; mat.position.set(0, 2.012, -8.0); boat.add(mat); }
 for (const [z, n] of [[-5.05, 3], [-5.65, 2]]) for (let i = 0; i < n; i++) box(0.56, 0.3, 0.44, M.blue, 2.62, 2.16 + i * 0.31, z).rotation.y = rand(-0.05, 0.05);
 const TUB = new V3(2.45, 2.0, -1.2);
@@ -1082,6 +1084,95 @@ cylBetween(new V3(GEN.x + 0.12, 2.64, GEN.z - 0.3), new V3(GEN.x + 0.12, 3.1, GE
 const genLight = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 6), new THREE.MeshBasicMaterial({ color: 0x40ff80 })); genLight.position.set(GEN.x + 0.32, 2.45, GEN.z + 0.2); boat.add(genLight);
 const BOXES = [[-2.25, 2.25, 3.95, 9.8], [-1.1, 1.1, -4.1, -1.9], [2.3, 3.0, -6.0, -4.75], [0.0, 0.85, -10.65, -9.8], [1.95, 2.95, -1.6, -0.8], [1.75, 3.05, 1.15, 2.25], [-3.1, -2.25, -9.3, -8.55], [-2.65, -1.95, 2.85, 3.55], [-1.85, -1.15, 2.25, 4.0], [-3.1, -2.2, -3.0, -1.1], [-3.1, -2.4, 0.0, 1.0], [-3.2, -2.3, -10.8, -9.9]];
 boat.traverse((o) => { if (o.isMesh) { o.castShadow = o.material !== M.glass; o.receiveShadow = true; } });
+
+// =============== below-deck hold (crew quarters + engine room), reached by the ladder under the deck hatch ===============
+const HOLD = { floor: -0.45, ceil: 1.93, z0: -8.6, z1: 1.6, zb: -5.6, xw: 2.9, lights: [], lit: null };
+// walk blockers inside the hold, same [x0, x1, z0, z1] format as BOXES
+const HOLD_OBS = [[-2.75, -1.75, -5.5, -1.6], [-1.65, -1.35, -5.05, -4.75], [1.95, 2.85, -0.65, 1.35], [-2.2, 0.0, 1.15, 1.6], [-0.35, 0.35, -2.8, -2.1], [-0.6, 0.85, -8.3, -6.4], [-2.6, -2.0, -8.3, -7.7], [1.6, 2.8, -7.9, -7.3]];
+const HOLD_LADDER = new V3(0, 0, -3.2);
+function holdOk(x, z) {
+  if (Math.abs(x) > HOLD.xw - 0.35 || z < HOLD.z0 + 0.3 || z > HOLD.z1 - 0.3) return false;
+  if (z > HOLD.zb - 0.18 && z < HOLD.zb + 0.18 && Math.abs(x) > 0.36) return false; // engine-room bulkhead, doorway in the middle
+  return !hitAny(x, z, HOLD_OBS, 0.2);
+}
+(function buildHold() {
+  const { floor: F, ceil: C, z0: Z0, z1: Z1, zb: ZB, xw: XW } = HOLD, H = C - F;
+  const plankTex = (base, seam, n) => { const c = document.createElement('canvas'); c.width = c.height = 256; const x = c.getContext('2d'); x.fillStyle = base; x.fillRect(0, 0, 256, 256); const r = rng(31); for (let i = 0; i < 400; i++) { x.fillStyle = `rgba(0,0,0,${r() * 0.07})`; x.fillRect(r() * 256, r() * 256, r() * 60, 1.5); } x.fillStyle = seam; for (let i = 0; i <= n; i++) x.fillRect(0, (i * 256) / n - 1, 256, 2.5); const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.colorSpace = THREE.SRGBColorSpace; return t; };
+  const fT = plankTex('#6b4a2f', 'rgba(20,10,4,.75)', 8); fT.repeat.set(1, 6);
+  const wT = plankTex('#8a6a48', 'rgba(30,18,8,.6)', 6); wT.repeat.set(4, 1);
+  const floorM = std(0xffffff, 0.85, 0, { map: fT }), wallM = std(0xffffff, 0.8, 0, { map: wT }), beamM = std(0x4e3522, 0.8, 0), ceilM = std(0x5c432c, 0.85, 0);
+  const steelH = std(0x7d868c, 0.45, 0.7), plateM = std(0x4f5559, 0.8, 0.25); // low metalness: a shiny plate mirrored the sky as a teal sheen down here
+  // shell: floor, ceiling (with the hatch opening) + deck beams, plank lining, bulkheads
+  box(XW * 2, 0.06, Z1 - Z0, floorM, 0, F - 0.03, (Z0 + Z1) / 2);
+  for (const [z0, z1] of [[Z0, -4.0], [-2.0, Z1]]) box(XW * 2, 0.05, z1 - z0, ceilM, 0, C, (z0 + z1) / 2);
+  for (const [x0, x1] of [[-XW, -0.95], [0.95, XW]]) box(x1 - x0, 0.05, 2.0, ceilM, (x0 + x1) / 2, C, -3);
+  for (let z = Z0 + 0.4; z < Z1; z += 0.8) if (z < -4.05 || z > -1.95) box(XW * 2, 0.14, 0.12, beamM, 0, C - 0.09, z);
+  for (const s of [-1, 1]) { box(0.08, H, Z1 - Z0, wallM, s * XW, (C + F) / 2, (Z0 + Z1) / 2); for (let z = Z0 + 0.4; z < Z1; z += 0.8) box(0.1, H, 0.12, beamM, s * (XW - 0.08), (C + F) / 2, z); }
+  box(XW * 2, H, 0.08, wallM, 0, (C + F) / 2, Z1); box(XW * 2, H, 0.08, wallM, 0, (C + F) / 2, Z0);
+  for (const [x0, x1] of [[-XW, -0.5], [0.5, XW]]) box(x1 - x0, H, 0.1, wallM, (x0 + x1) / 2, (C + F) / 2, ZB);
+  box(1.0, C - 1.55, 0.1, wallM, 0, (C + 1.55) / 2, ZB);
+  for (const x of [-0.5, 0.5]) box(0.08, 2.0, 0.14, beamM, x, F + 1.0, ZB); box(1.08, 0.08, 0.14, beamM, 0, 1.55, ZB);
+  box(XW * 2 - 0.1, 0.02, ZB - Z0, plateM, 0, F + 0.005, (Z0 + ZB) / 2);
+  // ladder up to the hatch
+  for (const s of [-0.28, 0.28]) cylBetween(new V3(s, F, -2.75), new V3(s, 2.05, -2.15), 0.03, steelH);
+  for (let i = 1; i < 9; i++) { const u = i / 9; box(0.56, 0.035, 0.035, steelH, 0, F + (2.05 - F) * u, -2.75 + 0.6 * u); }
+  // port side: insulated ice/fish bins
+  const binM = std(0xe9ecee, 0.45, 0.05), lidM = std(0x2f6fa8, 0.55, 0.1);
+  for (let i = 0; i < 3; i++) { const z = -4.9 + i * 1.35; box(1.0, 0.8, 1.15, binM, -2.25, F + 0.4, z); box(1.04, 0.06, 1.19, lidM, -2.25, F + 0.83, z); }
+  box(0.3, 0.42, 0.3, lidM, -1.5, F + 0.21, -4.9);
+  // starboard: crew bunks
+  const sheet = std(0xf1efe9, 0.4, 0);
+  for (const [y, col] of [[0.5, 0x3c6e91], [1.45, 0x8a3c2c]]) { box(0.9, 0.08, 2.0, beamM, 2.4, F + y, 0.35); box(0.85, 0.12, 1.94, std(col, 0.9, 0), 2.4, F + y + 0.1, 0.35); box(0.5, 0.1, 0.3, sheet, 2.4, F + y + 0.21, 1.1); }
+  for (const z of [-0.65, 1.35]) box(0.08, H, 0.08, beamM, 1.95, (C + F) / 2, z);
+  // shelves of gear along the forward bulkhead, a pile of net on the floor
+  for (const y of [0.35, 1.0]) box(2.2, 0.04, 0.4, beamM, -1.1, y, Z1 - 0.25);
+  for (let i = 0; i < 4; i++) box(0.28, 0.38, 0.18, [M.orange, M.blue, M.yellow, M.red][i], -2.0 + i * 0.5, 0.56, Z1 - 0.25);
+  for (let i = 0; i < 3; i++) { const t = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.05, 8, 20), M.rope); t.rotation.x = Math.PI / 2; t.position.set(-1.8 + i * 0.45, 1.06, Z1 - 0.25); boat.add(t); }
+  { const n = new THREE.Mesh(new THREE.SphereGeometry(0.55, 14, 10), std(0x3a6e5a, 0.95, 0)); n.scale.set(1.3, 0.3, 1); n.position.set(0.9, F + 0.12, 0.95); boat.add(n); }
+  // engine room: the boat's main diesel, exhaust, fuel tank, workbench
+  const engM = std(0x3f5f4c, 0.5, 0.45), pipeM = std(0x6a6058, 0.7, 0.6);
+  box(1.1, 0.85, 1.8, engM, 0, F + 0.5, -7.4); box(0.8, 0.25, 1.5, std(0x2c3e33, 0.45, 0.5), 0, F + 1.05, -7.4);
+  for (let i = 0; i < 4; i++) box(0.22, 0.1, 0.28, M.red, 0, F + 1.22, -7.95 + i * 0.37);
+  { const fw = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.12, 28), M.dark); fw.rotation.x = Math.PI / 2; fw.position.set(0, F + 0.45, -6.45); boat.add(fw); }
+  cylBetween(new V3(0.45, F + 1.05, -7.8), new V3(0.72, F + 1.6, -7.8), 0.07, pipeM); cylBetween(new V3(0.72, F + 1.6, -7.8), new V3(0.72, C + 0.02, -7.8), 0.07, pipeM);
+  cylBetween(new V3(-XW + 0.15, 1.6, -8.4), new V3(-XW + 0.15, 1.6, -5.7), 0.035, M.red); cylBetween(new V3(-XW + 0.15, 1.45, -8.4), new V3(-XW + 0.15, 1.45, -5.7), 0.03, steelH);
+  box(0.6, 1.0, 0.6, M.red, -2.3, F + 0.5, -8.0);
+  box(1.2, 0.08, 0.6, beamM, 2.2, F + 0.85, -7.6); for (const [x, z] of [[1.7, -7.85], [2.7, -7.85], [1.7, -7.35], [2.7, -7.35]]) box(0.06, 0.85, 0.06, beamM, x, F + 0.42, z);
+  box(0.45, 0.2, 0.25, M.red, 2.0, F + 1.0, -7.6); box(0.2, 0.12, 0.2, M.yellow, 2.5, F + 0.95, -7.5);
+  // bulbs; their lights are only switched on while you're down here (see updateHoldLights)
+  const bulbM = new THREE.MeshBasicMaterial({ color: new THREE.Color(3, 2.3, 1.4) });
+  for (const z of [-4.6, -0.6]) { const b = new THREE.Mesh(new THREE.SphereGeometry(0.06, 10, 8), bulbM); b.position.set(0, C - 0.22, z); boat.add(b); cylBetween(new V3(0, C - 0.16, z), new V3(0, C, z), 0.006, M.dark); const L = new THREE.PointLight(0xffc68a, 2.4, 7, 1.6); L.position.set(0, C - 0.3, z); L.visible = false; boat.add(L); HOLD.lights.push(L); }
+  { const tube = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 1.0, 8), new THREE.MeshBasicMaterial({ color: new THREE.Color(2.2, 2.6, 2.8) })); tube.rotation.z = Math.PI / 2; tube.position.set(0, C - 0.12, -7.0); boat.add(tube); const L = new THREE.PointLight(0xd8ecff, 2.2, 6, 1.6); L.position.set(0, C - 0.3, -7.0); L.visible = false; boat.add(L); HOLD.lights.push(L); }
+  // hull plug: an invisible, depth-only footprint of the hull just above the waterline. It's drawn after everything
+  // in the hold and before the sea (renderOrder 1 vs the water's 2), so the sea surface never shows through inside
+  // the hull - the hold floor sits below the waterline.
+  { const sh = new THREE.Shape(), pts = []; for (let i = 0; i <= 48; i++) { const z = -11.9 + 23.6 * i / 48; pts.push([hullHalfW(z) * 0.94, z]); }
+    sh.moveTo(pts[0][0], -pts[0][1]); for (const [x, z] of pts) sh.lineTo(x, -z); for (let i = pts.length - 1; i >= 0; i--) sh.lineTo(-pts[i][0], -pts[i][1]);
+    const g = new THREE.ShapeGeometry(sh); g.rotateX(-Math.PI / 2);
+    const plug = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ colorWrite: false, side: THREE.DoubleSide })); plug.position.y = 1.0; plug.renderOrder = 1; /* above wave crests inside the hull, still below eye level in the hold (1.17) */ boat.add(plug); }
+})();
+// Point lights add shader work to every lit material, so the hold's 3 lights only exist while you're in it.
+// Changing the light count makes three.js recompile materials (a brief hitch), so it's flipped under the
+// ladder fade where nobody can see the stutter.
+function updateHoldLights() { const want = P.zone === 'hold'; if (HOLD.lit === want) return; HOLD.lit = want; for (const L of HOLD.lights) L.visible = want; }
+function climbHold(down) {
+  if (P.climbing || !inputOn()) return;
+  if (P.carry) { toast('วางของในมือก่อนค่อยปีนบันได'); return; }
+  if (!lineFree()) { toast('เก็บสายเบ็ดก่อนค่อยลงท้องเรือ'); return; }
+  P.climbing = true; primaryHeld = false;
+  const f = $('fade'); f.style.transition = 'opacity .3s'; $('fadeTxt').textContent = ''; f.classList.add('on'); sfx('click');
+  setTimeout(() => {
+    if (down) { P.zone = 'hold'; P.x = HOLD_LADDER.x; P.z = HOLD_LADDER.z; P.y = HOLD.floor; P.yaw = Math.PI; P.pitch = 0.05; }
+    else { P.zone = 'deck'; P.x = 0; P.z = -1.45; P.y = 2.0; P.yaw = Math.PI; P.pitch = 0; }
+    updateHoldLights();
+    setTimeout(() => { f.classList.remove('on'); setTimeout(() => { f.style.transition = ''; P.climbing = false; }, 300); }, 250);
+  }, 320);
+}
+function holdInteractions(list) {
+  list.push({ pos: new V3(0, 0, -3), r: 2.0, label: 'ลงบันไดไปท้องเรือ', act: () => climbHold(true) });
+  list.push({ pos: HOLD_LADDER, r: 1.1, lvl: 3, in: true, label: 'ปีนบันไดขึ้นดาดฟ้า', act: () => climbHold(false) });
+  list.push({ pos: new V3(2.1, 0, 0.35), r: 1.1, lvl: 3, in: true, label: 'ค้างไว้: นอนเตียงลูกเรือ 30 นาที', hold: 1.6, act: napBunk });
+}
 
 // =============== people (player, crew, friends) ===============
 function headbandTex() {
@@ -1801,14 +1892,15 @@ function lvl0Ok(x, z) { if (walkable(x, z)) return true; if (!lineFree()) return
 function lvl1Ok(x, z) { if (inR(x, z, [-1.95, 1.95, 3.9, 5.15])) return true; if (!lineFree()) return false; return inR(x, z, [1.08, 1.62, 5.0, 5.9]) || (inR(x, z, [-1.6, 1.6, 5.65, 8.95]) && !hitAny(x, z, WH_OBS, 0.2)); }
 const inStairs = (x, z) => inR(x, z, [STAIR.x0, STAIR.x1, STAIR.z0, STAIR.z1 + 0.05]);
 function canGo(x, z) {
+  if (P.zone === 'hold') return holdOk(x, z) ? 'hold' : null;
   if (P.zone === 'land') { if (landOk(x, z)) return 'land'; if (x < 3.1 && lvl0Ok(x, z)) return 'deck'; return null; }
   if (P.zone === 'deck' && ISL.on && !lvl0Ok(x, z) && inR(x, z, [2.9, 4.6, -0.3, 0.5])) return 'land';
   if (P.zone === 'stairs') { if (inStairs(x, z)) return 'stairs'; if (z < STAIR.z0 && lvl0Ok(x, z)) return 'deck'; if (z > STAIR.z1 && lvl1Ok(x, z)) return 'upper'; return null; }
   if (P.zone === 'deck') { if (lvl0Ok(x, z)) return 'deck'; if (inStairs(x, z) && z < STAIR.z0 + 0.45) return 'stairs'; return null; }
   if (lvl1Ok(x, z)) return 'upper'; if (inStairs(x, z) && z > STAIR.z1 - 0.45) return 'stairs'; return null;
 }
-const isIndoors = () => (P.zone === 'deck' && P.z > 4.02 && Math.abs(P.x) < 2.2) || (P.zone === 'upper' && P.z > 5.42);
-const floorY = () => P.zone === 'land' ? landFloor(P.x, P.z) : P.zone === 'upper' ? UP_Y : P.zone === 'stairs' ? lerp(2.0, UP_Y, clamp((P.z - 2.25) / 1.75, 0, 1)) : 2.0;
+const isIndoors = () => P.zone === 'hold' || (P.zone === 'deck' && P.z > 4.02 && Math.abs(P.x) < 2.2) || (P.zone === 'upper' && P.z > 5.42);
+const floorY = () => P.zone === 'hold' ? HOLD.floor : P.zone === 'land' ? landFloor(P.x, P.z) : P.zone === 'upper' ? UP_Y : P.zone === 'stairs' ? lerp(2.0, UP_Y, clamp((P.z - 2.25) / 1.75, 0, 1)) : 2.0;
 let blockMsgT = 0;
 const inputOn = () => started && !paused && !menuOpen && !nightOver && !traveling && !pageOpen && !chatOpen && !kitchenOpen;
 function updatePlayer(dt) {
@@ -1818,6 +1910,8 @@ function updatePlayer(dt) {
   if (P.seated) { if (Math.hypot(mx, my) > 0.3 && !EAT.busy && inputOn()) standUp(); else { P.y = 2.0; P.moving = 0; camera.position.set(P.x - Math.sin(P.yaw) * 0.3, 3.36, P.z - Math.cos(P.yaw) * 0.3); camera.rotation.set(P.pitch, P.yaw, 0); return; } }
   if (BOIL.active && Math.hypot(mx, my) > 0.3 && K.boil && !K.boil.on && !K.boil.done && inputOn()) boilCancel();
   if (BOIL.active) { P.moving = 0; P.y = 2.0; camera.position.set(P.x, 3.55, P.z); camera.rotation.set(P.pitch, P.yaw, 0); return; }
+  updateHoldLights();
+  if (P.climbing) { P.moving = 0; P.y = floorY(); camera.position.set(P.x, P.y + 1.62, P.z); camera.rotation.set(P.pitch, P.yaw, 0); return; }
   const run = (keys.ShiftLeft || keys.ShiftRight || Math.hypot(joy.x, joy.y) > 0.92) && S.needs.energy > 12;
   const sp = (run ? 3.3 : 1.9) * (st === 'charge' || st === 'fight' ? 0.45 : 1) * (inputOn() && !gen.repairing ? 1 : 0) * (1 - 0.25 * (WX.amp - 0.85)) * (S.needs.energy <= 0 ? 0.6 : 1) * (P.zone === 'stairs' ? 0.75 : 1);
   const fx = -Math.sin(P.yaw), fz = -Math.cos(P.yaw), rx = Math.cos(P.yaw), rz = -Math.sin(P.yaw);
@@ -1934,7 +2028,7 @@ function interactables() {
   if (P.seated) { const myT = TABLE[mySeatIdx()]; list.push({ pos: { x: P.x, z: P.z }, r: 1, in: true, label: myT && myT.pieces.length ? `กินคำต่อไป (เหลือ ${Math.ceil(myT.pieces.length / myT.per)} คำ) · เดินเพื่อลุก` : 'ลุกขึ้น', act: () => { if (myT && myT.pieces.length) biteNext(); else standUp(); } }); return list; }
   islandInteractions(list);
   if (gen.broken && !gen.repairing) list.push({ pos: GEN, r: 1.9, label: gen.prog > 0 ? `ซ่อมเครื่องปั่นไฟต่อ (${Math.round(gen.prog * 100)}%)` : 'ซ่อมเครื่องปั่นไฟ', act: startRepair });
-  waterInteractions(list); potInteractions(list); fuelInteractions(list);
+  waterInteractions(list); potInteractions(list); fuelInteractions(list); holdInteractions(list);
   if (gull.state === 'approach' || gull.state === 'landed') list.push({ pos: TUB, r: 2.6, label: 'ไล่นกนางนวล', act: shooGull });
   for (const h of holders) if (h.state === 'bite') list.push({ pos: h.def.pos, r: 2.0, label: `เก็บคันปัก${h.def.side}`, act: () => landHolder(h) });
   if (!measured()) list.push({ pos: new V3(2.55, 0, -9.95), r: 1.8, label: 'ค้างไว้เพื่อวัดค่าน้ำ', hold: 1.0, act: measureWater });
@@ -1950,7 +2044,7 @@ function interactables() {
   return list;
 }
 let curUse = null;
-function nearestUse() { let best = null, bd = 99; const L = P.zone === 'upper' ? 1 : P.zone === 'deck' ? 0 : P.zone === 'land' ? 2 : -1, IN = isIndoors(); for (const it of interactables()) { if ((it.lvl || 0) !== L || !!it.in !== IN) continue; const d = toLocalDist(it.pos); if (d < it.r && d < bd) { bd = d; best = it; } } return best; }
+function nearestUse() { let best = null, bd = 99; const L = P.zone === 'upper' ? 1 : P.zone === 'deck' ? 0 : P.zone === 'land' ? 2 : P.zone === 'hold' ? 3 : -1, IN = isIndoors(); for (const it of interactables()) { if ((it.lvl || 0) !== L || !!it.in !== IN) continue; const d = toLocalDist(it.pos); if (d < it.r && d < bd) { bd = d; best = it; } } return best; }
 function tryUse(press) { if (!inputOn()) return; const it = nearestUse(); if (!it) return; if (!it.hold && press) { it.act(); useHeld = false; } }
 function updateUse(dt) {
   curUse = inputOn() && !gen.repairing ? nearestUse() : null;
@@ -2635,7 +2729,7 @@ function onBoatPeers(all, myUid) {
     if (uid === myUid || typeof pr.x !== 'number') continue;
     const r = NET.remotes.get(uid) || addRemote(uid, pr);
     r.name = pr.name || r.name; if (pr.col) r.col = pr.col;
-    r.tx = num(pr.x, -4, 4, 0); r.tz = num(pr.z, -12, 12, -6); r.ty = num(pr.y, 1.5, 6, 2); r.tyaw = num(pr.yaw, -1e4, 1e4, 0);
+    r.tx = num(pr.x, -4, 4, 0); r.tz = num(pr.z, -12, 12, -6); r.ty = num(pr.y, -1, 6, 2); r.tyaw = num(pr.yaw, -1e4, 1e4, 0);
     r.s = ['idle', 'charge', 'flying', 'water', 'bite', 'fight', 'landing'].includes(pr.s) ? pr.s : 'idle';
     r.lx = num(pr.lx, -200, 200, 0); r.lz = num(pr.lz, -200, 200, 0); r.ld = num(pr.ld, 0, 50, 0); r.c = num(pr.c, 0, 999, 0);
     r.seat = (pr.seat === 0 || pr.seat === 1) ? pr.seat : -1;
@@ -3053,8 +3147,27 @@ function updateBoss(dt) {
 // =============== crew: speech, helping, chat ===============
 const pickOne = (a) => a[Math.floor(Math.random() * a.length)];
 const GREET_LINES = ['ว่าไงน้อง เป็นไงบ้าง', 'มาคุยกับพี่หรอ กด E สิ', 'เหนื่อยยัง พักกินกาแฟก่อนก็ได้นะ', 'มายืนตกข้างพี่ก็ได้ เหงาๆ อยู่พอดี'];
-const CREW = { home: new V3(-2.7, 0, -10.35), homeYaw: Math.PI / 2 + 0.25, x: -2.7, z: -10.35, yaw: Math.PI / 2 + 0.25, path: [], task: null, taskT: 0, lastRoute: null, fishing: true, talking: false, sayT: 0, waveT: 0, greetAt: -999, cool: 0, watch: true, tubDone: false, probeDone: false, shooed: false, catchT: 40, holding: null, boxTold: false };
+const CREW = { home: new V3(-2.7, 0, -10.35), homeYaw: Math.PI / 2 + 0.25, x: -2.7, z: -10.35, yaw: Math.PI / 2 + 0.25, path: [], task: null, taskT: 0, lastRoute: null, fishing: true, talking: false, sayT: 0, waveT: 0, greetAt: -999, cool: 0, watch: true, tubDone: false, probeDone: false, shooed: false, catchT: 40, holding: null, boxTold: false, spot: 0, moveT: 200 };
 const CREW_ROUTES = { gen: [[-1.8, -9.2], [-1.8, -6], [-1.75, -1], [-2.0, 0.45]], tub: [[-1.8, -9.2], [-1.6, -5.4], [1.55, -5.0], [1.6, -1.2]], probe: [[-1.8, -9.25], [1.6, -9.25], [2.1, -9.7]], h0: [[-1.8, -9.2], [1.5, -9.0], [2.55, -8.2]], box: [[-1.95, -9.9], [-1.95, -8.92]], fuel: [[-1.8, -9.2], [-1.6, -5.4], [1.55, -5.0], [1.5, 0.9], [-2.0, 0.45]], h1: [[-1.8, -9.2], [-2.5, -6.6]] };
+// Chai's fishing spots. Every route in CREW_ROUTES starts from HUB (just inboard of his original stern spot), so
+// to go anywhere he first walks his spot's path back to HUB, then the route - which keeps him clear of deck clutter.
+// path ends at the spot itself; yaw is computed from where his line lands, plus the same rod-in-right-hand offset
+// his original stance had.
+const CREW_HUB = [-1.8, -9.2];
+const CREW_SPOTS = [
+  { name: 'ท้ายเรือกราบซ้าย', path: [[-2.7, -10.35]], water: [-9.5, -11.5] },
+  { name: 'ท้ายเรือกราบขวา', path: [[1.5, -9.0], [2.65, -7.1]], water: [9.5, -6.4] },
+  { name: 'กลางลำกราบซ้าย', path: [[-1.8, -6.0], [-2.75, -5.2]], water: [-9.5, -4.6] },
+  { name: 'กลางลำกราบขวา', path: [[-1.6, -5.4], [1.55, -5.0], [2.75, -2.9]], water: [9.5, -2.4] },
+];
+for (const sp of CREW_SPOTS) { const [x, z] = sp.path[sp.path.length - 1]; sp.yaw = Math.atan2(-(sp.water[0] - x), -(sp.water[1] - z)) + 0.417; }
+const crewToHub = () => CREW_SPOTS[CREW.spot].path.slice(0, -1).reverse().concat([CREW_HUB]).map(([x, z]) => new V3(x, 0, z));
+function crewMove(j) {
+  const sp = CREW_SPOTS[j]; if (!sp || j === CREW.spot) return;
+  const path = crewToHub().concat(sp.path.map(([x, z]) => new V3(x, 0, z)));
+  CREW.spot = j; const [hx, hz] = sp.path[sp.path.length - 1]; CREW.home.set(hx, 0, hz); CREW.homeYaw = sp.yaw; crewWater.set(sp.water[0], 0, sp.water[1]);
+  CREW.lastRoute = null; CREW.fishing = false; CREW.task = 'home'; CREW.path = path; CREW.moveT = rand(160, 300);
+}
 const TASK_T = { gen: 4, tub: 2.5, probe: 2, h0: 1, h1: 1, box: 1.3, fuel: 3 };
 let genBrokenT = 0, reactCool = 0;
 function wrapText(x, text, maxW) {
@@ -3121,8 +3234,8 @@ function adviceNow() {
   if (S.money > 1200 && !S.up.sonar) return 'มีเงินพอแล้ว ซื้อโซนาร์เถอะ จะได้รู้ว่าฝูงอยู่ลึกเท่าไหร่';
   return 'ปล่อยเหยื่อลงไปลึกสัก 10 เมตร แล้วแตะโยกเบาๆ เป็นระยะ';
 }
-function crewGo(task) { CREW.lastRoute = task; CREW.fishing = false; CREW.task = task; CREW.taskT = 0; CREW.path = CREW_ROUTES[task].map(([x, z]) => new V3(x, 0, z)); }
-function crewHome() { const r = CREW_ROUTES[CREW.lastRoute] || []; CREW.path = r.slice(0, -1).reverse().map(([x, z]) => new V3(x, 0, z)).concat([new V3(CREW.home.x, 0, CREW.home.z)]); CREW.task = 'home'; CREW.cool = 4; }
+function crewGo(task) { CREW.lastRoute = task; CREW.fishing = false; CREW.task = task; CREW.taskT = 0; CREW.path = crewToHub().concat(CREW_ROUTES[task].map(([x, z]) => new V3(x, 0, z))); }
+function crewHome() { const r = CREW_ROUTES[CREW.lastRoute] || []; CREW.path = r.slice(0, -1).reverse().concat([CREW_HUB], CREW_SPOTS[CREW.spot].path).map(([x, z]) => new V3(x, 0, z)); CREW.task = 'home'; CREW.cool = 4; }
 function doCrewTask(k) {
   if (k === 'gen') { if (gen.broken) { fixGen(true); crewSay('เรียบร้อย ไฟมาแล้ว เครื่องเก่ามันชอบงอแง'); } }
   else if (k === 'tub') { if (S.tub.length && S.freezer.length < FREEZE_CAP[S.up.freezer]) { freezeAll(); crewSay('ย้ายเข้าตู้แช่ให้แล้ว รอขายตอนราคาดีนะ'); } else crewSay('ตู้แช่เต็มแล้ว ต้องขายบ้างนะน้อง'); }
@@ -3154,6 +3267,7 @@ function crewAI(dt) {
   if (S.tub.length >= TUB_CAP[S.up.tub] - 1 && S.freezer.length < FREEZE_CAP[S.up.freezer] && !CREW.tubDone) { CREW.tubDone = true; crewSay('ถังจะเต็มแล้ว เดี๋ยวพี่ย้ายเข้าตู้แช่ให้นะ'); crewGo('tub'); return; }
   if (gull.state === 'landed' && gull.t > 2.5 && toLocalDist(TUB) > 4 && !CREW.shooed) { CREW.shooed = true; CREW.waveT = 2; crewSay('ชู่ว! ไปๆ นกบ้า'); setTimeout(() => { if (Math.random() < 0.7) shooGull(true); CREW.shooed = false; }, 1500); CREW.cool = 3; return; }
   if (!measured() && night > 0.35 && !CREW.probeDone) { CREW.probeDone = true; crewSay('น้องยังไม่ได้วัดค่าน้ำเลย เดี๋ยวพี่วัดให้'); crewGo('probe'); return; }
+  if (CREW.fishing && !CREW.holding && !DT.on) { CREW.moveT -= dt; if (CREW.moveT <= 0) { let j = CREW.spot; while (j === CREW.spot) j = Math.floor(Math.random() * CREW_SPOTS.length); crewSay(pickOne([`ตรงนี้เงียบไปหน่อย ย้ายไปลอง${CREW_SPOTS[j].name}ดีกว่า`, `หมึกคงย้ายฝูงแล้ว พี่ไปตก${CREW_SPOTS[j].name}นะ`, `ขอไปยืดเส้นยืดสายที่${CREW_SPOTS[j].name}หน่อย`]), 4); crewMove(j); return; } }
   if (CREW.fishing && !DT.on && lampsLive() && night > 0.4) { CREW.catchT -= dt * (0.6 + 0.6 * school.dens); if (CREW.catchT <= 0) { CREW.catchT = rand(55, 110); crewCatch(); } }
 }
 
@@ -3166,6 +3280,7 @@ function renderChatHelp() {
   const box = $('chatHelp'); box.textContent = '';
   const act = (label, fn) => box.appendChild(btn(label, () => { fn(); renderChatHelp(); }));
   act(CREW.watch ? 'ช่วยดูคันปัก: เปิดอยู่' : 'ช่วยดูคันปักให้หน่อย', () => { CREW.watch = !CREW.watch; addMsg('npc', CREW.watch ? 'ได้เลย คันปักกินเมื่อไหร่พี่เก็บให้' : 'โอเค งั้นน้องเก็บเองนะ'); });
+  if (CREW.fishing && !CREW.path.length && !CREW.holding) act('ย้ายไปตกที่อื่นหน่อย', () => { let j = CREW.spot; while (j === CREW.spot) j = Math.floor(Math.random() * CREW_SPOTS.length); addMsg('npc', `ได้เลย เดี๋ยวพี่ไปตก${CREW_SPOTS[j].name}`); crewMove(j); });
   if (!measured()) act('ช่วยวัดค่าน้ำให้หน่อย', () => { addMsg('npc', 'ได้ เดี๋ยวพี่เดินไปวัดให้'); CREW.probeDone = true; crewGo('probe'); });
   if (S.tub.length && S.freezer.length < FREEZE_CAP[S.up.freezer]) act('ช่วยย้ายหมึกเข้าตู้แช่', () => { addMsg('npc', 'จัดให้ ย้ายเข้าตู้แช่เลยนะ'); crewGo('tub'); });
   if (gen.broken) act('ช่วยซ่อมเครื่องปั่นไฟ', () => { addMsg('npc', 'ไปเดี๋ยวนี้แหละ'); crewGo('gen'); });
