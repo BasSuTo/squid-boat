@@ -3726,8 +3726,11 @@ function makeCage(scale = 1) {
   const fm = std(0x3a3f44, 0.5, 0.7);
   const c = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
   for (let i = 0; i < 4; i++) { const [ax, az] = c[i], [bx, bz] = c[(i + 1) % 4]; for (const y of [0, h]) cylBetween(new V3(ax * w / 2, y, az * d / 2), new V3(bx * w / 2, y, bz * d / 2), r, fm, g, 6); cylBetween(new V3(ax * w / 2, 0, az * d / 2), new V3(ax * w / 2, h, az * d / 2), r, fm, g, 6); }
-  if (!NET_TEX) { const cv = document.createElement('canvas'); cv.width = cv.height = 64; const x = cv.getContext('2d'); x.strokeStyle = 'rgba(30,40,45,.95)'; x.lineWidth = 2; for (let k = 0; k <= 64; k += 8) { x.beginPath(); x.moveTo(k, 0); x.lineTo(k, 64); x.stroke(); x.beginPath(); x.moveTo(0, k); x.lineTo(64, k); x.stroke(); } NET_TEX = new THREE.CanvasTexture(cv); NET_TEX.wrapS = NET_TEX.wrapT = THREE.RepeatWrapping; NET_TEX.repeat.set(5, 4); }
-  const net = new THREE.Mesh(new THREE.BoxGeometry(w * 0.99, h * 0.98, d * 0.99), new THREE.MeshStandardMaterial({ map: NET_TEX, transparent: true, alphaTest: 0.3, side: THREE.DoubleSide, roughness: 0.8 })); net.position.y = h / 2; g.add(net);
+  // net mesh has wider gaps than before (16px lines on a 64px tile, was 8px) - a tighter grid on an enclosed box
+  // meant you were looking through two stacked layers of mesh (the near wall plus the far wall behind whatever's
+  // inside), which made anything small and dark-colored sitting in the cage nearly impossible to pick out.
+  if (!NET_TEX) { const cv = document.createElement('canvas'); cv.width = cv.height = 64; const x = cv.getContext('2d'); x.strokeStyle = 'rgba(30,40,45,.85)'; x.lineWidth = 1.5; for (let k = 0; k <= 64; k += 16) { x.beginPath(); x.moveTo(k, 0); x.lineTo(k, 64); x.stroke(); x.beginPath(); x.moveTo(0, k); x.lineTo(64, k); x.stroke(); } NET_TEX = new THREE.CanvasTexture(cv); NET_TEX.wrapS = NET_TEX.wrapT = THREE.RepeatWrapping; NET_TEX.repeat.set(5, 4); }
+  const net = new THREE.Mesh(new THREE.BoxGeometry(w * 0.99, h * 0.98, d * 0.99), new THREE.MeshStandardMaterial({ map: NET_TEX, transparent: true, alphaTest: 0.35, depthWrite: false, side: THREE.DoubleSide, roughness: 0.8 })); net.position.y = h / 2; g.add(net);
   for (const s of [-1, 1]) { const fn = new THREE.Mesh(new THREE.CylinderGeometry(0.03 * scale, 0.14 * scale, 0.22 * scale, 12, 1, true), new THREE.MeshStandardMaterial({ map: NET_TEX, transparent: true, alphaTest: 0.3, side: THREE.DoubleSide })); fn.rotation.z = s * Math.PI / 2; fn.position.set(s * (w / 2 - 0.1 * scale), h / 2, 0); g.add(fn); }
   const tag = new THREE.Mesh(new THREE.BoxGeometry(0.1 * scale, 0.06 * scale, 0.01), std(0xf08a2b, 0.6, 0)); tag.position.set(0, h * 0.7, -d / 2 - 0.006); g.add(tag);
   g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
@@ -3812,8 +3815,10 @@ function startHaul(i) {
   // the netting wraps the cage as a full closed box, so at night with the deck lights not reaching this exact
   // spot, a crab sitting inside was basically invisible - the cage just looked empty even though it wasn't. A
   // small warm light fixed to the cage itself keeps whatever's inside visible no matter the time of night.
-  const lamp = new THREE.PointLight(0xffd9a0, 1.1, 2.4, 2); lamp.position.set(0, 0.42, 0); cage.add(lamp);
-  for (const c of crabs.slice(0, 6)) { const m = makeCatch(SP[c.id], c.kg, true); m.userData.crab = { vx: 0, t: rand(0, 5), ph: rand(0, 6) }; m.position.set(rand(-0.25, 0.25), 0.02, rand(-0.25, 0.25)); m.rotation.y = rand(0, 6.28); cage.add(m); }
+  const lamp = new THREE.PointLight(0xffe3b8, 2, 2.8, 2); lamp.position.set(0, 0.4, 0); cage.add(lamp);
+  // kept closer to the middle (was +-0.25, nearly touching the walls) and sized up a bit so the catch reads
+  // clearly as "something is in here" at a glance, rather than true-to-life tiny and easy to miss against the netting.
+  for (const c of crabs.slice(0, 6)) { const m = makeCatch(SP[c.id], c.kg, true); m.userData.crab = { vx: 0, t: rand(0, 5), ph: rand(0, 6) }; m.position.set(rand(-0.14, 0.14), 0.02, rand(-0.14, 0.14)); m.rotation.y = rand(0, 6.28); m.scale.setScalar(1.4); cage.add(m); }
   const lin = q.lz < -11 ? [q.lx, -10.75] : [q.lx - Math.sign(q.lx) * 0.75, q.lz];
   const from = new V3(q.wx, waveH(q.wx, q.wz, T) - 1.5, q.wz), to = boat.localToWorld(new V3(lin[0], 2.05, lin[1]));
   haul = { t: 0, cage, from, to, crabs, q, lin }; sfx('splash'); spawnSplash(tmp3.set(q.wx, waveH(q.wx, q.wz, T), q.wz), 1.2);
