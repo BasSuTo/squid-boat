@@ -2327,7 +2327,7 @@ function renderMenu() {
       tr.appendChild(el('td', m >= 1 ? 'up' : 'down', `${baht(sp.price * m)} (${m >= 1 ? '+' : ''}${Math.round((m - 1) * 100)}%)`));
       tr.appendChild(el('td', '', `${items.length} ตัว · ${items.reduce((a, b) => a + b.kg, 0).toFixed(2)} กก.`));
       tr.appendChild(el('td', '', baht(items.reduce((a, b) => a + freezerValue(b), 0))));
-      const td = el('td'); td.appendChild(btn('ขาย', () => { sellFreezer(sp.id); renderMenu(); })); tr.appendChild(td); tbody.appendChild(tr);
+      const td = el('td'); td.appendChild(btn('เอาออก', () => { unfreeze(sp.id); renderMenu(); }, 'btn', S.tub.length >= TUB_CAP[S.up.tub])); td.appendChild(btn('ขาย', () => { sellFreezer(sp.id); renderMenu(); })); tr.appendChild(td); tbody.appendChild(tr);
     }
     if (any) body.appendChild(wrap); else body.appendChild(el('div', 'hint', 'ตู้แช่ยังว่าง'));
   } else if (menuTab === 'black') {
@@ -2876,6 +2876,14 @@ function freezerValue(it) { const sp = SP[it.id]; return sp.strange ? 0 : it.kg 
 function sellFreezer(id) {
   let v = 0; S.freezer = S.freezer.filter((it) => { if (SP[it.id].strange || (id && it.id !== id)) return true; v += freezerValue(it); return false; });
   v = Math.round(v); S.money += v; save(); sfx('coin'); toast(`ขายจากตู้แช่ได้ ${baht(v)}`, 'good');
+}
+// selling was the only way out of the freezer before - no way to get something back if you froze it by mistake,
+// or just want to cook it instead. This moves it back to the tub (space permitting) so it can go to the kitchen.
+function unfreeze(id) {
+  const cap = TUB_CAP[S.up.tub]; let n = 0; const keep = [];
+  for (const it of S.freezer) { if (it.id === id && S.tub.length < cap) { S.tub.push(it); n++; } else keep.push(it); }
+  S.freezer = keep;
+  rebuildTub(); save(); toast(n ? `ย้ายกลับถัง ${n} ตัว` : 'ถังเต็มแล้ว', n ? 'good' : 'bad');
 }
 
 // =============== curses & shrine ===============
@@ -3818,7 +3826,17 @@ function startHaul(i) {
   const lamp = new THREE.PointLight(0xffe3b8, 2, 2.8, 2); lamp.position.set(0, 0.4, 0); cage.add(lamp);
   // kept closer to the middle (was +-0.25, nearly touching the walls) and sized up a bit so the catch reads
   // clearly as "something is in here" at a glance, rather than true-to-life tiny and easy to miss against the netting.
-  for (const c of crabs.slice(0, 6)) { const m = makeCatch(SP[c.id], c.kg, true); m.userData.crab = { vx: 0, t: rand(0, 5), ph: rand(0, 6) }; m.position.set(rand(-0.14, 0.14), 0.02, rand(-0.14, 0.14)); m.rotation.y = rand(0, 6.28); m.scale.setScalar(1.4); cage.add(m); }
+  // The lighting/spacing tweaks above still depend on the crab's own material picking up light correctly, which
+  // is hard to be 100% sure of without eyes on a real render - so on top of that, every crab in a landed cage now
+  // self-glows (emissive) a warm orange, which makes it visible regardless of scene lighting, camera angle or
+  // the netting in front of it. A floating glow ring above the cage also marks "there's something to pick up here"
+  // from a distance, so it never again reads as an empty box even before you walk up to it.
+  for (const c of crabs.slice(0, 6)) {
+    const m = makeCatch(SP[c.id], c.kg, true); m.userData.crab = { vx: 0, t: rand(0, 5), ph: rand(0, 6) }; m.position.set(rand(-0.14, 0.14), 0.02, rand(-0.14, 0.14)); m.rotation.y = rand(0, 6.28); m.scale.setScalar(1.4);
+    m.traverse((o) => { if (o.isMesh && o.material) { const mats = Array.isArray(o.material) ? o.material : [o.material]; for (const mt of mats) { if ('emissive' in mt) { mt.emissive = new THREE.Color(0xff8a2a); mt.emissiveIntensity = Math.max(mt.emissiveIntensity || 0, 0.45); } } } });
+    cage.add(m);
+  }
+  if (crabs.length) { const ring = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.018, 8, 20), new THREE.MeshBasicMaterial({ color: 0xffb347, transparent: true, opacity: 0.85 })); ring.rotation.x = Math.PI / 2; ring.position.y = 0.95; ring.userData.spin = true; cage.add(ring); cage.userData.beacon = ring; }
   const lin = q.lz < -11 ? [q.lx, -10.75] : [q.lx - Math.sign(q.lx) * 0.75, q.lz];
   const from = new V3(q.wx, waveH(q.wx, q.wz, T) - 1.5, q.wz), to = boat.localToWorld(new V3(lin[0], 2.05, lin[1]));
   haul = { t: 0, cage, from, to, crabs, q, lin }; sfx('splash'); spawnSplash(tmp3.set(q.wx, waveH(q.wx, q.wz, T), q.wz), 1.2);
