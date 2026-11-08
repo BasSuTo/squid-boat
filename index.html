@@ -2084,7 +2084,7 @@ function updateGull(dt) {
   if (!started) return;
   const tubW = boat.localToWorld(tmp3.set(TUB.x, 2.5, TUB.z));
   if (gull.state === 'none') {
-    if (S.tub.length > 0 && !traveling && !ISL.on) { gullT -= dt; if (gullT <= 0) { gull.state = 'approach'; gull.t = 0; const a = rand(0, 6.28); gull.from.set(tubW.x + Math.cos(a) * 60, tubW.y + 18, tubW.z + Math.sin(a) * 60); gull.g.visible = true; sfx('gull'); toast('นกนางนวลบินมาที่ถังหมึก! ไปไล่มันเร็ว', 'bad'); } }
+    if (S.tub.length > 0 && !traveling && !ISL.on) { gullT -= dt; if (gullT <= 0) { gull.state = 'approach'; gull.t = 0; const a = rand(0, 6.28); gull.from.set(tubW.x + Math.cos(a) * 60, tubW.y + 18, tubW.z + Math.sin(a) * 60); gull.g.visible = true; sfx('gull'); toast('นกนางนวลบินมาที่ถังหมึก! ไปไล่มันเร็ว', 'bad'); netEmit('gull', {}); } }
     return;
   }
   gull.t += dt;
@@ -2093,6 +2093,7 @@ function updateGull(dt) {
   else if (gull.state === 'landed') { gull.g.position.copy(tubW); gull.g.rotation.y += Math.sin(T * 3) * 0.01; flap(gull.t % 2 < 0.3 ? 20 : 0); if (gull.t > 9) stealSquid(); }
   else if (gull.state === 'leave') { gull.g.position.y += dt * 4; gull.g.position.x += dt * 9; flap(14); if (gull.t > 5) { gull.state = 'none'; gull.g.visible = false; gullT = rand(150, 300); } }
 }
+function remoteGull() { if (gull.state !== 'none') return; const tubW = boat.localToWorld(tmp3.set(TUB.x, 2.5, TUB.z)); gull.state = 'approach'; gull.t = 0; const a = rand(0, 6.28); gull.from.set(tubW.x + Math.cos(a) * 60, tubW.y + 18, tubW.z + Math.sin(a) * 60); gull.g.visible = true; sfx('gull'); }
 function shooGull(byCrew) { if (gull.state === 'none' || gull.state === 'leave') return; gull.state = 'leave'; gull.t = 0; sfx('gull'); if (byCrew !== true) { toast('ไล่นกไปได้แล้ว', 'good'); questEvent('gull'); } }
 function stealSquid() {
   if (S.tub.length) { const it = S.tub.pop(); save(); if (tubGroup.children.length) tubGroup.remove(tubGroup.children[tubGroup.children.length - 1]); toast(`นกนางนวลคาบ${SP[it.id].name}ไปหนึ่งตัว`, 'bad'); }
@@ -2808,6 +2809,8 @@ function onNetEvent(m) {
   else if (m.type === 'fuel') { const amt = num(m.data && m.data.amt, 1, 100, 0); if (amt > 0) { S.fuel = Math.min(100, S.fuel + amt); fuelWarned = false; save(); lampText(); toast(`${m.name} เติมน้ำมันเครื่องปั่นไฟแล้ว ตอนนี้ ${Math.ceil(S.fuel)}%`, 'good'); } }
   else if (m.type === 'island') { islandSync(!!(m.data && m.data.on), m.name); }
   else if (m.type === 'nap') { const mins = num(m.data && m.data.mins, 1, 30, 0); if (mins > 0 && !nightOver) { gameMin += mins; toast(`${m.name} งีบหลับไป ${Math.round(mins)} นาที เวลาเดินไปด้วย`, 'good'); } }
+  else if (m.type === 'gull') { remoteGull(); toast('นกนางนวลบินมาที่ถังหมึกแล้ว! ไปไล่มันเร็ว', 'bad', m.name); }
+  else if (m.type === 'rat') { remoteRatAppear(); toast('ได้ยินเสียงหนูกุกกักในท้องเรือ! ไปไล่ก่อนมันกินหมึกในห้องเย็น', 'bad', m.name); }
 }
 // keeps everyone docking at / leaving the island together, like one shared boat, instead of each player
 // visiting on their own schedule. Triggered either by a netEmit('island',…) from a peer, or by the one-time
@@ -4721,6 +4724,7 @@ function updateCat(dt) {
   }
   catG.visible = CAT.zone === 'deck' ? true : (P.zone === 'hold' || hatchT > 0.01);
 }
+function remoteRatAppear() { if (RAT.on) return; RAT.on = true; RAT.eatT = 50; ratG.visible = true; tone(2800, 0.06, 0.04, 'square'); }
 function chaseRat() { if (!RAT.on) return; RAT.on = false; ratG.visible = false; RAT.t = rand(300, 520); tone(2600, 0.08, 0.05, 'square'); toast('ไล่หนูหนีไปแล้ว', 'good'); }
 function updateRats(dt) {
   if (RAT.on) { RAT.ph += dt; const z = -3.5 + Math.sin(RAT.ph * 1.3) * 1.6, x = -1.45 + Math.sin(RAT.ph * 2.9) * 0.08; const dz = Math.cos(RAT.ph * 1.3); ratG.position.set(x, Math.max(HOLD.floor + 0.005, bilge.visible ? bilge.position.y - 0.03 : -9), z); /* swims when the hold is flooded */ ratG.rotation.y = dz > 0 ? Math.PI : 0; }
@@ -4734,7 +4738,7 @@ function updateRats(dt) {
     if (!S.cold.length) return;
     RAT.t -= dt; if (RAT.t > 0) return;
     RAT.on = true; RAT.eatT = 50; ratG.visible = true; tone(2800, 0.06, 0.04, 'square');
-    toast('ได้ยินเสียงหนูกุกกักในท้องเรือ! รีบลงไปไล่ก่อนมันกินหมึกในห้องเย็น', 'bad');
+    toast('ได้ยินเสียงหนูกุกกักในท้องเรือ! รีบลงไปไล่ก่อนมันกินหมึกในห้องเย็น', 'bad'); netEmit('rat', {});
     return;
   }
   if (Math.random() < dt * 0.8) tone(rand(2600, 3400), 0.04, P.zone === 'hold' ? 0.04 : 0.012, 'square');
