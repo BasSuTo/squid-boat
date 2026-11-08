@@ -2031,7 +2031,7 @@ function updateHolders(dt) {
     if (h.state === 'idle') {
       h.g.rotation.x = 0.75; if (!started || traveling || ISL.on) continue;
       const r = biteRate(14, 10, false) * 0.35;
-      if (Math.random() < r * dt) { h.state = 'bite'; h.t = 7; h.ring = 0; toast(`คันปัก${h.def.side}กิน! รีบไปเก็บ`, 'good'); }
+      if (Math.random() < r * dt) { h.state = 'bite'; h.t = 20; h.ring = 0; toast(`คันปัก${h.def.side}กิน! รีบไปเก็บ`, 'good'); }
     } else if (h.state === 'bite') {
       h.t -= dt; h.ring -= dt; h.g.rotation.x = 0.6 + Math.sin(T * 30) * 0.08;
       if (h.ring <= 0) { sfx('bell'); h.ring = 0.7; }
