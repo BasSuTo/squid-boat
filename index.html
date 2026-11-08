@@ -734,7 +734,7 @@ function setupComposer() {
   const rt = new THREE.WebGLRenderTarget(Math.max(1, Math.floor(innerWidth * pr)), Math.max(1, Math.floor(innerHeight * pr)), { type: THREE.HalfFloatType, samples: qName === 'low' ? 0 : 4 });
   composer = new EffectComposer(renderer, rt);
   composer.addPass(new RenderPass(scene, camera));
-  if (Q.bloom) composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth / 2, innerHeight / 2), 0.65, 0.55, 1.0));
+  if (Q.bloom) composer.addPass(new UnrealBloomPass(new THREE.Vector2(innerWidth / 2, innerHeight / 2), 0.45, 0.55, 1.35));
   composer.addPass(new OutputPass());
   gradePass = new ShaderPass(GradeShader); gradePass.uniforms.uGrain.value = Q.bloom ? 0.03 : 0.02; composer.addPass(gradePass);
   composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(innerWidth, innerHeight);
@@ -878,7 +878,7 @@ const std = (c, r, m, extra = {}) => new THREE.MeshStandardMaterial(Object.assig
 const M = {
   white: std(0xd8dcdf, 0.55, 0.1, { map: grimeTex() }), navy: std(0x15273c, 0.5, 0.3), steel: std(0xb9c1c6, 0.38, 0.75), dark: std(0x24292e, 0.6, 0.4),
   orange: std(0xe0731c, 0.5, 0.2), yellow: std(0xd6a01c, 0.5, 0.25), blue: std(0x2457b0, 0.6, 0), red: std(0xb5302a, 0.42, 0), buoyY: std(0xe0b52a, 0.42, 0),
-  rope: std(0x8b6c43, 0.95, 0), rubber: std(0x22332b, 0.92, 0), tub: std(0xe9ecee, 0.45, 0), gen: std(0x4c6a58, 0.55, 0.35),
+  rope: std(0x8b6c43, 0.95, 0), rubber: std(0x22332b, 0.92, 0), tub: std(0xaeb6ba, 0.75, 0), gen: std(0x4c6a58, 0.55, 0.35),
   glass: std(0x0c1519, 0.06, 0.3, { emissive: 0xffc884, emissiveIntensity: 0 }), porth: std(0x0c1519, 0.05, 0.3, { emissive: 0xffc884, emissiveIntensity: 0 }),
 };
 function box(w, h, d, mat, x, y, z, parent = boat) { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat); m.position.set(x, y, z); parent.add(m); return m; }
