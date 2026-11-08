@@ -3437,7 +3437,7 @@ function renderKitchen() {
   row.appendChild(el('div', 'hint', TOUCH ? 'ลากนิ้วผ่านเส้นประจากบนลงล่าง หรือแตะบนเส้นประ' : 'ลากเมาส์ผ่านเส้นประจากบนลงล่าง หรือคลิกบนเส้น · กด Space ให้หั่นอัตโนมัติ'));
   if (K.done) addFinishButtons(row);
   body.appendChild(row);
-  hookBoard(cv); drawBoard();
+  K.bgDirty = true; hookBoard(cv); drawBoard();
 }
 function pickSquid(it, src) {
   _kitchenReset();
@@ -3474,8 +3474,13 @@ function drawSquidBoard(x) {
   x.restore();
   x.strokeStyle = 'rgba(0,0,0,.18)'; x.lineWidth = 1.5; x.stroke(path);
 }
-function drawBoard() {
-  const cv = $('kBoard'); if (!cv) return; const x = cv.getContext('2d');
+// The wood-grain board + squid-slice art underneath is expensive (100+ stroke() calls, shadowBlur, seeded-RNG
+// grain) but only actually changes when a cut is committed or the view (re)opens - it does NOT change on every
+// drag point while the player is mid-slice. Redrawing all of that per pointermove was exactly what made the
+// sashimi minigame feel laggy on phones. So it's rendered once into an offscreen cache (K.bgCv) whenever
+// K.bgDirty is set, and the hot path (every pointermove) just blits that cached bitmap and draws the live trail
+// line on top - two cheap draw calls instead of ~150.
+function drawBoardBG(x) {
   const wood = x.createLinearGradient(0, 0, 0, KH); wood.addColorStop(0, '#c99e6c'); wood.addColorStop(1, '#a87c4f'); x.fillStyle = wood; x.fillRect(0, 0, KW, KH);
   const r = rng(77); for (let i = 0; i < 70; i++) { x.strokeStyle = `rgba(90,55,25,${0.05 + r() * 0.12})`; x.lineWidth = 1 + r() * 2; const y0 = r() * KH; x.beginPath(); for (let xx = 0; xx <= KW; xx += 20) x.lineTo(xx, y0 + Math.sin(xx * 0.01 + i) * 6); x.stroke(); }
   for (let i = 0; i < 40; i++) { x.strokeStyle = `rgba(60,35,15,${0.06 + r() * 0.08})`; x.lineWidth = 1; const cx2 = r() * KW, cy2 = r() * KH; x.beginPath(); x.moveTo(cx2, cy2); x.lineTo(cx2 + r() * 40 - 20, cy2 + r() * 8); x.stroke(); }
@@ -3489,8 +3494,14 @@ function drawBoard() {
     for (const g of GUIDES) { if (g.cut) continue; const idx = cuts.filter((c) => c < g.x).length; x.strokeStyle = g === next ? 'rgba(255,255,255,.95)' : 'rgba(255,255,255,.45)'; x.beginPath(); x.moveTo(g.x + idx * 12, KCY - 95); x.lineTo(g.x + idx * 12, KCY + 95); x.stroke(); }
     x.setLineDash([]);
   }
-  if (K.trail.length > 1 && K.trailT > 0) { x.strokeStyle = `rgba(255,255,255,${Math.min(1, K.trailT * 2)})`; x.lineWidth = 4; x.beginPath(); K.trail.forEach(([a, b], i) => i ? x.lineTo(a, b) : x.moveTo(a, b)); x.stroke(); }
   if (K.done) { x.fillStyle = 'rgba(6,13,19,.55)'; x.fillRect(0, KH - 64, KW, 64); x.fillStyle = '#fff'; x.font = '600 26px Kanit, sans-serif'; x.textAlign = 'center'; x.fillText(`หั่นเสร็จแล้ว · ฝีมือ ${kitchenScoreText()}`, KW / 2, KH - 24); x.textAlign = 'left'; }
+}
+function drawBoard() {
+  const cv = $('kBoard'); if (!cv) return; const x = cv.getContext('2d');
+  if (!K.bgCv) { K.bgCv = document.createElement('canvas'); K.bgCv.width = KW; K.bgCv.height = KH; K.bgDirty = true; }
+  if (K.bgDirty) { drawBoardBG(K.bgCv.getContext('2d')); K.bgDirty = false; }
+  x.clearRect(0, 0, KW, KH); x.drawImage(K.bgCv, 0, 0);
+  if (K.trail.length > 1 && K.trailT > 0) { x.strokeStyle = `rgba(255,255,255,${Math.min(1, K.trailT * 2)})`; x.lineWidth = 4; x.beginPath(); K.trail.forEach(([a, b], i) => i ? x.lineTo(a, b) : x.moveTo(a, b)); x.stroke(); }
 }
 function kitchenScore() { return K.cuts.length ? K.cuts.reduce((a, c) => a + c.v, 0) / K.cuts.length : 1; }
 function kitchenScoreText() { const s = kitchenScore(); return s > 1.1 ? 'เชฟมือโปร' : s > 0.97 ? 'สวยดี' : 'พอกินได้'; }
@@ -3503,6 +3514,7 @@ function doCut(gx, err) {
   K.cuts.push({ x: g.x + (gx - guideScreenX(g)) * 0.4, v });
   K.judge = v > 1.1 ? (g.head ? 'ตัดหัวเป๊ะ!' : 'สวยมาก!') : v >= 1 ? 'ดี' : 'เบี้ยวนิดหน่อย'; K.judgeCls = v > 1.1 ? 'great' : v >= 1 ? 'good' : 'bad';
   burst({ freq: 2600, q: 3, dur: 0.07, vol: 0.28 }); burst({ freq: 300, q: 1, dur: 0.12, vol: 0.2, delay: 0.03 });
+  K.bgDirty = true;
   if (GUIDES.every((q) => q.cut)) { K.done = true; sfx('great'); renderKitchen(); } else { $('kStep').textContent = 'ขั้นที่ 2 · หั่นเป็นชิ้น'; drawBoard(); }
   showJudge();
 }
