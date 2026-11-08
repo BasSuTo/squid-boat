@@ -337,7 +337,7 @@ body.touch #alerts{top:calc(56px + env(safe-area-inset-top,0px))}
   <div id="radarWrap"><div id="kn" class="num">0.3<span>kn</span></div><canvas id="radar" width="340" height="340"></canvas></div>
   <div id="cross"></div>
   <div id="skill" hidden>
-    <div class="sk-lbl">ซ่อมเครื่องปั่นไฟ <span id="skillPct" class="num">0%</span></div>
+    <div class="sk-lbl"><span id="skillLbl">ซ่อมเครื่องปั่นไฟ </span><span id="skillPct" class="num">0%</span></div>
     <canvas id="skillCv" width="340" height="340" aria-hidden="true"></canvas>
     <div id="skillJudge"></div>
     <div class="track sk-track"><div class="fill" id="skillFill"></div></div>
@@ -636,6 +636,8 @@ const UPG = {
   holder: { name: 'ที่ปักคันเสริม', desc: 'วางคันเบ็ดเพิ่มที่กราบเรือ กระดิ่งดังเมื่อหมึกกิน', price: [900, 2500] },
   pots: { name: 'ลอบปูเพิ่ม', desc: 'มีลอบปูให้วางพร้อมกันมากขึ้น 2 → 3 → 4 ใบ', price: [800, 2000] },
   freezer: { name: 'ตู้แช่แข็ง', desc: 'เก็บหมึกข้ามคืนรอราคาดี ความจุ 20 → 40 → 80 ตัว', price: [900, 2400] },
+  pump: { name: 'ปั๊มน้ำท้องเรือไฟฟ้า', desc: 'ช่วยสูบน้ำที่เข้าท้องเรือตอนฝนตกหรือพายุให้เองช้าๆ (ใช้ไฟจากเครื่องปั่นไฟ)', price: [1800] },
+  cat: { name: 'แมวประจำเรือ (เจ้าส้ม)', desc: 'นอนเฝ้าห้องเย็นใต้ท้องเรือ หนูไม่กล้ามาขโมยหมึก ลูบหัวได้ด้วย', price: [1500] },
 };
 const LURES = {
   basic: { name: 'โยกุ้ง 3.0', desc: 'ใช้ได้ทุกสถานการณ์', price: 0, col: 0xff8a2a, em: 0xff6a00 },
@@ -658,11 +660,11 @@ const EMOTES = ['สวัสดี', 'ได้แล้ว!', 'มาช่ว
 
 // =============== save ===============
 const SAVE_KEY = 'squid-save-v2';
-const S = { money: 300, total: 0, best: 0, night: 1, needs: { food: 100, water: 100, energy: 100 }, fresh: 6, desal: 0, fuel: 60, fuelStock: 3, dishes: [], deck: true, freezer: [], curses: [], story: { pages: 0, done: false, seen: false }, wmeas: {}, calm: false, title: '', up: { rod: 0, reel: 0, line: 0, lamp: 0, tub: 0, sonar: 0, holder: 0, freezer: 0, pots: 0 }, pots: [], crabKarma: 0, vol: { master: 0.8, sfx: 1, amb: 0.8, music: 0.7, muted: false }, lures: { basic: true, glow: false, big: false, fast: false }, lure: 'basic', journal: {}, tub: [], spot: 0 };
+const S = { money: 300, total: 0, best: 0, night: 1, needs: { food: 100, water: 100, energy: 100 }, fresh: 6, desal: 0, fuel: 60, fuelStock: 3, dishes: [], deck: true, freezer: [], curses: [], story: { pages: 0, done: false, seen: false }, wmeas: {}, calm: false, title: '', up: { rod: 0, reel: 0, line: 0, lamp: 0, tub: 0, sonar: 0, holder: 0, freezer: 0, pots: 0, cat: 0, pump: 0 }, pots: [], crabKarma: 0, vol: { master: 0.8, sfx: 1, amb: 0.8, music: 0.7, muted: false }, lures: { basic: true, glow: false, big: false, fast: false }, lure: 'basic', journal: {}, tub: [], spot: 0 };
 try {
   const old = JSON.parse(localStorage.getItem('squid-save-v1') || 'null');
   const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
-  if (s) { Object.assign(S, s); S.up = Object.assign({ rod: 0, reel: 0, line: 0, lamp: 0, tub: 0, sonar: 0, holder: 0, freezer: 0, pots: 0 }, s.up); S.lures = Object.assign({ basic: true }, s.lures); }
+  if (s) { Object.assign(S, s); S.up = Object.assign({ rod: 0, reel: 0, line: 0, lamp: 0, tub: 0, sonar: 0, holder: 0, freezer: 0, pots: 0, cat: 0, pump: 0 }, s.up); S.lures = Object.assign({ basic: true }, s.lures); }
   else if (old) { S.money = Math.max(300, old.money || 0); S.total = old.total || 0; S.best = old.best || 0; }
 } catch (e) {}
 if (!Array.isArray(S.tub)) S.tub = [];
@@ -1721,6 +1723,7 @@ const WX = { cloud: 0, rain: 0, amp: 0.85, flash: 0, nextFlash: 8 };
 let NIGHT = null;
 function moonName(k, waxing) { if (k < 0.12) return 'เดือนมืด'; if (k > 0.9) return 'เดือนเพ็ญ'; return waxing ? 'ข้างขึ้น' : 'ข้างแรม'; }
 function setupNight() {
+  resetBelowDeck();
   const r = rng(S.night * 7919 + 13), wr = r();
   const weather = wr < 0.42 ? 'clear' : wr < 0.68 ? 'cloudy' : wr < 0.9 ? 'rain' : 'storm';
   const phase = ((S.night + 2) % 30) / 30, moonK = 0.5 - 0.5 * Math.cos(phase * 2 * Math.PI);
@@ -1810,7 +1813,9 @@ let primaryHeld = false, holdT = 0, useHeld = false, useT = 0;
 const BEAT = 0.9; let beat0 = 0, interest = 0, combo = 0, pressT = 0, envF = 0.5, pullWarn = false, lastBeat = -1; const judge = { txt: '', cls: '', t: 0 };
 let landing = null; const flyers = [];
 const tipW = new V3(), tmp = new V3(), tmp2 = new V3(), tmp3 = new V3();
-const gen = { broken: false, t: rand(300, 520), repairing: false, prog: 0, check: null, next: 2, warn: 0 };
+const gen = { broken: false, t: rand(300, 520), repairing: false, prog: 0, check: null, next: 2, warn: 0, name: 'ซ่อมเครื่องปั่นไฟ', pos: GEN, zone: 'deck', spark: new V3(GEN.x + 0.1, 2.75, GEN.z), fix: () => fixGen() };
+// whichever machine the repair dial is currently working on (the generator, or the boat engine below deck)
+let rep = gen;
 let crewT = rand(40, 80), gullT = rand(90, 160);
 const powerOn = () => !gen.broken && S.fuel > 0;
 const lampsLive = () => lampsOn && powerOn();
@@ -1873,7 +1878,7 @@ function updateBoat(dt) {
   const c = Math.cos(BOAT_YAW), s = Math.sin(BOAT_YAW), h = (lx, lz) => waveH(lx * c + lz * s, -lx * s + lz * c, T);
   const hb = h(0, 10), hs = h(0, -10), hp = h(-3, 0), hst = h(3, 0), hc = h(0, 0);
   const y = (hb + hs + hp + hst + hc * 2) / 6, k = 1 - Math.exp(-dt * 2.2);
-  B.y += (y - B.y) * k; B.pitch += (Math.atan2(hb - hs, 20) - B.pitch) * k; B.roll += (Math.atan2(hp - hst, 6) * 0.8 - B.roll) * k;
+  B.y += (y - B.y) * k; B.pitch += (Math.atan2(hb - hs, 20) - B.pitch) * k; B.roll += (Math.atan2(hp - hst, 6) * 0.8 * (1 + 1.4 * FLOOD.lvl) - B.roll) * k;
   boat.position.y = B.y - 0.12; boat.rotation.x = -B.pitch; boat.rotation.z = -B.roll; radar.rotation.y += dt * 2.4;
   WU.uBoat.value.set(boat.position.x, boat.position.z);
 }
@@ -1913,7 +1918,7 @@ function updatePlayer(dt) {
   updateHoldLights();
   if (P.climbing) { P.moving = 0; P.y = floorY(); camera.position.set(P.x, P.y + 1.62, P.z); camera.rotation.set(P.pitch, P.yaw, 0); return; }
   const run = (keys.ShiftLeft || keys.ShiftRight || Math.hypot(joy.x, joy.y) > 0.92) && S.needs.energy > 12;
-  const sp = (run ? 3.3 : 1.9) * (st === 'charge' || st === 'fight' ? 0.45 : 1) * (inputOn() && !gen.repairing ? 1 : 0) * (1 - 0.25 * (WX.amp - 0.85)) * (S.needs.energy <= 0 ? 0.6 : 1) * (P.zone === 'stairs' ? 0.75 : 1);
+  const sp = (run ? 3.3 : 1.9) * (st === 'charge' || st === 'fight' ? 0.45 : 1) * (inputOn() && !rep.repairing ? 1 : 0) * (1 - 0.25 * (WX.amp - 0.85)) * (S.needs.energy <= 0 ? 0.6 : 1) * (P.zone === 'stairs' ? 0.75 : 1) * (P.zone === 'hold' ? 1 - 0.5 * FLOOD.lvl : 1);
   const fx = -Math.sin(P.yaw), fz = -Math.cos(P.yaw), rx = Math.cos(P.yaw), rz = -Math.sin(P.yaw);
   const vx = (fx * my + rx * mx) * sp * dt, vz = (fz * my + rz * mx) * sp * dt;
   let zz = canGo(P.x + vx, P.z); if (zz) { P.x += vx; P.zone = zz; } else if (vx && !lineFree() && Math.abs(P.x) < 2.3 && P.z > 3.3 && P.z < 4.6 && T > blockMsgT) { blockMsgT = T + 4; toast('เก็บสายเบ็ดก่อนค่อยเข้าห้อง'); }
@@ -1928,7 +1933,7 @@ function look(dx, dy, k) { P.yaw -= dx * k; P.pitch = clamp(P.pitch - dy * k, -1
 
 // one-button fishing: hold/release in every state
 function primaryDown() {
-  if (inputOn() && gen.repairing) { skillPress(); return; }
+  if (inputOn() && rep.repairing) { skillPress(); return; }
   if (inputOn() && P.seated) { biteNext(); return; }
   if (inputOn() && BOIL.active) { boilAction3D(); return; }
   if (inputOn() && ISL.on && st === 'idle') { if (T > blockMsgT) { blockMsgT = T + 2; toast('จอดเทียบท่าอยู่ ออกเรือก่อนค่อยตกหมึก'); } return; }
@@ -1985,7 +1990,7 @@ window.addEventListener('keydown', (e) => {
   if (BOIL.active && K.boil && K.boil.done && (e.code === 'KeyF' || e.code === 'Digit2')) { finishKitchen('pack'); return; }
   if (BOIL.active && K.boil && K.boil.done && e.code === 'Digit1') { finishKitchen('eat'); return; }
   if (e.code === 'Space' || e.code === 'KeyF') primaryDown();
-  if (e.code === 'KeyE') { if (gen.repairing) { skillPress(); return; } useHeld = true; useT = 0; tryUse(true); }
+  if (e.code === 'KeyE') { if (rep.repairing) { skillPress(); return; } useHeld = true; useT = 0; tryUse(true); }
   if (e.code === 'KeyB') openMenu('market');
   if (e.code === 'KeyK' && tut.on) endTut();
   if (e.code === 'KeyL') toggleLamps();
@@ -2013,7 +2018,7 @@ try { if (localStorage.getItem('squid-ctrl') === '1') $('ctrl').classList.add('m
   bc.addEventListener('pointerdown', (e) => { e.preventDefault(); bc.setPointerCapture(e.pointerId); primaryDown(); bc.classList.add('held'); });
   const bEnd = (e) => { e.preventDefault(); primaryUp(); bc.classList.remove('held'); }; bc.addEventListener('pointerup', bEnd); bc.addEventListener('pointercancel', bEnd);
   const bu = $('bUse');
-  bu.addEventListener('pointerdown', (e) => { e.preventDefault(); bu.setPointerCapture(e.pointerId); if (gen.repairing) { skillPress(); return; } useHeld = true; useT = 0; tryUse(true); });
+  bu.addEventListener('pointerdown', (e) => { e.preventDefault(); bu.setPointerCapture(e.pointerId); if (rep.repairing) { skillPress(); return; } useHeld = true; useT = 0; tryUse(true); });
   const uEnd = () => { useHeld = false; }; bu.addEventListener('pointerup', uEnd); bu.addEventListener('pointercancel', uEnd);
   $('bLamp').addEventListener('click', () => toggleLamps());
   $('bMenu').addEventListener('click', () => openMenu());
@@ -2028,7 +2033,7 @@ function interactables() {
   if (P.seated) { const myT = TABLE[mySeatIdx()]; list.push({ pos: { x: P.x, z: P.z }, r: 1, in: true, label: myT && myT.pieces.length ? `กินคำต่อไป (เหลือ ${Math.ceil(myT.pieces.length / myT.per)} คำ) · เดินเพื่อลุก` : 'ลุกขึ้น', act: () => { if (myT && myT.pieces.length) biteNext(); else standUp(); } }); return list; }
   islandInteractions(list);
   if (gen.broken && !gen.repairing) list.push({ pos: GEN, r: 1.9, label: gen.prog > 0 ? `ซ่อมเครื่องปั่นไฟต่อ (${Math.round(gen.prog * 100)}%)` : 'ซ่อมเครื่องปั่นไฟ', act: startRepair });
-  waterInteractions(list); potInteractions(list); fuelInteractions(list); holdInteractions(list);
+  waterInteractions(list); potInteractions(list); fuelInteractions(list); holdInteractions(list); belowDeckInteractions(list);
   if (gull.state === 'approach' || gull.state === 'landed') list.push({ pos: TUB, r: 2.6, label: 'ไล่นกนางนวล', act: shooGull });
   for (const h of holders) if (h.state === 'bite') list.push({ pos: h.def.pos, r: 2.0, label: `เก็บคันปัก${h.def.side}`, act: () => landHolder(h) });
   if (!measured()) list.push({ pos: new V3(2.55, 0, -9.95), r: 1.8, label: 'ค้างไว้เพื่อวัดค่าน้ำ', hold: 1.0, act: measureWater });
@@ -2047,19 +2052,19 @@ let curUse = null;
 function nearestUse() { let best = null, bd = 99; const L = P.zone === 'upper' ? 1 : P.zone === 'deck' ? 0 : P.zone === 'land' ? 2 : P.zone === 'hold' ? 3 : -1, IN = isIndoors(); for (const it of interactables()) { if ((it.lvl || 0) !== L || !!it.in !== IN) continue; const d = toLocalDist(it.pos); if (d < it.r && d < bd) { bd = d; best = it; } } return best; }
 function tryUse(press) { if (!inputOn()) return; const it = nearestUse(); if (!it) return; if (!it.hold && press) { it.act(); useHeld = false; } }
 function updateUse(dt) {
-  curUse = inputOn() && !gen.repairing ? nearestUse() : null;
+  curUse = inputOn() && !rep.repairing ? nearestUse() : null;
   const el = $('use'); el.hidden = !curUse || TOUCH;
   if (TOUCH) { const b = $('bUse'); b.hidden = !curUse; if (curUse) $('bUseLbl').textContent = curUse.label; }
   if (!curUse) { useT = 0; return; }
   $('useTxt').textContent = curUse.label; $('useBar').hidden = !curUse.hold;
   if (curUse.hold) { if (useHeld) { useT += dt; if (Math.random() < dt * 4) (curUse.tick || (() => sfx('tick')))(); } else useT = Math.max(0, useT - dt * 2); $('useFill').style.width = clamp(useT / curUse.hold * 100, 0, 100) + '%'; if (useT >= curUse.hold) { useT = 0; useHeld = false; curUse.act(); } }
 }
-function fixGen(byCrew) { gen.broken = false; gen.repairing = false; gen.prog = 0; gen.check = null; $('skill').hidden = true; gen.t = rand(320, 620); lampsOn = true; lampText(); sfx('click'); tone(60, 1.2, 0.2, 'sawtooth'); if (byCrew !== true) { toast('ซ่อมเครื่องปั่นไฟเรียบร้อย ไฟกลับมาแล้ว', 'good'); questEvent('gen'); netEmit('genFix', {}); } }
+function fixGen(byCrew) { gen.fixedAt = T; gen.broken = false; gen.repairing = false; gen.prog = 0; gen.check = null; if (rep === gen) $('skill').hidden = true; gen.t = rand(320, 620); lampsOn = true; lampText(); sfx('click'); tone(60, 1.2, 0.2, 'sawtooth'); if (byCrew !== true) { toast('ซ่อมเครื่องปั่นไฟเรียบร้อย ไฟกลับมาแล้ว', 'good'); questEvent('gen'); netEmit('genFix', {}); } }
 // mirror the generator breaking/getting fixed onto a peer's own gen state (not just a toast), so "ไฟดับ"/"ไฟมา"
 // actually matches on both screens. Guarded so the state only ever flips once per real change - applying it a
 // second time (e.g. a duplicate/late event) is a no-op, same pattern as islandSync.
 function remoteGenBreak() { if (gen.broken) return; gen.broken = true; gen.prog = 0; lampText(); }
-function remoteGenFix() { if (!gen.broken) return; gen.broken = false; gen.repairing = false; gen.prog = 0; gen.check = null; $('skill').hidden = true; gen.t = rand(320, 620); lampsOn = true; lampText(); }
+function remoteGenFix() { if (!gen.broken) return; gen.fixedAt = T; gen.broken = false; gen.repairing = false; gen.prog = 0; gen.check = null; if (rep === gen) $('skill').hidden = true; gen.t = rand(320, 620); lampsOn = true; lampText(); }
 function updateGen(dt) {
   if (!started || !lampsOn || night < 0.5 || gen.broken || S.fuel <= 0 || ISL.on) return;
   gen.t -= dt * (hasCurse('gen') ? 3 : 1) * (DT.on ? 1.5 : 1); if (gen.t <= 0) { gen.broken = true; gen.prog = 0; lampText(); sfx('sputter'); toast('ไฟดับ! เครื่องปั่นไฟที่กราบซ้ายเสีย', 'bad'); netEmit('gen', {}); setTimeout(() => { if (gen.broken) crewSay('ไปซ่อมเครื่องปั่นไฟหน่อย กด E แล้วกดตอนเข็มเข้าโซนนะ'); }, 2500); }
@@ -2298,6 +2303,7 @@ function awardCatch(sp, kg, obj, fromHolder) {
   if (!fromHolder) tutAdvance('land');
   const j = S.journal[sp.id] || { n: 0, max: 0 }; const firstTime = j.n === 0; j.n++; j.max = Math.max(j.max, kg); S.journal[sp.id] = j;
   if (sp.id === 'sandal') { toast('ได้รองเท้าแตะมาข้างหนึ่ง… โยนทิ้งไป', ''); scene.remove(obj); save(); return; }
+  if (CONTEST.on && !sp.strange) CONTEST.kg += kg;
   if (sp.strange) {
     if (Math.random() < (sp.curse || 0)) setTimeout(() => addCurse(`${sp.name}ติดขึ้นมากับเบ็ด`), 1800);
     if ((sp.id === 'alien' || sp.id === 'doll') && !DT.pageFound && S.story.pages < 5) { DT.pageFound = true; setTimeout(() => findPage(`พบกระดาษห่อถุงพลาสติก ติดมากับ${sp.name}`), 2600); }
@@ -2333,7 +2339,7 @@ function updateRod(dt) {
 // =============== night end / travel ===============
 function sellValue(it, port) { const sp = SP[it.id]; if (sp.strange) return 0; return it.kg * sp.price * NIGHT.market[sp.id] * (0.4 + 0.6 * it.f) * (port ? 1 : 0.85); }
 function sellAll(port) { let v = 0; S.tub = S.tub.filter((it) => { if (SP[it.id].strange) return true; v += sellValue(it, port); return false; }); v = Math.round(v); S.money += v; rebuildTub(); save(); return v; }
-function updateFreshness(dm) { const k = (NIGHT.ice ? 0.0003 : 0.0011) * (hasCurse('rot') ? 3 : 1); for (const it of S.tub) it.f = Math.max(0.3, it.f - k * dm); for (const it of S.crewBox) it.f = Math.max(0.3, it.f - 0.0005 * dm); }
+function updateFreshness(dm) { const k = (NIGHT.ice ? 0.0003 : 0.0011) * (hasCurse('rot') ? 3 : 1); for (const it of S.tub) it.f = Math.max(0.3, it.f - k * dm); for (const it of S.crewBox) it.f = Math.max(0.3, it.f - 0.0005 * dm); for (const it of S.cold) it.f = Math.max(0.3, it.f - 0.00012 * dm); }
 function endNight() {
   nightOver = true; primaryHeld = false; if (document.pointerLockElement) document.exitPointerLock();
   if (kitchenOpen) { kitchenOpen = false; $('kitchen').hidden = true; K.view = 'list'; K.item = null; K.done = false; }
@@ -2353,6 +2359,7 @@ function startNextNight() {
 }
 function travel(idx, who) {
   if (traveling || idx === S.spot) return;
+  if (!who && eng.broken) { toast('เครื่องยนต์เรือเสียอยู่ ต้องลงไปซ่อมที่ห้องเครื่องก่อนถึงจะออกเรือได้', 'bad'); return; }
   if (S.pots.length) { const n = autoCollectPots(); toast(`พี่ชัยกู้ลอบปูก่อนออกเรือ ได้ปู ${n} ตัวใส่กล่องพี่ชัย`, 'say'); }
   traveling = true; primaryHeld = false; st = 'idle'; fish = null; landing = null;
   $('fadeTxt').textContent = `กำลังเดินเรือไป${SPOTS[idx].name}…`; $('fade').classList.add('on'); sfx('engine');
@@ -2528,6 +2535,8 @@ function renderMenu() {
 }
 function afterUpgrade(k) {
   if (k === 'pots') { rebuildPotStack(); toast(`มีลอบปู ${POT_CAP[S.up.pots]} ใบแล้ว`, 'good'); }
+  if (k === 'cat') { catG.visible = true; toast('เจ้าส้มมาอยู่บนเรือแล้ว นอนอยู่บนกองอวนใต้ท้องเรือ', 'good'); }
+  if (k === 'pump') toast('ติดตั้งปั๊มน้ำท้องเรือแล้ว จะช่วยสูบน้ำออกเองตอนมีไฟ', 'good');
   if (k === 'holder') { buildHolders(); toast('ติดตั้งที่ปักคันแล้ว ที่' + HOLDER_DEF[S.up.holder - 1].side, 'good'); }
   if (k === 'sonar') { $('sonarBox').hidden = false; document.body.classList.add('hasSonar'); }
   if (k === 'tub') toast(`ถังจุได้ ${TUB_CAP[S.up.tub]} ตัวแล้ว`, 'good');
@@ -2724,7 +2733,7 @@ function syncRemoteSeats() {
 }
 const num = (v, a, b, d) => (typeof v === 'number' && isFinite(v) ? clamp(v, a, b) : d);
 function onBoatPeers(all, myUid) {
-  let maxGm = null, minFl = null, peerGenBroken = false;
+  let maxGm = null, minFl = null, peerGenBroken = false, peerEngBroken = false, maxFd = 0;
   for (const [uid, pr] of Object.entries(all)) {
     if (uid === myUid || typeof pr.x !== 'number') continue;
     const r = NET.remotes.get(uid) || addRemote(uid, pr);
@@ -2743,10 +2752,16 @@ function onBoatPeers(all, myUid) {
     if (typeof pr.gm === 'number') maxGm = Math.max(maxGm ?? 0, num(pr.gm, 0, 2000, 0));
     if (typeof pr.fl === 'number') minFl = Math.min(minFl ?? 100, num(pr.fl, 0, 100, 100));
     if (pr.gb) peerGenBroken = true;
+    if (pr.eb) peerEngBroken = true;
+    if (typeof pr.fd === 'number') maxFd = Math.max(maxFd, num(pr.fd, 0, 1, 0));
+    r.ck = typeof pr.ck === 'number' ? num(pr.ck, 0, 999, 0) : (CONTEST.on ? r.ck || 0 : 0);
   }
   syncClock(maxGm);
   syncFuel(minFl);
-  if (peerGenBroken) remoteGenBreak();
+  // a peer's status can still say 'broken' for a moment after a fix (theirs or ours) - don't let that re-break it
+  if (peerGenBroken && T - (gen.fixedAt ?? -99) > 4) remoteGenBreak();
+  if (peerEngBroken && T - (eng.fixedAt ?? -99) > 4) breakEngine(false);
+  if (maxFd > FLOOD.lvl + 0.05) FLOOD.lvl += (maxFd - FLOOD.lvl) * 0.3; // same boat: the bilge never looks drier to you than to a friend
   if (!NET.islSynced) { NET.islSynced = true; if (!ISL.on) { for (const r of NET.remotes.values()) if (r.isl) { islandSync(true); break; } } }
   syncRemoteSeats(); renderPlayers();
 }
@@ -2775,6 +2790,10 @@ function onNetEvent(m) {
   if (m.type === 'catch') { const d = m.data || {}; const sp = SP[d.sp]; const kg = num(d.kg, 0, 10, 0); if (!sp) return; toast(`${sp.id === 'sandal' ? 'ได้รองเท้าแตะ' : 'ได้' + sp.name} ${kg.toFixed(2)} กก.`, 'say', m.name); }
   else if (m.type === 'chat') { const i = m.data && m.data.i; if (!Number.isInteger(i) || i < 0 || i >= EMOTES.length) return; toast(EMOTES[i], 'say', m.name); const r = NET.remotes.get(m.by); if (r) { r.bubble = EMOTES[i]; r.bubbleT = 4; r.labelTex(); } }
   else if (m.type === 'move') { const i = m.data && m.data.spot; if (!Number.isInteger(i) || i < 0 || i >= SPOTS.length) return; travel(i, m.name); }
+  else if (m.type === 'eng') { if (!eng.broken) { breakEngine(false); toast('เครื่องยนต์เรือดับ! ต้องลงไปซ่อมที่ห้องเครื่อง', 'bad', m.name); } }
+  else if (m.type === 'engFix') { if (eng.broken) { fixEngine(true); toast('ซ่อมเครื่องยนต์เรือเรียบร้อยแล้ว', 'good', m.name); } }
+  else if (m.type === 'pump') { const a = num(m.data && m.data.a, 0, 0.3, 0); FLOOD.lvl = Math.max(0, FLOOD.lvl - a); }
+  else if (m.type === 'contest') { startContest(false, m.name); }
   else if (m.type === 'gen') { remoteGenBreak(); toast('ไฟดับ! เครื่องปั่นไฟเสีย', 'bad', m.name); }
   else if (m.type === 'genFix') { remoteGenFix(); toast('ซ่อมเครื่องปั่นไฟเรียบร้อยแล้ว ไฟกลับมาแล้ว', 'good', m.name); }
   else if (m.type === 'fuel') { const amt = num(m.data && m.data.amt, 1, 100, 0); if (amt > 0) { S.fuel = Math.min(100, S.fuel + amt); fuelWarned = false; save(); lampText(); toast(`${m.name} เติมน้ำมันเครื่องปั่นไฟแล้ว ตอนนี้ ${Math.ceil(S.fuel)}%`, 'good'); } }
@@ -2844,7 +2863,7 @@ function updateNet(dt) {
     // friend sees it land on the table the moment cooking finishes - not only once we actually sit down to eat it
     const dishOf = (t) => (t && t.owner === 'local') ? { k: t.k, id: t.id, kg: +t.kg.toFixed(2), q: +t.q.toFixed(2), f: +(t.f || 1).toFixed(2) } : null;
     const potsOut = S.pots.map((q) => ({ wx: +q.wx.toFixed(2), wz: +q.wz.toFixed(2), t: Math.round(q.t), bait: !!q.bait }));
-    update(NET.myRef, { x: +P.x.toFixed(2), z: +P.z.toFixed(2), y: +P.y.toFixed(2), yaw: +P.yaw.toFixed(3), s: st, lx: +lure.x.toFixed(2), lz: +lure.z.toFixed(2), ld: +lure.depth.toFixed(1), c: NIGHT.stats.count, gm: Math.round(gameMin), t: Date.now(), seat: sIdx, p0: dishOf(TABLE[0]), p1: dishOf(TABLE[1]), cr: P.carry || null, isl: ISL.on, pt: potsOut, fl: +S.fuel.toFixed(1), gb: gen.broken }).catch(() => {});
+    update(NET.myRef, { x: +P.x.toFixed(2), z: +P.z.toFixed(2), y: +P.y.toFixed(2), yaw: +P.yaw.toFixed(3), s: st, lx: +lure.x.toFixed(2), lz: +lure.z.toFixed(2), ld: +lure.depth.toFixed(1), c: NIGHT.stats.count, gm: Math.round(gameMin), t: Date.now(), seat: sIdx, p0: dishOf(TABLE[0]), p1: dishOf(TABLE[1]), cr: P.carry || null, isl: ISL.on, pt: potsOut, fl: +S.fuel.toFixed(1), gb: gen.broken, eb: eng.broken, fd: +FLOOD.lvl.toFixed(2), ck: CONTEST.on ? +CONTEST.kg.toFixed(2) : null }).catch(() => {});
   }
   for (const r of NET.remotes.values()) {
     // while a peer's island state doesn't match ours (briefly, mid-sync, or if netcode drops a packet), their
@@ -3268,7 +3287,7 @@ function crewAI(dt) {
   if (gull.state === 'landed' && gull.t > 2.5 && toLocalDist(TUB) > 4 && !CREW.shooed) { CREW.shooed = true; CREW.waveT = 2; crewSay('ชู่ว! ไปๆ นกบ้า'); setTimeout(() => { if (Math.random() < 0.7) shooGull(true); CREW.shooed = false; }, 1500); CREW.cool = 3; return; }
   if (!measured() && night > 0.35 && !CREW.probeDone) { CREW.probeDone = true; crewSay('น้องยังไม่ได้วัดค่าน้ำเลย เดี๋ยวพี่วัดให้'); crewGo('probe'); return; }
   if (CREW.fishing && !CREW.holding && !DT.on) { CREW.moveT -= dt; if (CREW.moveT <= 0) { let j = CREW.spot; while (j === CREW.spot) j = Math.floor(Math.random() * CREW_SPOTS.length); crewSay(pickOne([`ตรงนี้เงียบไปหน่อย ย้ายไปลอง${CREW_SPOTS[j].name}ดีกว่า`, `หมึกคงย้ายฝูงแล้ว พี่ไปตก${CREW_SPOTS[j].name}นะ`, `ขอไปยืดเส้นยืดสายที่${CREW_SPOTS[j].name}หน่อย`]), 4); crewMove(j); return; } }
-  if (CREW.fishing && !DT.on && lampsLive() && night > 0.4) { CREW.catchT -= dt * (0.6 + 0.6 * school.dens); if (CREW.catchT <= 0) { CREW.catchT = rand(55, 110); crewCatch(); } }
+  if (CREW.fishing && !DT.on && lampsLive() && night > 0.4) { CREW.catchT -= dt * (0.6 + 0.6 * school.dens) * (CONTEST.on ? 2.2 : 1); if (CREW.catchT <= 0) { CREW.catchT = rand(55, 110); crewCatch(); } }
 }
 
 // chat
@@ -3280,6 +3299,7 @@ function renderChatHelp() {
   const box = $('chatHelp'); box.textContent = '';
   const act = (label, fn) => box.appendChild(btn(label, () => { fn(); renderChatHelp(); }));
   act(CREW.watch ? 'ช่วยดูคันปัก: เปิดอยู่' : 'ช่วยดูคันปักให้หน่อย', () => { CREW.watch = !CREW.watch; addMsg('npc', CREW.watch ? 'ได้เลย คันปักกินเมื่อไหร่พี่เก็บให้' : 'โอเค งั้นน้องเก็บเองนะ'); });
+  if (!CONTEST.on && !ISL.on) act('ท้าแข่งตกหมึก 3 นาที', () => { addMsg('npc', 'ได้เลย! เริ่มนับเวลาตั้งแต่ตอนนี้'); startContest(true); });
   if (CREW.fishing && !CREW.path.length && !CREW.holding) act('ย้ายไปตกที่อื่นหน่อย', () => { let j = CREW.spot; while (j === CREW.spot) j = Math.floor(Math.random() * CREW_SPOTS.length); addMsg('npc', `ได้เลย เดี๋ยวพี่ไปตก${CREW_SPOTS[j].name}`); crewMove(j); });
   if (!measured()) act('ช่วยวัดค่าน้ำให้หน่อย', () => { addMsg('npc', 'ได้ เดี๋ยวพี่เดินไปวัดให้'); CREW.probeDone = true; crewGo('probe'); });
   if (S.tub.length && S.freezer.length < FREEZE_CAP[S.up.freezer]) act('ช่วยย้ายหมึกเข้าตู้แช่', () => { addMsg('npc', 'จัดให้ ย้ายเข้าตู้แช่เลยนะ'); crewGo('tub'); });
@@ -3420,45 +3440,45 @@ function updateVisuals(dt) {
 // =============== generator repair skill check ===============
 const skillCv = $('skillCv'), skx = skillCv.getContext('2d');
 let judgeT = 0;
-function startRepair() { if (!gen.broken) return; audioInit(); gen.repairing = true; gen.check = null; gen.warn = 0; gen.next = rand(0.8, 1.8); $('skill').hidden = false; $('skillJudge').textContent = ''; }
-function stopRepair(msg) { if (!gen.repairing) return; gen.repairing = false; gen.check = null; $('skill').hidden = true; if (msg) toast(msg); }
+function startRepair(t = gen) { if (!t.broken) return; rep = t; $('skillLbl').textContent = t.name + ' '; audioInit(); rep.repairing = true; rep.check = null; rep.warn = 0; rep.next = rand(0.8, 1.8); $('skill').hidden = false; $('skillJudge').textContent = ''; }
+function stopRepair(msg) { if (!rep.repairing) return; rep.repairing = false; rep.check = null; $('skill').hidden = true; if (msg) toast(msg); }
 function skillPress() {
-  const c = gen.check; if (!c) return;
-  const a = c.t / c.dur * 360; gen.check = null; gen.next = rand(1.2, 2.8);
-  if (a >= c.z0 && a <= c.z0 + c.gw) { gen.prog = Math.min(1, gen.prog + 0.06); sfx('great'); judge2('เยี่ยม! +6%', 'great'); }
+  const c = rep.check; if (!c) return;
+  const a = c.t / c.dur * 360; rep.check = null; rep.next = rand(1.2, 2.8);
+  if (a >= c.z0 && a <= c.z0 + c.gw) { rep.prog = Math.min(1, rep.prog + 0.06); sfx('great'); judge2('เยี่ยม! +6%', 'great'); }
   else if (a >= c.z0 && a <= c.z0 + c.w) { sfx('good'); judge2('ดี', 'good'); }
   else skillFail();
 }
 function judge2(t, cls) { const j = $('skillJudge'); j.textContent = t; j.className = cls; judgeT = 1.1; }
 function skillFail() {
-  gen.check = null; gen.next = rand(1.5, 3); gen.prog = Math.max(0, gen.prog - 0.1); sfx('boom'); P.shake = 0.45; judge2('พลาด! เครื่องระเบิด −10%', 'fail');
-  sparkBurst(boat.localToWorld(tmp3.set(GEN.x + 0.1, 2.75, GEN.z))); crewReact('genfail');
+  rep.check = null; rep.next = rand(1.5, 3); rep.prog = Math.max(0, rep.prog - 0.1); sfx('boom'); P.shake = 0.45; judge2('พลาด! เครื่องระเบิด −10%', 'fail');
+  sparkBurst(boat.localToWorld(tmp3.copy(rep.spark))); crewReact('genfail');
 }
 function updateRepair(dt) {
   if (judgeT > 0) { judgeT -= dt; if (judgeT <= 0) $('skillJudge').textContent = ''; }
-  if (!gen.repairing) return;
-  if (!gen.broken) { stopRepair(); return; }
-  if (P.moving > 0.3 || toLocalDist(GEN) > 2.3 || !inputOn()) { stopRepair(inputOn() ? 'หยุดซ่อมชั่วคราว ความคืบหน้ายังอยู่' : null); return; }
+  if (!rep.repairing) return;
+  if (!rep.broken) { stopRepair(); return; }
+  if (P.moving > 0.3 || toLocalDist(rep.pos) > 2.3 || P.zone !== rep.zone || !inputOn()) { stopRepair(inputOn() ? 'หยุดซ่อมชั่วคราว ความคืบหน้ายังอยู่' : null); return; }
   const easy = EASY();
-  if (gen.check) {
-    const c = gen.check; c.t += dt;
+  if (rep.check) {
+    const c = rep.check; c.t += dt;
     if (c.t / c.dur * 360 > c.z0 + c.w + 4) skillFail();
   } else {
-    gen.prog += dt / (easy ? 8 : 11);
+    rep.prog += dt / (easy ? 8 : 11);
     if (Math.random() < dt * 5) burst({ freq: rand(600, 1500), q: 4, dur: 0.05, vol: 0.07 });
-    gen.next -= dt;
-    if (gen.next <= 0 && gen.warn <= 0) { gen.warn = 0.55; sfx('warn'); }
-    if (gen.warn > 0) { gen.warn -= dt; if (gen.warn <= 0) { const w = easy ? 58 : 40; gen.check = { t: 0, dur: easy ? 1.45 : 1.05, z0: rand(115, 290), w, gw: easy ? 15 : 10 }; } }
+    rep.next -= dt;
+    if (rep.next <= 0 && rep.warn <= 0) { rep.warn = 0.55; sfx('warn'); }
+    if (rep.warn > 0) { rep.warn -= dt; if (rep.warn <= 0) { const w = easy ? 58 : 40; rep.check = { t: 0, dur: easy ? 1.45 : 1.05, z0: rand(115, 290), w, gw: easy ? 15 : 10 }; } }
   }
-  if (gen.prog >= 1) { stopRepair(); fixGen(); return; }
-  $('skillFill').style.width = (gen.prog * 100).toFixed(1) + '%'; $('skillPct').textContent = Math.round(gen.prog * 100) + '%';
+  if (rep.prog >= 1) { stopRepair(); rep.fix(); return; }
+  $('skillFill').style.width = (rep.prog * 100).toFixed(1) + '%'; $('skillPct').textContent = Math.round(rep.prog * 100) + '%';
   $('skillHint').textContent = TOUCH ? 'เข็มเข้าโซนขาวเมื่อไหร่ แตะปุ่มส้มเลย' : 'เข็มเข้าโซนขาวเมื่อไหร่ กด Space, คลิก หรือ E · ขยับตัวเพื่อหยุดซ่อม';
   const W2 = skillCv.width, cx = W2 / 2, R = W2 * 0.38, rad = (d) => (d - 90) * Math.PI / 180;
   skx.clearRect(0, 0, W2, W2);
   skx.lineWidth = 6; skx.strokeStyle = 'rgba(255,255,255,.35)'; skx.beginPath(); skx.arc(cx, cx, R, 0, 7); skx.stroke();
-  skx.strokeStyle = 'rgba(127,224,166,.9)'; skx.lineWidth = 8; skx.beginPath(); skx.arc(cx, cx, R + 18, rad(0), rad(gen.prog * 360)); skx.stroke();
-  const c = gen.check;
-  if (c || gen.warn > 0) {
+  skx.strokeStyle = 'rgba(127,224,166,.9)'; skx.lineWidth = 8; skx.beginPath(); skx.arc(cx, cx, R + 18, rad(0), rad(rep.prog * 360)); skx.stroke();
+  const c = rep.check;
+  if (c || rep.warn > 0) {
     if (c) {
       skx.lineWidth = 22; skx.strokeStyle = 'rgba(255,255,255,.92)'; skx.beginPath(); skx.arc(cx, cx, R, rad(c.z0), rad(c.z0 + c.w)); skx.stroke();
       skx.strokeStyle = '#ffb347'; skx.beginPath(); skx.arc(cx, cx, R, rad(c.z0), rad(c.z0 + c.gw)); skx.stroke();
@@ -3482,7 +3502,7 @@ function updateNeeds(dt) {
   N.food = Math.max(0, N.food - 0.065 * hard * tutK * dt);
   N.water = Math.max(0, N.water - 0.09 * hard * tutK * dt);
   let de = 0;
-  if (P.running) de -= 0.4; if (st === 'fight' && primaryHeld) de -= 0.3; if (gen.repairing) de -= 0.25;
+  if (P.running) de -= 0.4; if (st === 'fight' && primaryHeld) de -= 0.3; if (rep.repairing) de -= 0.25;
   if (!P.running && !(st === 'fight' && primaryHeld) && N.food > 15 && N.water > 15) de += 0.35;
   if (N.food <= 0) de -= 0.5; if (N.water <= 0) de -= 0.8;
   N.energy = clamp(N.energy + de * dt, 0, 100);
@@ -3507,7 +3527,7 @@ function openKitchen() {
 function closeKitchen() {
   if (K.view === 'pot') { confirmPot(); return; }
   if (K.view === 'boil' && K.boil && K.boil.done) { finishKitchen(S.dishes.length < DISH_CAP ? 'pack' : 'eat'); return; }
-  if (K.view === 'box' || K.view === 'shop') { kitchenOpen = false; $('kitchen').hidden = true; K.view = 'list'; requestLock(); return; }
+  if (K.view === 'box' || K.view === 'shop' || K.view === 'cold') { kitchenOpen = false; $('kitchen').hidden = true; K.view = 'list'; requestLock(); return; }
   if (K.view === 'boil') { boilStop(); }
   _kitchenReset();
   if (K.item) { K.src.push(K.item); rebuildTub(); rebuildCrate(); save(); }
@@ -3516,8 +3536,9 @@ function closeKitchen() {
 $('kClose').addEventListener('click', closeKitchen);
 function renderKitchen() {
   const body = $('kBody'); body.textContent = '';
-  $('kTitle').textContent = K.view === 'box' ? 'กล่องหมึกของพี่ชัย' : K.view === 'pot' ? 'ปูในลอบ' : K.view === 'shop' ? 'ร้านป้าแดง · ซีฟู้ดเกาะลอยใจ' : K.view === 'boil' ? 'ครัวบนเรือ · ต้มปู' : 'ครัวบนเรือ · ซาชิมิหมึก';
+  $('kTitle').textContent = K.view === 'cold' ? 'ห้องเย็นใต้ท้องเรือ' : K.view === 'box' ? 'กล่องหมึกของพี่ชัย' : K.view === 'pot' ? 'ปูในลอบ' : K.view === 'shop' ? 'ร้านป้าแดง · ซีฟู้ดเกาะลอยใจ' : K.view === 'boil' ? 'ครัวบนเรือ · ต้มปู' : 'ครัวบนเรือ · ซาชิมิหมึก';
   if (K.view === 'shop') { renderShop(body); return; }
+  if (K.view === 'cold') { renderCold(body); return; }
   if (K.view === 'boil') { renderBoil(body); return; }
   if (K.view === 'pot') { renderPotView(body); return; }
   if (K.view === 'box') {
@@ -3767,6 +3788,7 @@ function crewCatch() {
   if (S.crewBox.length >= CRATE_CAP) { if (Math.random() < 0.5) crewSay('กล่องพี่เต็มแล้ว ช่วยเอาไปขายหรือย้ายเข้าถังหน่อย'); return; }
   let sp = pickSpecies(14); if (sp.strange || sp.id === 'sandal' || sp.id === 'firefly') sp = SP.loligo;
   const kg = rollKg(sp, false), wp = boat.localToWorld(tmp2.copy(crewWater)); wp.y = waveH(wp.x, wp.z, T);
+  if (CONTEST.on) CONTEST.crewKg += kg;
   spawnSplash(wp, 0.6); if (toLocalDist(CREW) < 9) sfx('splash');
   const mesh = makeCatch(sp, kg, false); mesh.position.set(0, -0.3, -0.05); mesh.rotation.set(0, 0, 0); crew.userData.arms[1].el.add(mesh);
   CREW.holding = { id: sp.id, kg, mesh }; crew.userData.rod.rotation.x = 1.1;
@@ -4468,7 +4490,7 @@ let hudAcc = 0, sweep = 0, lastPrompt = '', lastAlerts = '';
 function promptFor() {
   const T1 = TOUCH;
   switch (st) {
-    case 'idle': if (gen.repairing) return ''; if (P.carry === 'pot') return 'เดินไปที่ขอบเรือ แล้วค้าง E เพื่อหย่อนลอบปู'; if (P.carry === 'fuel') return 'เอาแกลลอนไปเติมที่เครื่องปั่นไฟกราบซ้าย (ค้าง E)'; if (P.carry) return P.carry === 'sea' ? 'เอาน้ำทะเลไปเทใส่เครื่องกรองน้ำข้างเครื่องปั่นไฟ' : 'วางถังคืนที่กรอบสีเหลือง · หรือเดินไปที่ขอบเรือ แล้วค้าง E เพื่อหย่อนถังตักน้ำทะเล'; if (isIndoors()) return ''; return T1 ? 'กดปุ่มส้มค้างไว้ แล้วปล่อยเพื่อเหวี่ยง' : 'หันไปทางทะเล กดค้างแล้วปล่อยเพื่อเหวี่ยง';
+    case 'idle': if (rep.repairing) return ''; if (P.carry === 'pot') return 'เดินไปที่ขอบเรือ แล้วค้าง E เพื่อหย่อนลอบปู'; if (P.carry === 'fuel') return 'เอาแกลลอนไปเติมที่เครื่องปั่นไฟกราบซ้าย (ค้าง E)'; if (P.carry) return P.carry === 'sea' ? 'เอาน้ำทะเลไปเทใส่เครื่องกรองน้ำข้างเครื่องปั่นไฟ' : 'วางถังคืนที่กรอบสีเหลือง · หรือเดินไปที่ขอบเรือ แล้วค้าง E เพื่อหย่อนถังตักน้ำทะเล'; if (isIndoors()) return ''; return T1 ? 'กดปุ่มส้มค้างไว้ แล้วปล่อยเพื่อเหวี่ยง' : 'หันไปทางทะเล กดค้างแล้วปล่อยเพื่อเหวี่ยง';
     case 'charge': return 'ปล่อยเพื่อเหวี่ยง';
     case 'water': {
       if (holdT >= 0.22 && primaryHeld) return 'กำลังม้วนเก็บสาย… ปล่อยเพื่อหยุด';
@@ -4509,6 +4531,9 @@ function updateHUD(dt, timeStr) {
   pr.hidden = !txt || tut.on; pr.classList.toggle('alertp', st === 'bite' || (st === 'fight' && (pullWarn || pullLeft > 0 || tension > snapLim())));
   if (st === 'water') $('iFish').textContent = lure.depth < 2 ? 'ยังตื้นไป' : envF > 1 ? 'หมึกเยอะ' : envF > 0.5 ? 'มีหมึกบ้าง' : night < 0.4 ? 'ฟ้ายังสว่าง หมึกน้อย' : 'หมึกน้อย ลองเปลี่ยนความลึก';
   const al = []; if (DT.on) al.push(['red', DT.boss ? 'มันอยู่ใต้เรือ… เหวี่ยงเบ็ดสู้กับมัน' : 'คืนน้ำดำ']);
+  if (eng.broken) al.push(['red', 'เครื่องยนต์เรือดับ · ลงไปซ่อมที่ห้องเครื่องใต้ท้องเรือ']);
+  if (FLOOD.lvl > 0.25) al.push([FLOOD.lvl > 0.6 ? 'red' : '', `น้ำเข้าท้องเรือ ${Math.round(FLOOD.lvl * 100)}% · ลงไปโยกปั๊มสูบออก`]);
+  if (RAT.on) al.push(['red', 'หนูอยู่ในท้องเรือ! รีบลงไปไล่']);
   if (gen.broken) al.push(['red', 'ไฟดับ! ซ่อมเครื่องปั่นไฟกราบซ้าย']);
   else if (S.fuel <= 0) al.push(['red', 'น้ำมันหมด ไฟดับ! เอาแกลลอนไปเติมที่เครื่องปั่นไฟ']);
   else if (S.fuel < 12 && night > 0.3) al.push(['', `น้ำมันใกล้หมด ${Math.ceil(S.fuel)}%`]);
@@ -4518,7 +4543,7 @@ function updateHUD(dt, timeStr) {
   if (key !== lastAlerts) { lastAlerts = key; const box = $('alerts'); box.textContent = ''; for (const [c, t] of al) box.appendChild(el('div', 'alert ' + c, t)); }
   if (TOUCH) {
     const lbl = { idle: 'เหวี่ยง', charge: 'ปล่อย!', water: primaryHeld && holdT > 0.22 ? 'ม้วน…' : 'โยก', bite: 'กดค้าง!', fight: primaryHeld ? 'ม้วน…' : 'ค้างม้วน', flying: '…', landing: '…' }[st];
-    $('bCastLbl').textContent = gen.repairing ? 'กด!' : P.carry && st === 'idle' ? '—' : lbl; $('bCast').classList.toggle('hot', st === 'bite');
+    $('bCastLbl').textContent = rep.repairing ? 'กด!' : P.carry && st === 'idle' ? '—' : lbl; $('bCast').classList.toggle('hot', st === 'bite');
     $('bReel').hidden = st !== 'water';
   }
   if (NET.code) renderPlayers();
@@ -4560,6 +4585,184 @@ $('go').addEventListener('click', () => {
 });
 addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); if (composer) composer.setSize(innerWidth, innerHeight); });
 
+// =============== below-deck systems: boat engine, bilge flooding, cold room, rats, boat cat, fishing contest ===============
+if (!Array.isArray(S.cold)) S.cold = [];
+const COLD_CAP = 60;
+
+// ---- boat engine: breaks now and then; until it's repaired in the engine room the boat can't move fishing spots
+const eng = { broken: false, t: rand(420, 780), repairing: false, prog: 0, check: null, next: 2, warn: 0, name: 'ซ่อมเครื่องยนต์เรือ', pos: new V3(0.4, 0, -6.0), zone: 'hold', spark: new V3(0, HOLD.floor + 1.0, -6.6), fix: () => fixEngine() };
+function breakEngine(local) {
+  if (eng.broken) return; eng.broken = true; eng.prog = 0;
+  if (!local) return;
+  sfx('sputter'); toast('เครื่องยนต์เรือดับ! ลงไปซ่อมที่ห้องเครื่องใต้ท้องเรือ ไม่งั้นย้ายจุดตกไม่ได้', 'bad'); netEmit('eng', {});
+  setTimeout(() => crewSay('เครื่องยนต์ดับอีกแล้ว ลงบันไดฝาเหล็กกลางเรือ ไปซ่อมที่ห้องเครื่องหน่อยนะ'), 1800);
+}
+function fixEngine(remote) {
+  eng.fixedAt = T; eng.broken = false; eng.repairing = false; eng.prog = 0; eng.check = null; eng.t = rand(600, 1000);
+  if (rep === eng) $('skill').hidden = true;
+  if (remote) return;
+  sfx('click'); tone(55, 1.4, 0.22, 'sawtooth'); toast('ซ่อมเครื่องยนต์เรือเรียบร้อย ออกเรือได้แล้ว', 'good'); netEmit('engFix', {});
+}
+function updateEngine(dt) {
+  if (eng.broken && P.zone === 'hold' && Math.random() < dt * 5) { const s = new THREE.Sprite(smokeMat); s.position.set(rand(-0.2, 0.2), HOLD.floor + 1.35, -7.4 + rand(-0.4, 0.4)); s.scale.setScalar(0.3); s.userData.t = 0; boat.add(s); smokes.push(s); }
+  if (!started || ISL.on || traveling || nightOver || eng.broken) return;
+  eng.t -= dt * (1 + 1.5 * FLOOD.lvl) * (NIGHT.weather === 'storm' ? 1.6 : 1);
+  if (eng.t <= 0) breakEngine(true);
+}
+
+// ---- bilge flooding: rain and storms put water in the hold; it makes the boat roll harder and the engine fail sooner
+const FLOOD = { lvl: 0, warned: 0, lossT: 40 };
+const bilge = new THREE.Mesh(new THREE.PlaneGeometry(HOLD.xw * 2 - 0.12, HOLD.z1 - HOLD.z0 - 0.12), std(0x1d3a3a, 0.15, 0.1));
+bilge.rotation.x = -Math.PI / 2; bilge.position.set(0, HOLD.floor, (HOLD.z0 + HOLD.z1) / 2); bilge.visible = false; boat.add(bilge); // opaque: drawn before the hull plug
+{ // hand pump against the starboard wall
+  const body = std(0x2f5f8a, 0.5, 0.3);
+  box(0.35, 0.9, 0.4, body, 2.55, HOLD.floor + 0.45, -3.2); box(0.4, 0.06, 0.45, M.dark, 2.55, HOLD.floor + 0.92, -3.2);
+  cylBetween(new V3(2.55, HOLD.floor + 0.95, -3.2), new V3(2.2, HOLD.floor + 1.3, -3.2), 0.025, M.steel);
+  cylBetween(new V3(2.7, HOLD.floor + 0.3, -3.05), new V3(2.84, HOLD.floor + 1.6, -3.05), 0.04, M.rubber);
+  HOLD_OBS.push([2.3, 2.85, -3.45, -2.95]);
+}
+function updateFlood(dt) {
+  if (FLOOD.lvl > 0.02) { bilge.visible = true; bilge.position.y = HOLD.floor + 0.02 + FLOOD.lvl * 0.85 + Math.sin(T * 1.7) * 0.01; } else bilge.visible = false;
+  if (!started || ISL.on || nightOver) return;
+  const rate = WX.rain > 0.2 ? (NIGHT.weather === 'storm' ? 1 / 200 : 1 / 520) * WX.rain : 0;
+  FLOOD.lvl += rate * dt;
+  if (S.up.pump && powerOn()) FLOOD.lvl -= dt / 260;
+  FLOOD.lvl = clamp(FLOOD.lvl, 0, 1);
+  const stage = FLOOD.lvl > 0.85 ? 3 : FLOOD.lvl > 0.55 ? 2 : FLOOD.lvl > 0.3 ? 1 : 0;
+  if (stage > FLOOD.warned) {
+    FLOOD.warned = stage;
+    if (stage === 1) { toast('น้ำเริ่มเข้าท้องเรือแล้ว ลงไปโยกปั๊มสูบออกด้วย', 'bad'); crewSay('ฝนแบบนี้น้ำเข้าท้องเรือแน่ ลงไปสูบออกหน่อยนะ ปั๊มอยู่ข้างขวา'); }
+    else if (stage === 2) toast('น้ำในท้องเรือเยอะแล้ว เรือเริ่มโคลงแรง!', 'bad');
+    else toast('น้ำเกือบเต็มท้องเรือ! ของในถังจะเริ่มกระเด็นตกทะเล', 'bad');
+  } else if (stage < FLOOD.warned) FLOOD.warned = stage;
+  if (FLOOD.lvl >= 0.95) { FLOOD.lossT -= dt; if (FLOOD.lossT <= 0) { FLOOD.lossT = 40; const i = S.tub.findIndex((it) => !SP[it.id].strange); if (i >= 0) { const it = S.tub.splice(i, 1)[0]; rebuildTub(); save(); toast(`เรือโคลงแรง ${SP[it.id].name}ในถังกระเด็นตกทะเลไป 1 ตัว!`, 'bad'); } } } else FLOOD.lossT = 40;
+}
+function pumpBilge() {
+  if (FLOOD.lvl < 0.01) { toast('ยังไม่มีน้ำในท้องเรือ'); return; }
+  const a = 0.12; FLOOD.lvl = Math.max(0, FLOOD.lvl - a); S.needs.energy = Math.max(0, S.needs.energy - 1.5);
+  burst({ freq: 260, q: 1.5, dur: 0.25, vol: 0.12 }); sfx('pour'); netEmit('pump', { a });
+  if (FLOOD.lvl < 0.01) toast('สูบน้ำออกหมดแล้ว', 'good');
+}
+
+// ---- cold room: the ice bins below deck hold a lot and keep things fresh, but rats come for it unless there's a cat
+function openCold() { if (!inputOn()) return; kitchenOpen = true; primaryHeld = false; if (document.pointerLockElement) document.exitPointerLock(); K.view = 'cold'; $('kitchen').hidden = false; renderKitchen(); }
+function renderCold(body) {
+  $('kStep').textContent = `${S.cold.length} / ${COLD_CAP} ตัว`;
+  body.appendChild(el('div', 'hint', 'ถังน้ำแข็งใต้ท้องเรือ จุเยอะกว่าตู้แช่ หมึกกับปูเสียช้ามาก แต่ต้องเดินลงมาเอาเอง และระวังหนู ถ้ามีแมวประจำเรือ (ซื้อในเมนูอัปเกรด) หนูจะไม่กล้ามา'));
+  const cap = TUB_CAP[S.up.tub], row0 = el('div', 'krow');
+  row0.appendChild(btn(`ย้ายของในถังลงมาทั้งหมด (${S.tub.filter((it) => !SP[it.id].strange).length})`, () => { let n = 0; S.tub = S.tub.filter((it) => { if (SP[it.id].strange || S.cold.length >= COLD_CAP) return true; S.cold.push(it); n++; return false; }); rebuildTub(); save(); toast(n ? `ย้ายลงห้องเย็น ${n} ตัว` : 'ห้องเย็นเต็มแล้ว', n ? 'good' : 'bad'); renderKitchen(); }, 'btn pri', !S.tub.length || S.cold.length >= COLD_CAP));
+  const tot = Math.round(S.cold.reduce((a, b) => a + sellValue(b, false), 0));
+  row0.appendChild(btn(`ขายทั้งหมดให้เรือรับซื้อ ${baht(tot)}`, () => { S.money += tot; S.cold = []; save(); sfx('coin'); toast(`ขายของในห้องเย็นได้ ${baht(tot)}`, 'good'); renderKitchen(); }, 'btn', !S.cold.length));
+  body.appendChild(row0);
+  if (!S.cold.length) { body.appendChild(el('div', 'hint', 'ห้องเย็นยังว่างอยู่')); return; }
+  for (const it of S.cold.slice().sort((a, b) => b.kg - a.kg)) {
+    const row = el('div', 'kitem'), d = el('div');
+    d.appendChild(el('b', '', `${SP[it.id].name} ${it.kg.toFixed(2)} กก.`));
+    const pp = el('p', '', `ความสด ${Math.round(it.f * 100)}% · ขายได้ ${baht(sellValue(it, false))}`); const fb = el('span', 'fresh'), fi = el('i'); fi.style.width = Math.round(it.f * 100) + '%'; fb.appendChild(fi); pp.appendChild(fb); d.appendChild(pp); row.appendChild(d);
+    row.appendChild(btn('เอาขึ้นถัง', () => { const i = S.cold.indexOf(it); if (i >= 0) S.cold.splice(i, 1); S.tub.push(it); rebuildTub(); save(); renderKitchen(); }, 'btn', S.tub.length >= cap));
+    row.appendChild(btn('ขาย', () => { const v = Math.round(sellValue(it, false)); const i = S.cold.indexOf(it); if (i >= 0) S.cold.splice(i, 1); S.money += v; save(); sfx('coin'); renderKitchen(); }, 'btn', !sellValue(it, false)));
+    body.appendChild(row);
+  }
+}
+const RAT = { on: false, t: rand(220, 420), eatT: 0, ph: 0, catT: rand(400, 700) };
+const ratG = new THREE.Group(); ratG.visible = false; boat.add(ratG);
+{
+  const fur = std(0x5b544c, 0.9, 0), pink = std(0xd99a9a, 0.7, 0);
+  const b = new THREE.Mesh(new THREE.SphereGeometry(0.07, 12, 8), fur); b.scale.set(0.8, 0.7, 1.4); b.position.y = 0.05; ratG.add(b);
+  const h = new THREE.Mesh(new THREE.SphereGeometry(0.045, 10, 8), fur); h.scale.set(1, 0.9, 1.3); h.position.set(0, 0.06, -0.11); ratG.add(h);
+  for (const s of [-1, 1]) { const e = new THREE.Mesh(new THREE.SphereGeometry(0.02, 8, 6), pink); e.scale.set(1, 1, 0.4); e.position.set(s * 0.03, 0.1, -0.1); ratG.add(e); const ey = new THREE.Mesh(new THREE.SphereGeometry(0.008, 6, 4), eyeMat); ey.position.set(s * 0.022, 0.075, -0.155); ratG.add(ey); }
+  const tail = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.008, 0.2, 5), pink); tail.rotation.x = Math.PI / 2 - 0.25; tail.position.set(0, 0.04, 0.17); ratG.add(tail);
+}
+const catG = new THREE.Group(); catG.position.set(2.42, HOLD.floor + 0.66, -0.3); catG.rotation.y = -1.2; /* curled up at the foot of the lower bunk, stays dry when the hold floods */ catG.visible = !!S.up.cat; boat.add(catG);
+{
+  const orange = std(0xd9822b, 0.85, 0), cream = std(0xf3dcb4, 0.85, 0);
+  const b = new THREE.Mesh(new THREE.SphereGeometry(0.16, 16, 10), orange); b.scale.set(1.3, 0.6, 1); b.position.y = 0.08; catG.add(b);
+  const h = new THREE.Mesh(new THREE.SphereGeometry(0.09, 14, 10), orange); h.position.set(0.17, 0.12, 0.06); catG.add(h);
+  const mz = new THREE.Mesh(new THREE.SphereGeometry(0.04, 10, 8), cream); mz.position.set(0.24, 0.1, 0.08); catG.add(mz);
+  for (const s of [-1, 1]) { const ear = new THREE.Mesh(new THREE.ConeGeometry(0.03, 0.06, 6), orange); ear.position.set(0.17, 0.21, 0.06 + s * 0.05); catG.add(ear); }
+  const tail = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.025, 6, 16, Math.PI * 1.1), orange); tail.rotation.x = Math.PI / 2; tail.position.set(-0.02, 0.04, 0); catG.add(tail);
+  for (let i = 0; i < 3; i++) { const st2 = new THREE.Mesh(new THREE.TorusGeometry(0.14, 0.012, 4, 12, Math.PI), std(0xa85a1a, 0.85, 0)); st2.position.set(-0.08 + i * 0.07, 0.09, 0); st2.rotation.y = Math.PI / 2; catG.add(st2); }
+}
+let petT = 0;
+function petCat() { if (T < petT) { toast('เจ้าส้มหลับปุ๋ยไปแล้ว'); return; } petT = T + 60; tone(rand(700, 900), 0.35, 0.05, 'sine'); toast('เมี้ยว~ เจ้าส้มคลอเคลียมือ หายเหนื่อยไปนิดนึง', 'good'); S.needs.energy = Math.min(100, S.needs.energy + 4); }
+function chaseRat() { if (!RAT.on) return; RAT.on = false; ratG.visible = false; RAT.t = rand(300, 520); tone(2600, 0.08, 0.05, 'square'); toast('ไล่หนูหนีไปแล้ว', 'good'); }
+function updateRats(dt) {
+  if (RAT.on) { RAT.ph += dt; const z = -3.5 + Math.sin(RAT.ph * 1.3) * 1.6, x = -1.45 + Math.sin(RAT.ph * 2.9) * 0.08; const dz = Math.cos(RAT.ph * 1.3); ratG.position.set(x, Math.max(HOLD.floor + 0.005, bilge.visible ? bilge.position.y - 0.03 : -9), z); /* swims when the hold is flooded */ ratG.rotation.y = dz > 0 ? Math.PI : 0; }
+  catG.rotation.z = Math.sin(T * 1.2) * 0.015;
+  if (!started || ISL.on || traveling || nightOver) return;
+  if (S.up.cat) {
+    if (RAT.on) chaseRat();
+    if (S.cold.length) { RAT.catT -= dt; if (RAT.catT <= 0) { RAT.catT = rand(500, 900); toast('เจ้าส้มจับหนูในท้องเรือได้อีกตัว เก่งมาก!', 'good'); } }
+    return;
+  }
+  if (!RAT.on) {
+    if (!S.cold.length) return;
+    RAT.t -= dt; if (RAT.t > 0) return;
+    RAT.on = true; RAT.eatT = 50; ratG.visible = true; tone(2800, 0.06, 0.04, 'square');
+    toast('ได้ยินเสียงหนูกุกกักในท้องเรือ! รีบลงไปไล่ก่อนมันกินหมึกในห้องเย็น', 'bad');
+    return;
+  }
+  if (Math.random() < dt * 0.8) tone(rand(2600, 3400), 0.04, P.zone === 'hold' ? 0.04 : 0.012, 'square');
+  RAT.eatT -= dt;
+  if (RAT.eatT <= 0) {
+    let n = Math.min(S.cold.length, Math.random() < 0.5 ? 1 : 2);
+    for (let k = 0; k < n; k++) S.cold.splice(Math.floor(Math.random() * S.cold.length), 1);
+    save(); RAT.on = false; ratG.visible = false; RAT.t = rand(260, 480);
+    toast(`หนูแอบกินของในห้องเย็นไป ${n} ตัว แล้ววิ่งหนีไป ซื้อแมวมาเฝ้าดีมั้ย`, 'bad');
+  }
+}
+function belowDeckInteractions(list) {
+  if (eng.broken && !eng.repairing) list.push({ pos: eng.pos, r: 1.4, lvl: 3, in: true, label: eng.prog > 0 ? `ซ่อมเครื่องยนต์เรือต่อ (${Math.round(eng.prog * 100)}%)` : 'ซ่อมเครื่องยนต์เรือ', act: () => startRepair(eng) });
+  list.push({ pos: new V3(2.15, 0, -3.2), r: 1.1, lvl: 3, in: true, label: FLOOD.lvl > 0.01 ? `ค้างไว้: โยกปั๊มสูบน้ำออก (น้ำ ${Math.round(FLOOD.lvl * 100)}%)` : 'ปั๊มมือสูบน้ำท้องเรือ (ยังไม่มีน้ำ)', hold: FLOOD.lvl > 0.01 ? 0.9 : undefined, act: pumpBilge });
+  list.push({ pos: new V3(-1.5, 0, -3.5), r: 1.3, lvl: 3, in: true, label: `เปิดห้องเย็นใต้ท้องเรือ (${S.cold.length}/${COLD_CAP})`, act: openCold });
+  if (RAT.on) list.push({ pos: { x: ratG.position.x, z: ratG.position.z }, r: 1.8, lvl: 3, in: true, label: 'ไล่หนู!', act: chaseRat });
+  if (S.up.cat) list.push({ pos: new V3(2.0, 0, -0.35), r: 0.9, lvl: 3, in: true, label: 'ลูบหัวเจ้าส้ม', act: petCat });
+}
+
+// ---- fishing contest: challenge Chai (and everyone in the room joins) - most kg in ~3 minutes wins
+const CONTEST = { on: false, end: 0, kg: 0, crewKg: 0, showT: 0 };
+const CONTEST_MIN = 230; // game minutes, ~3 real minutes at TIME_RATE
+const contestBox = document.createElement('div'); contestBox.id = 'contest'; contestBox.hidden = true;
+contestBox.style.cssText = 'position:fixed;top:calc(10px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);min-width:220px;max-width:calc(100% - 32px);padding:8px 14px;border-radius:12px;background:rgba(10,18,26,.82);color:#fff;font:600 13px/1.5 Sarabun,sans-serif;z-index:6;pointer-events:none;text-align:left';
+document.body.appendChild(contestBox);
+function startContest(local, who) {
+  if (CONTEST.on || ISL.on || nightOver) return;
+  CONTEST.on = true; CONTEST.end = gameMin + CONTEST_MIN; CONTEST.kg = 0; CONTEST.crewKg = 0; CONTEST.showT = 0; contestBox.hidden = false;
+  for (const r of NET.remotes.values()) r.ck = 0;
+  sfx('bell'); toast(who ? `${who} เปิดแข่งตกหมึก! ใครได้น้ำหนักรวมเยอะสุดใน 3 นาทีชนะ` : 'เริ่มแข่งตกหมึก! ใครได้น้ำหนักรวมเยอะสุดใน 3 นาทีชนะ', 'good');
+  crewSay(pickOne(['มาเลย พี่ไม่ยอมแพ้เด็กหรอก', 'แข่งก็แข่ง ระวังพี่แซงนะ', 'ได้! แพ้ห้ามงอนนะ']), 4);
+  if (local) netEmit('contest', {});
+}
+function contestRows() {
+  const rows = [{ name: 'เรา', kg: CONTEST.kg, me: true }, { name: 'พี่ชัย', kg: CONTEST.crewKg }];
+  for (const r of NET.remotes.values()) rows.push({ name: r.name || 'เพื่อน', kg: r.ck || 0 });
+  return rows.sort((a, b) => b.kg - a.kg);
+}
+function renderContest(final) {
+  const left = Math.max(0, (CONTEST.end - gameMin) / TIME_RATE), mm = Math.floor(left / 60), ss = Math.floor(left % 60);
+  contestBox.textContent = '';
+  contestBox.appendChild(el('div', '', final ? 'ผลแข่งตกหมึก' : `แข่งตกหมึก · เหลือ ${mm}:${String(ss).padStart(2, '0')}`));
+  contestRows().forEach((r, i) => { const d = el('div', '', `${i + 1}. ${r.name} — ${r.kg.toFixed(2)} กก.`); if (r.me) d.style.color = '#ffd27a'; contestBox.appendChild(d); });
+}
+function updateContest(dt) {
+  if (!CONTEST.on) { if (CONTEST.showT > 0) { CONTEST.showT -= dt; if (CONTEST.showT <= 0) contestBox.hidden = true; } return; }
+  if (Math.random() < dt * 4) renderContest(false);
+  if (gameMin < CONTEST.end && !nightOver && !ISL.on) return;
+  CONTEST.on = false; CONTEST.showT = 10; renderContest(true);
+  const rows = contestRows(), win = rows[0];
+  if (win.kg <= 0) { toast('หมดเวลา ไม่มีใครตกได้เลย เสมอกัน 555'); return; }
+  if (win.me) { S.money += 300; save(); sfx('coin'); toast(`ชนะการแข่งขัน! ${win.kg.toFixed(2)} กก. ได้รางวัล ${baht(300)}`, 'good'); crewSay('ยอมใจเลย เก่งกว่าพี่แล้ว'); }
+  else if (win.name === 'พี่ชัย') { toast(`พี่ชัยชนะ ${win.kg.toFixed(2)} กก.`, ''); crewSay('ฮ่าๆ ประสบการณ์มันสอนกันไม่ได้นะน้อง'); }
+  else toast(`${win.name} ชนะการแข่งขัน ${win.kg.toFixed(2)} กก.`, '');
+}
+
+function resetBelowDeck() {
+  eng.broken = false; eng.repairing = false; eng.prog = 0; eng.check = null; eng.t = rand(420, 780);
+  FLOOD.lvl = 0; FLOOD.warned = 0; if (RAT.on) { RAT.on = false; ratG.visible = false; }
+  if (rep === eng) { rep = gen; $('skill').hidden = true; }
+}
+function updateBelowDeck(dt) { updateEngine(dt); updateFlood(dt); updateRats(dt); updateContest(dt); }
+
 // =============== boot & loop ===============
 setupNight(); resetSchool(); renderQuests(); buildHolders(); lampText();
 if (S.up.sonar) { $('sonarBox').hidden = false; document.body.classList.add('hasSonar'); }
@@ -4589,7 +4792,7 @@ function frame() {
   } else safe('idleLure', () => { lure.pos.copy(tipW); lure.pos.y -= 0.42; lureObj.position.copy(lure.pos); setLine(fishLine, tipW, lure.pos, 0); updateDark(dt); });
   safe('updateFx', () => updateFx(dt)); safe('updateRod', () => updateRod(dt)); safe('updateNet', () => updateNet(dt)); safe('updateBoss', () => updateBoss(dt));
   safe('updateCrew', () => updateCrew(dt)); safe('updateVisuals', () => updateVisuals(dt)); safe('updateRepair', () => updateRepair(dt)); safe('updateSparks', () => updateSparks(dt));
-  safe('updateNeeds', () => updateNeeds(dt)); safe('updateWater', () => updateWater(dt)); safe('updateEat', () => { updateEat(dt); updateBoil3D(dt); }); safe('updateCrate', () => { updateCrate(dt); updateStations(dt); updatePots(dt); updateFuel(dt); });
+  safe('updateNeeds', () => updateNeeds(dt)); safe('updateWater', () => updateWater(dt)); safe('updateEat', () => { updateEat(dt); updateBoil3D(dt); }); safe('updateCrate', () => { updateCrate(dt); updateStations(dt); updatePots(dt); updateFuel(dt); }); safe('updateBelowDeck', () => updateBelowDeck(dt));
   if (started) { safe('updateHUD', () => updateHUD(dt, ts)); safe('drawRadar', () => drawRadar(dt)); safe('drawSonar', () => drawSonar(dt)); }
   safe('render', () => { if (composer && !ERRS.has('composer')) { try { composer.render(); } catch (e) { ERRS.add('composer'); console.error(e); renderer.render(scene, camera); } } else renderer.render(scene, camera); });
 }
