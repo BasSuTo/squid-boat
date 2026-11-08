@@ -2133,7 +2133,7 @@ function updateHolders(dt) {
     if (h.state === 'idle') {
       h.g.rotation.x = 0.75; if (!started || traveling || ISL.on) continue;
       const r = biteRate(14, 10, false) * 0.35;
-      if (Math.random() < r * dt) { h.state = 'bite'; h.t = 20; h.ring = 0; toast(`คันปัก${h.def.side}กิน! รีบไปเก็บ`, 'good'); }
+      if (Math.random() < r * dt) { h.state = 'bite'; h.t = rand(180, 300); h.ring = 0; toast(`คันปัก${h.def.side}กิน! ไม่ต้องรีบมาก พี่ชัยช่วยเก็บให้ได้ถ้าช้าไป`, 'good'); }
     } else if (h.state === 'bite') {
       h.t -= dt; h.ring -= dt; h.g.rotation.x = 0.6 + Math.sin(T * 30) * 0.08;
       if (h.ring <= 0) { sfx('bell'); h.ring = 0.7; }
@@ -4540,7 +4540,7 @@ function updateHUD(dt, timeStr) {
   if (gen.broken) al.push(['red', 'ไฟดับ! ซ่อมเครื่องปั่นไฟกราบซ้าย']);
   else if (S.fuel <= 0) al.push(['red', 'น้ำมันหมด ไฟดับ! เอาแกลลอนไปเติมที่เครื่องปั่นไฟ']);
   else if (S.fuel < 12 && night > 0.3) al.push(['', `น้ำมันใกล้หมด ${Math.ceil(S.fuel)}%`]);
-  for (const h of holders) if (h.state === 'bite') al.push(['', `คันปัก${h.def.side}กิน! ${Math.ceil(h.t)} วิ`]);
+  for (const h of holders) if (h.state === 'bite') al.push(['', `คันปัก${h.def.side}กิน! ${h.t > 60 ? Math.ceil(h.t / 60) + ' นาที' : Math.ceil(h.t) + ' วิ'}`]);
   if (gull.state === 'approach' || gull.state === 'landed') al.push(['red', 'นกนางนวลจะขโมยหมึกในถัง']);
   const key = al.map((a) => a.join(':')).join('|');
   if (key !== lastAlerts) { lastAlerts = key; const box = $('alerts'); box.textContent = ''; for (const [c, t] of al) box.appendChild(el('div', 'alert ' + c, t)); }
