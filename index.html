@@ -379,6 +379,13 @@ body.touch #alerts{top:calc(56px + env(safe-area-inset-top,0px))}
 .spot .btn{margin-left:auto;flex:none}
 .emotes{display:flex;flex-wrap:wrap;gap:8px}
 .code{font:700 30px var(--display);letter-spacing:.2em}
+.icode{font:700 22px var(--display);letter-spacing:.18em;padding:2px 12px;border-radius:8px;background:rgba(0,0,0,.35);border:1px solid var(--line)}
+#inviteRow{display:flex;flex-direction:column;gap:6px}
+#invMsg{min-height:1.45em;color:var(--good)}
+#invMsg.bad{color:#ff9b7a}
+#invBanner{padding:7px 10px;border-radius:8px;background:rgba(80,200,140,.12);border:1px solid rgba(80,200,140,.3)}
+#players .ph{font-size:11px;color:var(--mute);margin-top:5px}
+#players .ph kbd{font-size:10px}
 @media (max-height:520px){.brief{gap:9px}.brief p{font-size:14px}.keys{font-size:13px;gap:4px 10px}.go{padding:10px 26px}}
 @media (prefers-reduced-motion:reduce){#prompt.alertp,#bCast.hot,.alert{animation:none}.toast,#card{animation:none}.mrow.playing .eq i{animation:none;height:70%}}
 </style>
@@ -405,7 +412,7 @@ body.touch #alerts{top:calc(56px + env(safe-area-inset-top,0px))}
     <div class="box" id="questBox"><h4>ภารกิจคืนนี้ <span id="qSpot">หน้าเกาะมันใน</span></h4><div id="qList"></div></div>
     <div class="box" id="waterBox"><h4>ค่าน้ำ <span id="wSpot">ยังไม่ได้วัด</span></h4><div id="wVals" class="wgrid"></div></div>
     <div class="box" id="sonarBox" hidden><h4>โซนาร์ <span id="sonarTxt">ฝูงหมึก ~ 12 ม.</span></h4><canvas id="sonar" width="460" height="236"></canvas></div>
-    <div class="box" id="players" hidden><h4>บนเรือ <span id="pCode"></span></h4><div id="pList"></div></div>
+    <div class="box" id="players" hidden><h4>บนเรือ <span id="pCode"></span></h4><div id="pList"></div><div class="ph"><kbd>J</kbd> คัดลอกลิงก์ชวนเพื่อน</div></div>
   </div>
 
   <div id="radarWrap"><div id="kn" class="num">0.3<span>kn</span></div><canvas id="radar" width="340" height="340"></canvas></div>
@@ -469,6 +476,7 @@ body.touch #alerts{top:calc(56px + env(safe-area-inset-top,0px))}
       <li><kbd>Tab</kbd><span>เมนู ตลาด อัปเกรด (<kbd>B</kbd> ปิด)</span></li>
       <li><kbd>L</kbd><span>ไฟล่อหมึก · <kbd>H</kbd> ไฟดาดฟ้า · <kbd>R</kbd> วิทยุ</span></li>
       <li><kbd>P</kbd><span>เครื่องเล่นเพลงชิวๆ ตกหมึก</span></li>
+      <li><kbd>J</kbd><span>ชวนเพื่อน (คัดลอกลิงก์เข้าเรือ)</span></li>
       <li><kbd>M</kbd><span>เสียง · <kbd>Esc</kbd> หยุดพัก</span></li>
     </ul>
   </div>
@@ -531,8 +539,14 @@ body.touch #alerts{top:calc(56px + env(safe-area-inset-top,0px))}
         <input id="sCode" maxlength="8" autocomplete="off" spellcheck="false" placeholder="รหัส">
         <button class="btn" type="button" id="sJoin">ขึ้นเรือ</button>
       </div>
+      <div id="invBanner" class="netState ok" role="status" hidden></div>
+      <div id="inviteRow" hidden>
+        <div class="hint">รหัสเรือของคุณ ส่งให้เพื่อนได้เลย เพื่อนกดลิงก์แล้วจะเข้าเรือให้อัตโนมัติ</div>
+        <div class="joinrow"><span class="icode" id="invCode"></span><button class="btn pri" type="button" id="invCopy">คัดลอกรหัส</button><button class="btn" type="button" id="invLink">คัดลอกลิงก์ชวน</button><button class="btn" type="button" id="invLeave">ออกจากเรือ</button></div>
+        <div class="hint" id="invMsg" role="status"></div>
+      </div>
       <div class="boats" id="boatsStart"></div>
-      <div class="hint">ล็อกอินด้วย Google ของคุณก่อน แล้วส่งลิงก์เว็บนี้กับรหัสเรือให้เพื่อน เพื่อนล็อกอินด้วย Google ของตัวเองแล้วใส่รหัสเข้ามาเล่นได้เลย ไม่ต้องมีบัญชี Claude</div>
+      <div class="hint">ล็อกอินด้วย Google ของคุณก่อน สร้างเรือ แล้วกด "คัดลอกลิงก์ชวน" ส่งให้เพื่อน เพื่อนกดลิงก์ ล็อกอินด้วย Google ของตัวเอง ก็เข้าเรือให้เองเลย (ใส่รหัสเองก็ได้) ไม่ต้องมีบัญชี Claude</div>
     </div>
     <div class="seg" role="group" aria-label="คุณภาพภาพ">
       <span>คุณภาพภาพ</span>
@@ -2982,6 +2996,7 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyQ') reelInNow();
   if (e.code === 'KeyM') setMuted(!A.muted);
   if (e.code === 'KeyP') openMusic();
+  if (e.code === 'KeyJ') inviteFriends();
   if (e.code === 'KeyZ') { const c = $('ctrl'); c.classList.toggle('min'); try { localStorage.setItem('squid-ctrl', c.classList.contains('min') ? '1' : '0'); } catch (er) {} }
 });
 window.addEventListener('keyup', (e) => { keys[e.code] = false; if (e.code === 'Space' || e.code === 'KeyF') primaryUp(); if (e.code === 'KeyE') useHeld = false; });
@@ -3566,6 +3581,58 @@ async function bindCrewBox(code) {
 }
 function unbindCrewBox() { if (crewBoxUnsub) { crewBoxUnsub(); crewBoxUnsub = null; } NET.crewBoxRef = null; }
 function netState(txt, ok) { for (const id of ['netState']) { const e = $(id); if (e) { e.textContent = txt; e.classList.toggle('ok', !!ok); } } }
+// ---- inviting friends: copy the boat code / an invite link, and join straight from a ?boat=CODE link ----
+let PENDING_BOAT = ''; // a boat code from an invite link, joined automatically as soon as we are signed in
+try {
+  const sp = new URLSearchParams(location.search), raw = String(sp.get('boat') || ''), c = /^[A-Za-z0-9]{4,8}$/.test(raw) ? raw.toLowerCase() : '';
+  if (validCode(c)) { PENDING_BOAT = c; try { sessionStorage.setItem('squid-boat-pending', c); } catch (e) {} }
+  else { try { const o = sessionStorage.getItem('squid-boat-pending') || ''; if (validCode(o)) PENDING_BOAT = o; } catch (e) {} }
+  if (sp.has('boat')) { sp.delete('boat'); const q = sp.toString(); try { history.replaceState(null, '', location.pathname + (q ? '?' + q : '') + location.hash); } catch (e) {} }
+} catch (e) {}
+function clearPending() { PENDING_BOAT = ''; try { sessionStorage.removeItem('squid-boat-pending'); } catch (e) {} renderInvite(); }
+function inviteUrl() {
+  try { const u = new URL(location.href); u.search = ''; u.hash = ''; u.searchParams.set('boat', NET.code); return u.toString(); }
+  catch (e) { return location.origin + location.pathname + '?boat=' + NET.code; }
+}
+function copyText(t, okMsg, failMsg, ev) {
+  const b = ev && ev.currentTarget && ev.currentTarget.tagName === 'BUTTON' ? ev.currentTarget : null;
+  const say = (m, good) => { // toasts live in the HUD, which is hidden on the start screen, so also show the result next to the buttons
+    toast(m, good ? 'good' : 'bad');
+    const im = $('invMsg'); if (im && !$('inviteRow').hidden) { im.textContent = m; im.classList.toggle('bad', !good); clearTimeout(say.t); say.t = setTimeout(() => { im.textContent = ''; }, 4500); }
+    if (good && b) { const o = b.dataset.o || b.textContent; b.dataset.o = o; b.textContent = 'คัดลอกแล้ว ✓'; clearTimeout(b._t); b._t = setTimeout(() => { b.textContent = o; }, 1600); }
+  };
+  const legacy = () => { try { const ta = document.createElement('textarea'); ta.value = t; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0'; document.body.appendChild(ta); ta.select(); const ok = document.execCommand('copy'); ta.remove(); return ok; } catch (e) { return false; } };
+  const done = () => say(okMsg, true), fail = () => say(failMsg, false);
+  try { if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(t).then(done, () => (legacy() ? done() : fail())); return; } } catch (e) {}
+  legacy() ? done() : fail();
+}
+function copyBoatCode(ev) {
+  if (!NET.code) { toast('ยังไม่ได้อยู่บนเรือ สร้างเรือก่อนนะ', 'bad'); return; }
+  const t = NET.code.toUpperCase();
+  copyText(t, 'คัดลอกรหัสเรือ ' + t + ' แล้ว', 'คัดลอกไม่ได้ จดรหัส ' + t + ' ไว้แทน', ev);
+}
+function copyInvite(ev) {
+  if (!NET.code) { toast('ยังไม่ได้อยู่บนเรือ สร้างเรือก่อนนะ', 'bad'); return; }
+  const t = NET.code.toUpperCase();
+  copyText(inviteUrl(), 'คัดลอกลิงก์ชวนเพื่อนแล้ว ส่งให้เพื่อนกดเข้าเรือ ' + t + ' ได้เลย', 'คัดลอกลิงก์ไม่ได้ บอกรหัส ' + t + ' ให้เพื่อนแทน', ev);
+}
+// J in game: copy the invite link, opening a boat first when we are not on one yet
+async function inviteFriends() {
+  if (!NET.fbUser) { toast('เข้าสู่ระบบด้วย Google ก่อน (กด Tab แล้วเลือกเล่นกับเพื่อน) แล้วค่อยชวนเพื่อน', 'bad'); return; }
+  if (!NET.code) { await createBoat(); if (!NET.code) return; }
+  copyInvite();
+}
+function renderInvite() {
+  const on = !!NET.code, row = $('inviteRow'); if (row) { row.hidden = !on; if (on) $('invCode').textContent = NET.code.toUpperCase(); }
+  const bn = $('invBanner');
+  if (bn) {
+    const t = PENDING_BOAT && !on ? (NET.fbUser ? 'กำลังขึ้นเรือ ' + PENDING_BOAT.toUpperCase() + ' ตามที่เพื่อนชวน…' : 'เพื่อนชวนขึ้นเรือ ' + PENDING_BOAT.toUpperCase() + ' · เข้าสู่ระบบด้วย Google แล้วจะขึ้นเรือให้เอง') : '';
+    bn.hidden = !t; bn.textContent = t;
+  }
+}
+$('invCopy').addEventListener('click', copyBoatCode);
+$('invLink').addEventListener('click', copyInvite);
+$('invLeave').addEventListener('click', () => leaveBoat(false));
 function netEmit(type, data) {
   if (!NET.eventsRef || !NET.fbUser) return;
   const r = push(NET.eventsRef);
@@ -3582,7 +3649,7 @@ function updateAuthUI() {
     const ph = $('userPhoto'); if (ph) { if (NET.fbUser.photoURL) { ph.src = NET.fbUser.photoURL; ph.style.display = ''; } else ph.style.display = 'none'; }
   }
   netState(signed ? 'เข้าสู่ระบบแล้ว พร้อมเล่นออนไลน์' : 'เข้าสู่ระบบด้วย Google เพื่อเล่นกับเพื่อน', signed);
-  renderBoats(); if (menuOpen) renderMenu();
+  renderBoats(); renderInvite(); if (menuOpen) renderMenu();
 }
 async function googleSignIn() {
   await fbReady;
@@ -3596,7 +3663,7 @@ async function googleSignIn() {
 async function googleSignOut() { await fbReady; await leaveBoat(true); try { await signOut(fbAuth); } catch (e) {} }
 async function netInit() {
   await fbReady;
-  onAuthStateChanged(fbAuth, (u) => { NET.fbUser = u; NET.ready = !!u; updateAuthUI(); });
+  onAuthStateChanged(fbAuth, (u) => { NET.fbUser = u; NET.ready = !!u; updateAuthUI(); if (u && PENDING_BOAT && !NET.code) { const c = PENDING_BOAT; joinBoat(c).then(() => { if (NET.code === c) toast('ขึ้นเรือ ' + c.toUpperCase() + ' ตามที่เพื่อนชวนแล้ว', 'good'); }); } });
   onValue(ref(fbDb, 'lobby'), (snap) => { LOBBY = snap.val() || {}; renderBoats(); }, () => {});
 }
 function openBoats() {
@@ -3617,7 +3684,8 @@ async function joinBoat(raw) {
   if (!NET.fbUser) { toast('เข้าสู่ระบบด้วย Google ก่อนนะครับ', 'bad'); return; }
   const code = String(raw || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 8);
   if (!validCode(code)) { toast('รหัสเรือต้องมี 4–8 ตัวอักษร a–z หรือ 0–9', 'bad'); return; }
-  if (NET.code === code) return;
+  if (NET.code === code) { clearPending(); return; }
+  clearPending();
   await leaveBoat(true);
   try {
     NET.code = code; NET.synced = false; NET.islSynced = false; NET.joinedAt = Date.now();
@@ -3640,8 +3708,8 @@ async function joinBoat(raw) {
     msReset(); try { NET.subs.push(onValue(ref(fbDb, '.info/serverTimeOffset'), (s) => { const v = +s.val(); if (isFinite(v)) MS.skew = v; })); } catch (e) {}
     netState(`อยู่บนเรือ ${code.toUpperCase()} · บอกรหัสนี้ให้เพื่อน`, true);
     toast(`ขึ้นเรือ ${code.toUpperCase()} แล้ว บอกรหัสนี้ให้เพื่อนเพื่อมาเล่นด้วยกัน`, 'good');
-    $('players').hidden = false; $('pCode').textContent = code.toUpperCase(); renderBoats(); renderPlayers(); if (menuOpen) renderMenu();
-  } catch (e) { NET.code = null; toast('ขึ้นเรือไม่ได้ ลองใหม่อีกครั้ง', 'bad'); }
+    $('players').hidden = false; $('pCode').textContent = code.toUpperCase(); renderBoats(); renderPlayers(); renderInvite(); if (menuOpen) renderMenu();
+  } catch (e) { NET.code = null; renderInvite(); toast('ขึ้นเรือไม่ได้ ลองใหม่อีกครั้ง', 'bad'); }
 }
 async function leaveBoat(silent) {
   if (!NET.code) return;
@@ -3652,7 +3720,7 @@ async function leaveBoat(silent) {
   try { if (NET.lobbyMeRef) await remove(NET.lobbyMeRef); } catch (e) {}
   NET.code = null; NET.playersRef = null; NET.eventsRef = null; NET.myRef = null; NET.lobbyMeRef = null;
   for (const r of NET.remotes.values()) removeRemote(r); NET.remotes.clear(); syncRemoteSeats();
-  $('players').hidden = true; if (!silent) { toast('ออกจากเรือออนไลน์แล้ว'); netState('เข้าสู่ระบบแล้ว พร้อมเล่นออนไลน์', true); } renderBoats(); if (menuOpen) renderMenu();
+  $('players').hidden = true; if (!silent) { toast('ออกจากเรือออนไลน์แล้ว'); netState('เข้าสู่ระบบแล้ว พร้อมเล่นออนไลน์', true); } renderBoats(); renderInvite(); if (menuOpen) renderMenu();
 }
 const CARRY_TAG = { bucket: '🪣 ถือถังน้ำ', sea: '🪣 ตักน้ำทะเล', pot: '🦀 ถือลอบปู', fuel: '⛽ ถือแกลลอนน้ำมัน' };
 // small hand-held props for OTHER players' avatars (third-person), separate from the camera-attached first-person
@@ -3823,9 +3891,9 @@ function renderOnlineTab(body) {
   const who = el('div', 'hint', `เข้าสู่ระบบเป็น ${NET.fbUser.displayName || NET.fbUser.email}`); body.appendChild(who);
   body.appendChild(btn('ออกจากระบบ', googleSignOut));
   if (NET.code) {
-    body.appendChild(el('div', 'hint', 'รหัสเรือของคุณ บอกให้เพื่อนใส่รหัสนี้ที่หน้าเริ่มเกมหรือแท็บนี้'));
+    body.appendChild(el('div', 'hint', 'ส่งลิงก์ชวนให้เพื่อน เพื่อนกดแล้วเข้าเรือให้อัตโนมัติ หรือบอกรหัสนี้ให้เพื่อนใส่เอง (กด J ระหว่างเล่นก็คัดลอกลิงก์ได้)'));
     const row = el('div', 'joinrow'); row.appendChild(el('span', 'code', NET.code.toUpperCase()));
-    row.appendChild(btn('คัดลอกรหัส', () => { const t = NET.code.toUpperCase(), no = () => toast('คัดลอกไม่ได้ จดรหัส ' + t + ' ไว้แทน'); try { navigator.clipboard.writeText(t).then(() => toast('คัดลอกรหัสแล้ว', 'good')).catch(no); } catch (er) { no(); } }));
+    row.appendChild(btn('คัดลอกรหัส', copyBoatCode)); row.appendChild(btn('คัดลอกลิงก์ชวน', copyInvite, 'btn pri'));
     row.appendChild(btn('ออกจากเรือ', () => leaveBoat(false))); body.appendChild(row);
     body.appendChild(el('h3', '', 'คนบนเรือ'));
     const pl = el('div', 'boats'); const me = el('div', 'boatItem'); me.appendChild(el('b', '', 'คุณ')); me.appendChild(el('span', 'hint', `คืนนี้ ${NIGHT.stats.count} ตัว`)); pl.appendChild(me);
@@ -3840,9 +3908,9 @@ function renderOnlineTab(body) {
     row.appendChild(btn('ขึ้นเรือ', () => joinBoat(inp.value))); body.appendChild(row);
   }
   body.appendChild(el('h3', '', 'เรือที่เปิดอยู่')); const bx = el('div', 'boats'); bx.id = 'boatsMenu'; body.appendChild(bx); renderBoats();
-  body.appendChild(el('div', 'hint', 'ส่งลิงก์เว็บนี้ให้เพื่อน เพื่อนล็อกอินด้วย Google ของตัวเองแล้วใส่รหัสเรือเข้ามาเล่นได้เลย ไม่ต้องมีบัญชี Claude'));
+  body.appendChild(el('div', 'hint', 'เพื่อนเข้าเรือกลางเกมได้เลย ไม่ต้องรอเริ่มใหม่ แค่กดลิงก์ชวน ล็อกอินด้วย Google ของตัวเอง ไม่ต้องมีบัญชี Claude'));
 }
-function createBoat() { const a = 'abcdefghjkmnpqrstuvwxyz23456789'; let c = ''; for (let i = 0; i < 5; i++) c += a[Math.floor(Math.random() * a.length)]; joinBoat(c); }
+function createBoat() { const a = 'abcdefghjkmnpqrstuvwxyz23456789'; let c = ''; for (let i = 0; i < 5; i++) c += a[Math.floor(Math.random() * a.length)]; return joinBoat(c); }
 $('sCreate').addEventListener('click', () => createBoat());
 $('sJoin').addEventListener('click', () => joinBoat($('sCode').value));
 $('sCode').addEventListener('keydown', (e) => { if (e.key === 'Enter') joinBoat($('sCode').value); });
