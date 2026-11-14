@@ -1119,10 +1119,10 @@ const deckSpot = new THREE.SpotLight(0xfff4e0, 0, 45, 0.85, 0.6, 1.6); deckSpot.
 const deckSpotT = new THREE.Object3D(); deckSpotT.position.set(0, 2, -5); boat.add(deckSpot, deckSpotT); deckSpot.target = deckSpotT;
 // deck props
 for (const [w, d, x, z] of [[2.2, 0.12, 0, -1.96], [2.2, 0.12, 0, -4.04], [0.12, 1.96, -1.04, -3], [0.12, 1.96, 1.04, -3]]) box(w, 0.34, d, M.steel, x, 2.17, z); // hold hatch coaming
-const hatchLid = new THREE.Group(); hatchLid.position.set(0, 2.34, -4.1); boat.add(hatchLid); box(1.9, 0.06, 1.9, M.dark, 0, 0, 0.95, hatchLid); for (const s of [-0.7, 0.7]) box(0.08, 0.04, 1.7, M.steel, s, 0.05, 0.95, hatchLid);
+const hatchLid = new THREE.Group(); hatchLid.position.set(0, 2.34, -4.1); boat.add(hatchLid); box(2.04, 0.06, 2.1, M.dark, 0, 0, 1.05, hatchLid); for (const s of [-0.7, 0.7]) box(0.08, 0.04, 1.9, M.steel, s, 0.05, 1.05, hatchLid); /* covers the whole 1.9 x 1.9 deck opening, resting on the coaming */
 /* ฝาปิดเริ่มต้นแบบปิดสนิท แล้วค่อยยกตั้งขึ้นเองตอนขึ้นลงบันได จากนั้นหุบกลับลงเองหลังขึ้นดาดฟ้าสักพัก */
 let hatchT = 0;
-function updateHatch(dt) { hatchT = (P.zone === 'hold' || P.climbing) ? 2.5 : hatchT - dt; const want = hatchT > 0 ? -Math.PI / 2 : 0; hatchLid.rotation.x += (want - hatchLid.rotation.x) * Math.min(1, dt * 5); }
+function updateHatch(dt) { hatchT = (P.zone === 'hold' || P.climbing) ? 2.5 : hatchT - dt; const want = hatchT > 0 ? -Math.PI / 2 : 0; hatchLid.rotation.x += (want - hatchLid.rotation.x) * Math.min(1, dt * 5); if (want === 0 && hatchLid.rotation.x > -0.004) hatchLid.rotation.x = 0; }
 { const mat = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 3.4), M.rubber); mat.rotation.x = -Math.PI / 2; mat.position.set(0, 2.012, -8.0); mat.userData.st = 1; boat.add(mat); }
 for (const [z, n] of [[-5.05, 3], [-5.65, 2]]) for (let i = 0; i < n; i++) box(0.56, 0.3, 0.44, M.blue, 2.62, 2.16 + i * 0.31, z).rotation.y = rand(-0.05, 0.05);
 const TUB = new V3(2.45, 2.0, -1.2);
@@ -1211,12 +1211,12 @@ const holdGroup = new THREE.Group(); holdGroup.visible = false; boat.add(holdGro
   { const sh = new THREE.Shape(), pts = []; for (let i = 0; i <= 48; i++) { const z = -11.9 + 23.6 * i / 48; pts.push([hullHalfW(z) * 0.94, z]); }
     sh.moveTo(pts[0][0], -pts[0][1]); for (const [x, z] of pts) sh.lineTo(x, -z); for (let i = pts.length - 1; i >= 0; i--) sh.lineTo(-pts[i][0], -pts[i][1]);
     const g = new THREE.ShapeGeometry(sh); g.rotateX(-Math.PI / 2);
-    const plug = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ colorWrite: false, side: THREE.DoubleSide })); plug.position.y = 1.0; plug.renderOrder = 1; /* above wave crests inside the hull, still below eye level in the hold (1.17) */ holdGroup.add(plug); }
+    const plug = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ colorWrite: false, side: THREE.DoubleSide })); plug.position.y = 1.0; plug.renderOrder = 1; /* above wave crests inside the hull, still below eye level in the hold (1.17) */ boat.add(plug); /* outside holdGroup: must keep the sea out even while the hold is hidden */ }
 })();
 // Point lights add shader work to every lit material, so the hold's 3 lights only exist while you're in it.
 // Changing the light count makes three.js recompile materials (a brief hitch), so it's flipped under the
 // ladder fade where nobody can see the stutter.
-function updateHoldLights() { const want = P.zone === 'hold'; holdGroup.visible = want || hatchT > 0.01; if (HOLD.lit === want) return; HOLD.lit = want; for (const L of HOLD.lights) L.visible = want; }
+function updateHoldLights() { const want = P.zone === 'hold'; holdGroup.visible = want || hatchT > 0.01 || hatchLid.rotation.x < 0; /* until the lid is fully shut you can still see in */ if (HOLD.lit === want) return; HOLD.lit = want; for (const L of HOLD.lights) L.visible = want; }
 function climbHold(down) {
   if (P.climbing || !inputOn()) return;
   if (P.carry) { toast('วางของในมือก่อนค่อยปีนบันได'); return; }
@@ -4833,44 +4833,116 @@ const ratG = new THREE.Group(); ratG.visible = false; holdGroup.add(ratG);
   for (const s of [-1, 1]) { const e = new THREE.Mesh(new THREE.SphereGeometry(0.02, 8, 6), pink); e.scale.set(1, 1, 0.4); e.position.set(s * 0.03, 0.1, -0.1); ratG.add(e); const ey = new THREE.Mesh(new THREE.SphereGeometry(0.008, 6, 4), eyeMat); ey.position.set(s * 0.022, 0.075, -0.155); ratG.add(ey); }
   const tail = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.008, 0.2, 5), pink); tail.rotation.x = Math.PI / 2 - 0.25; tail.position.set(0, 0.04, 0.17); ratG.add(tail);
 }
-const catG = new THREE.Group(); catG.position.set(2.42, HOLD.floor + 0.66, -0.3); catG.rotation.y = -1.2; /* curled up at the foot of the lower bunk, stays dry when the hold floods */ catG.visible = false; boat.add(catG);
+// เจ้าส้ม: a standing cat (faces -Z) with legs, tail and head on their own joints so it can walk, sit and loaf
+const catG = new THREE.Group(); catG.position.set(2.42, HOLD.floor + 0.66, -0.3); catG.visible = false; boat.add(catG);
+const CATR = {};
 {
-  const orange = std(0xd9822b, 0.85, 0), cream = std(0xf3dcb4, 0.85, 0);
-  const b = new THREE.Mesh(new THREE.SphereGeometry(0.16, 16, 10), orange); b.scale.set(1.3, 0.6, 1); b.position.y = 0.08; catG.add(b);
-  const h = new THREE.Mesh(new THREE.SphereGeometry(0.09, 14, 10), orange); h.position.set(0.17, 0.12, 0.06); catG.add(h);
-  const mz = new THREE.Mesh(new THREE.SphereGeometry(0.04, 10, 8), cream); mz.position.set(0.24, 0.1, 0.08); catG.add(mz);
-  for (const s of [-1, 1]) { const ear = new THREE.Mesh(new THREE.ConeGeometry(0.03, 0.06, 6), orange); ear.position.set(0.17, 0.21, 0.06 + s * 0.05); catG.add(ear); }
-  const tail = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.025, 6, 16, Math.PI * 1.1), orange); tail.rotation.x = Math.PI / 2; tail.position.set(-0.02, 0.04, 0); catG.add(tail);
-  for (let i = 0; i < 3; i++) { const st2 = new THREE.Mesh(new THREE.TorusGeometry(0.14, 0.012, 4, 12, Math.PI), std(0xa85a1a, 0.85, 0)); st2.position.set(-0.08 + i * 0.07, 0.09, 0); st2.rotation.y = Math.PI / 2; catG.add(st2); }
+  const orange = std(0xd9822b, 0.85, 0), cream = std(0xf3dcb4, 0.85, 0), stripe = std(0xa85a1a, 0.85, 0), pink = std(0xe39a9a, 0.7, 0);
+  const body = new THREE.Group(); catG.add(body); CATR.body = body;
+  const torso = new THREE.Mesh(new THREE.SphereGeometry(0.1, 16, 12), orange); torso.scale.set(0.85, 0.8, 2.0); torso.position.y = 0.2; body.add(torso);
+  const chest = new THREE.Mesh(new THREE.SphereGeometry(0.085, 14, 10), cream); chest.scale.set(0.9, 1, 0.8); chest.position.set(0, 0.19, -0.14); body.add(chest);
+  for (let i = 0; i < 3; i++) { const s2 = new THREE.Mesh(new THREE.TorusGeometry(0.083, 0.012, 4, 14, Math.PI), stripe); s2.rotation.y = Math.PI / 2; s2.scale.set(1, 1, 0.85); s2.position.set(0, 0.2, -0.03 + i * 0.07); body.add(s2); }
+  const head = new THREE.Group(); head.position.set(0, 0.31, -0.22); body.add(head); CATR.head = head;
+  const hd = new THREE.Mesh(new THREE.SphereGeometry(0.082, 16, 12), orange); hd.scale.set(1.08, 0.94, 0.95); head.add(hd);
+  const mz = new THREE.Mesh(new THREE.SphereGeometry(0.038, 10, 8), cream); mz.scale.set(1.3, 0.8, 0.8); mz.position.set(0, -0.028, -0.066); head.add(mz);
+  const nose = new THREE.Mesh(new THREE.SphereGeometry(0.009, 8, 6), pink); nose.position.set(0, -0.012, -0.096); head.add(nose);
+  const eyeM = std(0x8fbf3a, 0.2, 0), slit = std(0x0c0c0c, 0.3, 0);
+  for (const s of [-1, 1]) {
+    const ear = new THREE.Mesh(new THREE.ConeGeometry(0.032, 0.065, 4), orange); ear.position.set(s * 0.045, 0.072, 0.005); ear.rotation.set(-0.15, 0, -s * 0.28); head.add(ear);
+    const inn = new THREE.Mesh(new THREE.ConeGeometry(0.018, 0.04, 4), pink); inn.position.set(s * 0.045, 0.068, -0.006); inn.rotation.set(-0.15, 0, -s * 0.28); head.add(inn);
+    const e = new THREE.Mesh(new THREE.SphereGeometry(0.0145, 10, 8), eyeM); e.position.set(s * 0.034, 0.012, -0.072); head.add(e);
+    const p = new THREE.Mesh(new THREE.SphereGeometry(0.007, 6, 6), slit); p.scale.set(0.45, 1.5, 0.6); p.position.set(s * 0.034, 0.012, -0.0855); head.add(p);
+  }
+  CATR.legs = [];
+  for (const [x, z] of [[-0.05, -0.13], [0.05, -0.13], [-0.05, 0.13], [0.05, 0.13]]) {
+    const L = new THREE.Group(); L.position.set(x, 0.17, z); body.add(L);
+    const leg = new THREE.Mesh(new THREE.CapsuleGeometry(0.025, 0.11, 4, 8), orange); leg.position.y = -0.075; L.add(leg);
+    const paw = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 6), cream); paw.scale.set(1, 0.6, 1.3); paw.position.set(0, -0.155, -0.01); L.add(paw);
+    CATR.legs.push(L);
+  }
+  const tail = new THREE.Group(); tail.position.set(0, 0.24, 0.19); body.add(tail); CATR.tail = [];
+  let par = tail;
+  for (let i = 0; i < 4; i++) { const seg = new THREE.Group(); if (i) seg.position.y = 0.07; par.add(seg); const c = new THREE.Mesh(new THREE.CapsuleGeometry(0.019 - i * 0.002, 0.05, 3, 8), i === 3 ? stripe : orange); c.position.y = 0.035; seg.add(c); CATR.tail.push(seg); par = seg; }
+  catG.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  try { mergeRig(catG); } catch (e) {}
 }
 let petT = 0;
-function petCat() { if (T < petT) { toast('เจ้าส้มหลับปุ๋ยไปแล้ว'); return; } petT = T + 60; tone(rand(700, 900), 0.35, 0.05, 'sine'); toast('เมี้ยว~ เจ้าส้มคลอเคลียมือ หายเหนื่อยไปนิดนึง', 'good'); S.needs.energy = Math.min(100, S.needs.energy + 4); }
-// Cat roaming: wanders between its bunk in the hold and a couple of open-deck spots, walking through the ladder
-// coordinates so it visually climbs up/down like the player does, instead of sitting in one place forever.
-const CAT_HOLD_SPOT = new V3(2.42, HOLD.floor + 0.66, -0.3), CAT_DECK_SPOTS = [new V3(1.3, 2.08, -0.7), new V3(-1.0, 2.08, -1.3)];
-const LADDER_DECK = new V3(0, 0, -1.45);
-const CAT = { zone: 'hold', path: [], moveT: rand(200, 360) };
+function petCat() { if (T < petT) { toast('เจ้าส้มหลับปุ๋ยไปแล้ว'); return; } petT = T + 60; tone(rand(700, 900), 0.35, 0.05, 'sine'); toast('เมี้ยว~ เจ้าส้มคลอเคลียมือ หายเหนื่อยไปนิดนึง', 'good'); S.needs.energy = Math.min(100, S.needs.energy + 4); CAT.moveT = Math.max(CAT.moveT, 20); }
+// Roaming: wanders all over the main deck, pops into the cabin, and goes down the ladder to nap on its bunk.
+// Every leg of a trip is a straight line checked against the same obstacle boxes the player collides with.
+const CAT_HOLD_SPOT = new V3(2.42, HOLD.floor + 0.66, -0.3);
+const LADDER_DECK = new V3(0, 0, -1.45), CAT_DOOR_OUT = { x: 1.09, z: 3.3 }, CAT_DOOR_IN = { x: 1.09, z: 4.6 };
+const CAT_DY = 2.0, CAT_HY = HOLD.floor;
+const CAT = { zone: 'hold', path: [], moveT: rand(30, 80), ph: 0, pose: 0, onBunk: true };
+const catInCabin = (x, z) => z > 4.02 && Math.abs(x) < 2.2;
+const catCabinOk = (x, z) => inR(x, z, [-1.7, 1.7, 4.55, 9.1]) && !hitAny(x, z, CABIN_OBS, 0.25);
+function catSeg(a, b, ok) { const L = Math.hypot(b.x - a.x, b.z - a.z), n = Math.ceil(L / 0.15); for (let i = 1; i <= n; i++) { const t = i / n; if (t * L < 0.12) continue; if (!ok(a.x + (b.x - a.x) * t, a.z + (b.z - a.z) * t)) return false; } return true; }
+function catPick(from, ok, gen) { for (let i = 0; i < 40; i++) { const p = gen(); if (ok(p.x, p.z) && catSeg(from, p, ok)) return p; } return null; }
+const catDeckPt = () => { const z = rand(-10.8, 3.3); return { x: rand(-1, 1) * Math.max(0, hullHalfW(z) - 0.7), z }; };
+// in the hold the ladder stands between the bunks and its own foot, so walk round it instead of through the rails
+const CAT_BUNK_EXIT = { x: 1.6, z: -0.3 }; // floor spot beside the bunk (the bunk itself is an obstacle)
+function catHoldRoute(from, to) {
+  if (!holdOk(from.x, from.z)) return [CAT_BUNK_EXIT].concat(catHoldRoute(CAT_BUNK_EXIT, to));
+  if (catSeg(from, to, holdOk)) return [to];
+  for (const sx of [0.75, -0.75]) { const a = { x: sx, z: -2.45 }, b = { x: sx, z: -3.2 }; if (catSeg(from, a, holdOk) && catSeg(a, b, holdOk) && catSeg(b, to, holdOk)) return [a, b, to]; if (catSeg(from, b, holdOk) && catSeg(b, a, holdOk) && catSeg(a, to, holdOk)) return [b, a, to]; }
+  return [to];
+}
 function catPlanTrip() {
   if (CAT.path.length) return;
-  const toDeck = CAT.zone === 'hold', hy = HOLD.floor + 0.08, dy = 2.08;
-  const dest = toDeck ? pickOne(CAT_DECK_SPOTS) : CAT_HOLD_SPOT;
-  CAT.path = toDeck
-    ? [{ x: HOLD_LADDER.x, z: HOLD_LADDER.z, y: hy }, { x: LADDER_DECK.x, z: LADDER_DECK.z, y: dy, zone: 'deck' }, { x: dest.x, z: dest.z, y: dest.y }]
-    : [{ x: LADDER_DECK.x, z: LADDER_DECK.z, y: dy }, { x: HOLD_LADDER.x, z: HOLD_LADDER.z, y: hy, zone: 'hold' }, { x: dest.x, z: dest.z, y: dest.y }];
+  const here = { x: catG.position.x, z: catG.position.z }, r = Math.random(), P2 = (p, y, zone) => ({ x: p.x, z: p.z, y, zone });
+  CAT.onBunk = false;
+  if (CAT.zone === 'hold') {
+    if (r < 0.75) { const d = catPick(LADDER_DECK, walkable, catDeckPt) || LADDER_DECK; CAT.path = catHoldRoute(here, HOLD_LADDER).map((p) => P2(p, CAT_HY)).concat([P2(LADDER_DECK, CAT_DY, 'deck'), P2(d, CAT_DY)]); }
+    else { const d = catPick(here, holdOk, () => ({ x: rand(-2.4, 2.4), z: rand(HOLD.z0 + 0.5, HOLD.z1 - 0.5) })); CAT.path = d ? [P2(d, CAT_HY)] : catHoldRoute(here, CAT_BUNK_EXIT).map((p) => P2(p, CAT_HY)).concat([{ x: CAT_HOLD_SPOT.x, z: CAT_HOLD_SPOT.z, y: CAT_HOLD_SPOT.y, bunk: 1 }]); }
+    return;
+  }
+  if (catInCabin(here.x, here.z)) { // leave the cabin through the door
+    const d = r < 0.4 ? catPick(here, catCabinOk, () => ({ x: rand(-1.6, 1.6), z: rand(4.6, 9.0) })) : null;
+    if (d) { CAT.path = [P2(d, CAT_DY)]; return; }
+    const out = catPick(CAT_DOOR_OUT, walkable, catDeckPt) || CAT_DOOR_OUT;
+    let via = [];
+    if (!catSeg(here, CAT_DOOR_IN, catCabinOk)) { const m = catPick(here, catCabinOk, () => ({ x: rand(-1.6, 1.6), z: rand(4.6, 9.0) })); if (m && catSeg(m, CAT_DOOR_IN, catCabinOk)) via = [P2(m, CAT_DY)]; } // step round the furniture first
+    CAT.path = via.concat([P2(CAT_DOOR_IN, CAT_DY), P2(CAT_DOOR_OUT, CAT_DY), P2(out, CAT_DY)]); return;
+  }
+  if (r < 0.12) { // down the ladder for a nap
+    if (catSeg(here, LADDER_DECK, walkable)) { const r2 = catHoldRoute(HOLD_LADDER, CAT_BUNK_EXIT); CAT.path = [P2(LADDER_DECK, CAT_DY), P2(HOLD_LADDER, CAT_HY, 'hold')].concat(r2.map((p) => P2(p, CAT_HY)), [{ x: CAT_HOLD_SPOT.x, z: CAT_HOLD_SPOT.z, y: CAT_HOLD_SPOT.y, bunk: 1 }]); return; }
+  } else if (r < 0.33 && catSeg(here, CAT_DOOR_OUT, walkable)) { // visit the cabin
+    const d = catPick(CAT_DOOR_IN, catCabinOk, () => ({ x: rand(-1.6, 1.6), z: rand(4.6, 9.0) }));
+    if (d) { CAT.path = [P2(CAT_DOOR_OUT, CAT_DY), P2(CAT_DOOR_IN, CAT_DY), P2(d, CAT_DY)]; return; }
+  }
+  const d = catPick(here, walkable, catDeckPt);
+  if (d) CAT.path = [P2(d, CAT_DY)];
+  else if (catSeg(here, LADDER_DECK, walkable)) CAT.path = [P2(LADDER_DECK, CAT_DY)];
+  else CAT.moveT = 5;
 }
 function updateCat(dt) {
   if (!S.up.cat) return;
-  catG.rotation.z = Math.sin(T * 1.2) * 0.015;
+  let moving = false;
   if (started && !ISL.on && !traveling && !nightOver) {
     if (CAT.path.length) {
-      const t = CAT.path[0], dx = t.x - catG.position.x, dz = t.z - catG.position.z, d = Math.hypot(dx, dz), sp = 0.75 * dt;
-      if (d <= sp) { catG.position.x = t.x; catG.position.z = t.z; catG.position.y = t.y; if (t.zone) CAT.zone = t.zone; CAT.path.shift(); if (!CAT.path.length) CAT.moveT = rand(260, 480); }
-      else { catG.position.x += dx / d * sp; catG.position.z += dz / d * sp; const want = Math.atan2(-dx, -dz); catG.rotation.y += Math.atan2(Math.sin(want - catG.rotation.y), Math.cos(want - catG.rotation.y)) * Math.min(1, dt * 5); }
-    } else {
-      CAT.moveT -= dt; if (CAT.moveT <= 0) catPlanTrip();
-    }
+      moving = true;
+      const t = CAT.path[0], dx = t.x - catG.position.x, dz = t.z - catG.position.z, d = Math.hypot(dx, dz), sp = 0.85 * dt;
+      if (d <= sp) {
+        catG.position.x = t.x; catG.position.z = t.z; catG.position.y = t.y; if (t.zone) CAT.zone = t.zone; CAT.path.shift();
+        if (!CAT.path.length) { CAT.onBunk = !!t.bunk; CAT.moveT = t.bunk ? rand(45, 100) : CAT.zone === 'hold' ? rand(15, 35) : rand(8, 30); }
+      } else {
+        catG.position.x += dx / d * sp; catG.position.z += dz / d * sp;
+        let wantY = t.bunk && d < 0.5 ? t.y : CAT.zone === 'hold' ? CAT_HY : CAT_DY;
+        if (t.zone) { const f = Math.max(0, Math.min(1, 1 - d / 1.75)); wantY = (t.zone === 'deck' ? CAT_HY : CAT_DY) + (t.y - (t.zone === 'deck' ? CAT_HY : CAT_DY)) * f; hatchT = Math.max(hatchT, 2.5); } // climbing the ladder: the hatch opens for the cat too
+        catG.position.y += (wantY - catG.position.y) * Math.min(1, dt * 8); // hops up onto the bunk at the end
+        const want = Math.atan2(-dx, -dz); catG.rotation.y += Math.atan2(Math.sin(want - catG.rotation.y), Math.cos(want - catG.rotation.y)) * Math.min(1, dt * 6);
+      }
+    } else { CAT.moveT -= dt; if (CAT.moveT <= 0) catPlanTrip(); }
   }
-  catG.visible = CAT.zone === 'deck' ? true : (P.zone === 'hold' || hatchT > 0.01);
+  // pose: 1 = walking/standing, 0 = loaf (legs tucked, body low)
+  CAT.pose += ((moving ? 1 : 0) - CAT.pose) * Math.min(1, dt * 4);
+  if (moving) CAT.ph += dt * 11;
+  const sw = Math.sin(CAT.ph) * 0.55 * CAT.pose;
+  CATR.legs.forEach((L, i) => { L.rotation.x = (i === 0 || i === 3 ? sw : -sw); L.scale.y = 0.35 + 0.65 * CAT.pose; });
+  CATR.body.position.y = -0.105 * (1 - CAT.pose) + Math.abs(Math.sin(CAT.ph)) * 0.012 * CAT.pose;
+  CATR.head.rotation.y = moving ? 0 : Math.sin(T * 0.4) * 0.5; CATR.head.rotation.x = moving ? 0.1 : 0;
+  CATR.tail.forEach((s, i) => { s.rotation.x = (moving ? -0.35 : -1.25 + i * 0.05) + (i ? 0.25 : 0); s.rotation.z = Math.sin(T * (moving ? 3 : 1.3) - i * 0.6) * (0.25 + i * 0.08); });
+  catG.visible = CAT.zone === 'deck' ? true : holdGroup.visible;
 }
 function remoteRatAppear() { if (RAT.on) return; RAT.on = true; RAT.eatT = 50; ratG.visible = true; tone(2800, 0.06, 0.04, 'square'); }
 function chaseRat() { if (!RAT.on) return; RAT.on = false; ratG.visible = false; RAT.t = rand(300, 520); tone(2600, 0.08, 0.05, 'square'); toast('ไล่หนูหนีไปแล้ว', 'good'); }
@@ -4903,7 +4975,7 @@ function belowDeckInteractions(list) {
   list.push({ pos: new V3(2.15, 0, -3.2), r: 1.1, lvl: 3, in: true, label: FLOOD.lvl > 0.01 ? `ค้างไว้: โยกปั๊มสูบน้ำออก (น้ำ ${Math.round(FLOOD.lvl * 100)}%)` : 'ปั๊มมือสูบน้ำท้องเรือ (ยังไม่มีน้ำ)', hold: FLOOD.lvl > 0.01 ? 0.9 : undefined, act: pumpBilge });
   list.push({ pos: new V3(-1.5, 0, -3.5), r: 1.3, lvl: 3, in: true, label: `เปิดห้องเย็นใต้ท้องเรือ (${S.cold.length}/${COLD_CAP})`, act: openCold });
   if (RAT.on) list.push({ pos: { x: ratG.position.x, z: ratG.position.z }, r: 1.8, lvl: 3, in: true, label: 'ไล่หนู!', act: chaseRat });
-  if (S.up.cat && !CAT.path.length) list.push({ pos: { x: catG.position.x, z: catG.position.z }, r: 0.9, lvl: CAT.zone === 'deck' ? 0 : 3, in: CAT.zone !== 'deck', label: 'ลูบหัวเจ้าส้ม', act: petCat });
+  if (S.up.cat && !CAT.path.length && catG.visible) list.push({ pos: { x: catG.position.x, z: catG.position.z }, r: 0.9, lvl: CAT.zone === 'deck' ? 0 : 3, in: CAT.zone !== 'deck' || catInCabin(catG.position.x, catG.position.z), label: 'ลูบหัวเจ้าส้ม', act: petCat });
 }
 
 // ---- fishing contest: challenge Chai (and everyone in the room joins) - most kg in ~3 minutes wins
