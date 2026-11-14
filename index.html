@@ -3131,15 +3131,17 @@ function updateHolders(dt) {
     if (h.state === 'idle') {
       h.g.rotation.x = 0.75; if (!started || traveling || ISL.on) continue;
       const r = biteRate(14, 10, false) * 0.35;
-      if (Math.random() < r * dt) { h.state = 'bite'; h.t = rand(420, 600); h.ring = 0; toast(`คันปัก${h.def.side}กิน! ไม่ต้องรีบมาก พี่ชัยช่วยเก็บให้ได้ถ้าช้าไป`, 'good'); }
+      if (Math.random() < r * dt) { h.state = 'bite'; h.t = rand(420, 600); h.ring = 0; h.age = 0; h.claim = null; h.lost = false; toast(`คันปัก${h.def.side}กิน! ${CREW.watch ? 'ถ้าไม่มีใครมา พี่ชัย' + (S.up.cat ? 'หรือเจ้าส้ม' : '') + 'จะไปเก็บให้' : 'รีบมากด E เก็บนะ'}`, 'good'); }
     } else if (h.state === 'bite') {
-      h.t -= dt; h.ring -= dt; h.g.rotation.x = 0.6 + Math.sin(T * 30) * 0.08;
+      h.t -= dt; h.age = (h.age || 0) + dt; h.ring -= dt; h.g.rotation.x = 0.6 + Math.sin(T * 30) * 0.08; if (h.claim && h.age > 200) h.claim = null; /* a helper who never arrived: let someone else try */
+      if (S.up.cat && CREW.watch && (!h.claim || (h.claim === 'crew' && h.age >= HELP_CAT_AFTER + 45)) && h.age >= HELP_CAT_AFTER && started && !ISL.on && !traveling && !nightOver) catFetch(h);
       if (h.ring <= 0) { sfx('bell'); h.ring = 0.7; }
-      if (h.t <= 0) { h.state = 'idle'; toast(`หมึกที่คันปัก${h.def.side}หลุดไปแล้ว`); }
+      if (h.t <= 0) { h.state = 'idle'; h.lost = true; toast(`หมึกที่คันปัก${h.def.side}หลุดไปแล้ว`); }
     }
     setLine(h.line, tmp, wp, h.state === 'bite' ? 0.05 : 0.3);
   }
 }
+const HELP_CREW_AFTER = 30, HELP_CAT_AFTER = 75; // seconds a hooked squid on a holder rod waits before Chai, then the cat, fetches it
 function landHolder(h) {
   h.state = 'idle'; const sp = pickSpecies(14), kg = rollKg(sp, false);
   const wp = boat.localToWorld(tmp2.copy(h.def.out)); wp.y = waveH(wp.x, wp.z, T);
@@ -3195,10 +3197,18 @@ function cast() {
 const beatPhase = (t) => ((((t - beat0) % BEAT) + BEAT) % BEAT) / BEAT;
 function envFactor(depth, horiz) { return clamp(biteRate(depth, horiz, false) / 0.12, 0.08, 1.6); }
 let nibbleT = 0, biteAt = 1;
+// Tap = jig. Before, a tap only added 0.05*envF "interest" (almost nothing) and every tap reset jigT, so tapping
+// quicker than 0.4 s never counted at all; with the lure parked on the bottom it never attracted anything.
+// Now each tap lifts the lure 1.6 m (taps <0.3 s apart count as one lift) so tapping lets you work the lure up
+// to the school's depth (it sinks back by itself), and a tap at depth also draws squid in - far more at a depth
+// where the sonar/"หมึกเยอะ" says squid are.
+let jigBonusT = -9;
+const JIG_LIFT = 1.6;
 function jig() {
-  if (nibbleT > 0) { nibbleT = 0; interest = Math.max(0, interest - 0.3); kick = 1; sfx('escape'); toast('ตวัดเร็วไป หมึกตกใจหนีไปก่อน รอให้กินจริงๆ'); crewReact('early'); return; }
-  const fresh = jigT > 0.4; lure.depth = Math.max(0, lure.depth - 0.5); jigT = 0; kick = 1; sfx('jig');
-  if (fresh && lure.depth >= 2) interest += 0.05 * envF;
+  if (nibbleT > 0) { nibbleT = 0; interest = Math.max(0, interest - 0.15); kick = 1; sfx('escape'); toast('ตวัดเร็วไป หมึกตกใจหนีไปก่อน รอให้กินจริงๆ'); crewReact('early'); return; }
+  const d0 = lure.depth; kick = 1; sfx('jig');
+  if (jigT > 0.3) { lure.depth = Math.max(0, d0 - JIG_LIFT); jigT = 0; }
+  if (d0 >= 2 && T - jigBonusT > 0.7) { jigBonusT = T; interest += 0.02 + 0.25 * Math.min(envF, 1.4); }
 }
 function bite() { st = 'bite'; biteT = EASY() ? 2.6 : 1.5; interest = 0; combo = 0; sfx('bite'); kick = 1; try { if (navigator.vibrate) navigator.vibrate([140, 60, 140]); } catch (e) {} if (Math.random() < 0.3 && !tut.on) crewSay('กินแล้ว! กดเลย', 2.5, true); tutAdvance('bite'); }
 function hook() {
@@ -4325,7 +4335,7 @@ function doCrewTask(k) {
   else if (k === 'probe') { if (!measured()) measureWater(); }
   else if (k === 'fuel') { if (S.fuel < 60 && S.fuelStock > 0) { S.fuelStock--; S.fuel = Math.min(100, S.fuel + 35); lampsOn = true; fuelWarned = false; save(); lampText(); sfx('pour'); crewSay('เติมน้ำมันให้แล้ว ไฟมาแล้ว'); } }
   else if (k === 'box') { crateLid(1.2); if (CREW.holding) { const h = CREW.holding; CREW.holding = null; if (h.mesh.parent) h.mesh.parent.remove(h.mesh); addToCrewBox({ id: h.id, kg: h.kg, f: 1 }); save(); rebuildCrate(); sfx('thud'); if (!CREW.boxTold) { CREW.boxTold = true; crewSay('ใส่กล่องสีฟ้าตรงนี้นะ น้องเปิดหยิบไปทำกินหรือเอาไปขายได้เลย', 7); } else if (Math.random() < 0.4) crewSay(pickOne(['ใส่กล่องแล้ว', 'อีกตัวแล้ว คืนนี้หมึกเข้าดี', 'กล่องพี่เริ่มหนักแล้วนะ'])); } }
-  else if (k[0] === 'h') { const h = holders[+k.slice(1)]; if (h && h.state === 'bite') { landHolder(h); crewSay('ได้แล้ว! ใส่ถังให้แล้วนะ'); } else crewSay('ช้าไปนิด หลุดซะแล้ว'); }
+  else if (k[0] === 'h') { const h = holders[+k.slice(1)]; if (h && h.state === 'bite') { landHolder(h); crewSay('ได้แล้ว! ใส่ถังให้แล้วนะ'); } else crewSay(h && h.lost ? 'ช้าไปนิด หลุดซะแล้ว' : 'อ้าว มีคนเก็บไปแล้วเหรอ'); }
 }
 function crewAI(dt) {
   if (!crew.visible || nightOver || ISL.on) return;
@@ -4346,7 +4356,7 @@ function crewAI(dt) {
   CREW.cool -= dt; if (CREW.cool > 0) return;
   if (S.fuel <= 0 && !gen.broken && fuelEmptyT > 40 && S.fuelStock > 0 && P.carry !== 'fuel') { crewSay('น้ำมันหมด เดี๋ยวพี่ไปเติมให้'); crewGo('fuel'); return; }
   if (gen.broken && genBrokenT > 45 && !gen.repairing) { crewSay('เดี๋ยวพี่ไปดูเครื่องปั่นไฟเอง'); crewGo('gen'); return; }
-  for (const h of holders) if (h.state === 'bite' && h.t < 5.5 && CREW.watch && (st === 'fight' || st === 'landing' || toLocalDist(h.def.pos) > 4)) { crewSay(`คันปัก${h.def.side}กิน! เดี๋ยวพี่เก็บให้`); crewGo('h' + h.idx); return; }
+  for (const h of holders) if (h.state === 'bite' && !h.claim && CREW.watch && (h.age >= HELP_CREW_AFTER || h.t < 5.5)) { h.claim = 'crew'; crewSay(h.age >= HELP_CREW_AFTER ? `คันปัก${h.def.side}กินอยู่นานแล้ว เดี๋ยวพี่เก็บให้` : `คันปัก${h.def.side}กิน! เดี๋ยวพี่เก็บให้`); crewGo('h' + h.idx); return; }
   if (S.tub.length >= TUB_CAP[S.up.tub] - 1 && S.freezer.length < FREEZE_CAP[S.up.freezer] && !CREW.tubDone) { CREW.tubDone = true; crewSay('ถังจะเต็มแล้ว เดี๋ยวพี่ย้ายเข้าตู้แช่ให้นะ'); crewGo('tub'); return; }
   if (gull.state === 'landed' && gull.t > 2.5 && toLocalDist(TUB) > 4 && !CREW.shooed) { CREW.shooed = true; CREW.waveT = 2; crewSay('ชู่ว! ไปๆ นกบ้า'); setTimeout(() => { if (Math.random() < 0.7) shooGull(true); CREW.shooed = false; }, 1500); CREW.cool = 3; return; }
   if (!measured() && night > 0.35 && !CREW.probeDone) { CREW.probeDone = true; crewSay('น้องยังไม่ได้วัดค่าน้ำเลย เดี๋ยวพี่วัดให้'); crewGo('probe'); return; }
@@ -5558,7 +5568,7 @@ function promptFor() {
     case 'charge': return 'ปล่อยเพื่อเหวี่ยง';
     case 'water': {
       if (holdT >= 0.22 && primaryHeld) return 'กำลังม้วนเก็บสาย… ปล่อยเพื่อหยุด';
-      let t = nibbleT > 0 ? 'มีอะไรมาตอด… อย่าเพิ่งกด รอให้กินจริง' : (T1 ? 'รอลุ้นหมึกกิน · แตะเพื่อโยกเรียกหมึก · กดค้าง = ม้วนเก็บ · ปุ่ม "เก็บสาย" = เก็บทันที' : 'รอลุ้นหมึกกิน · แตะเพื่อโยกเรียกหมึก · กดค้าง = ม้วนเก็บ · กด Q = เก็บทันที');
+      let t = nibbleT > 0 ? 'มีอะไรมาตอด… อย่าเพิ่งกด รอให้กินจริง' : (T1 ? 'รอลุ้นหมึกกิน · แตะ = โยกเหยื่อ ยกขึ้น ล่อหมึก (ปล่อยแล้วจมเอง) · กดค้าง = ม้วนเก็บ · ปุ่ม "เก็บสาย" = เก็บทันที' : 'รอลุ้นหมึกกิน · แตะ = โยกเหยื่อ ยกขึ้น ล่อหมึก (ปล่อยแล้วจมเอง) · กดค้าง = ม้วนเก็บ · กด Q = เก็บทันที');
       if (lure.depth < 2) t = 'รอให้เหยื่อจมลงไปก่อน';
       if (lure.depth >= SPOTS[S.spot].bottom - 0.4) t = 'เหยื่อถึงพื้นแล้ว · ' + t;
       return t;
@@ -5593,7 +5603,7 @@ function updateHUD(dt, timeStr) {
   if (out) { $('iDepth').textContent = lure.depth.toFixed(1); $('iLine').textContent = Math.round(tipW.distanceTo(lure.pos)); }
   const pr = $('prompt'), txt = promptFor(); if (txt !== lastPrompt) { pr.textContent = txt; lastPrompt = txt; }
   pr.hidden = !txt || tut.on; pr.classList.toggle('alertp', st === 'bite' || (st === 'fight' && (pullWarn || pullLeft > 0 || tension > snapLim())));
-  if (st === 'water') $('iFish').textContent = lure.depth < 2 ? 'ยังตื้นไป' : envF > 1 ? 'หมึกเยอะ' : envF > 0.5 ? 'มีหมึกบ้าง' : night < 0.4 ? 'ฟ้ายังสว่าง หมึกน้อย' : 'หมึกน้อย ลองเปลี่ยนความลึก';
+  if (st === 'water') $('iFish').textContent = lure.depth < 2 ? 'ยังตื้นไป' : envF > 1 ? 'หมึกเยอะ' : envF > 0.5 ? 'มีหมึกบ้าง' : night < 0.4 ? 'ฟ้ายังสว่าง หมึกน้อย' : 'หมึกน้อย แตะยกเหยื่อขึ้นเพื่อเปลี่ยนความลึก';
   const al = []; if (DT.on) al.push(['red', DT.boss ? 'มันอยู่ใต้เรือ… เหวี่ยงเบ็ดสู้กับมัน' : 'คืนน้ำดำ']);
   if (eng.broken) al.push(['red', 'เครื่องยนต์เรือดับ · ลงไปซ่อมที่ห้องเครื่องใต้ท้องเรือ']);
   if (FLOOD.lvl > 0.25) al.push([FLOOD.lvl > 0.6 ? 'red' : '', `น้ำเข้าท้องเรือ ${Math.round(FLOOD.lvl * 100)}% · ลงไปโยกปั๊มสูบออก`]);
@@ -5777,7 +5787,7 @@ function petCat() { if (T < petT) { toast('เจ้าส้มหลับป�
 const CAT_HOLD_SPOT = new V3(2.42, HOLD.floor + 0.66, -0.3);
 const LADDER_DECK = new V3(0, 0, -1.45), CAT_DOOR_OUT = { x: 1.09, z: 3.3 }, CAT_DOOR_IN = { x: 1.09, z: 4.6 };
 const CAT_DY = 2.0, CAT_HY = HOLD.floor;
-const CAT = { zone: 'hold', path: [], moveT: rand(30, 80), ph: 0, pose: 0, onBunk: true };
+const CAT = { zone: 'hold', path: [], moveT: rand(30, 80), ph: 0, pose: 0, onBunk: true, fetching: null, fetchT: 0 };
 const catInCabin = (x, z) => z > 4.02 && Math.abs(x) < 2.2;
 const catCabinOk = (x, z) => inR(x, z, [-1.7, 1.7, 4.55, 9.1]) && !hitAny(x, z, CABIN_OBS, 0.25);
 function catSeg(a, b, ok) { const L = Math.hypot(b.x - a.x, b.z - a.z), n = Math.ceil(L / 0.15); for (let i = 1; i <= n; i++) { const t = i / n; if (t * L < 0.12) continue; if (!ok(a.x + (b.x - a.x) * t, a.z + (b.z - a.z) * t)) return false; } return true; }
@@ -5819,6 +5829,40 @@ function catPlanTrip() {
   else if (catSeg(here, LADDER_DECK, walkable)) CAT.path = [P2(LADDER_DECK, CAT_DY)];
   else CAT.moveT = 5;
 }
+// ---- the cat fetches a squid that has been hooked on a holder rod for a long time and nobody came (after Chai had his chance) ----
+// Routes only go through spots the crew already walks (clear of the deck clutter), checked with the same walkable test as the roaming.
+const CAT_NODES = [[-1.8, -9.2], [1.5, -9.0], [-1.6, -5.4], [1.55, -5.0], [0, -1.45], [1.6, -1.2], [-1.75, -1], [-2.0, 0.45], [-2.5, -6.6], [2.55, -8.2]].map(([x, z]) => ({ x, z }));
+const CAT_HOLDER_SPOT = [{ x: 2.55, z: -8.2 }, { x: -2.5, z: -6.6 }];
+function catGraphPath(from, goal) {
+  const nodes = [from].concat(CAT_NODES, [goal]), n = nodes.length, dist = new Array(n).fill(Infinity), prev = new Array(n).fill(-1), done = new Array(n).fill(false); dist[0] = 0;
+  for (let it = 0; it < n; it++) {
+    let u = -1; for (let i = 0; i < n; i++) if (!done[i] && (u < 0 || dist[i] < dist[u])) u = i;
+    if (u < 0 || dist[u] === Infinity) break; done[u] = true; if (u === n - 1) break;
+    for (let v = 0; v < n; v++) if (!done[v]) { const d = Math.hypot(nodes[u].x - nodes[v].x, nodes[u].z - nodes[v].z); if (dist[u] + d < dist[v] && catSeg(nodes[u], nodes[v], walkable)) { dist[v] = dist[u] + d; prev[v] = u; } }
+  }
+  if (!isFinite(dist[n - 1])) return null;
+  const out = []; for (let v = n - 1; v > 0; v = prev[v]) out.unshift(nodes[v]); return out;
+}
+function catFetch(h) {
+  if (CAT.fetching != null || T < (h.catTry || 0)) return;
+  h.catTry = T + 20;
+  if (CAT.path.some((q) => q.zone)) { h.catTry = T + 3; return; } // mid-climb on the ladder: wait until it is on its feet
+  const goal = CAT_HOLDER_SPOT[h.idx]; if (!goal) return;
+  const here = { x: catG.position.x, z: catG.position.z }, P2 = (q, y, zone) => ({ x: q.x, z: q.z, y, zone });
+  let pre = [], start = here;
+  if (CAT.zone === 'hold') { pre = catHoldRoute(here, HOLD_LADDER).map((q) => P2(q, CAT_HY)).concat([P2(LADDER_DECK, CAT_DY, 'deck')]); start = LADDER_DECK; }
+  else if (catInCabin(here.x, here.z)) {
+    if (!catSeg(here, CAT_DOOR_IN, catCabinOk)) { const m = catPick(here, catCabinOk, () => ({ x: rand(-1.6, 1.6), z: rand(4.6, 9.0) })); if (!m || !catSeg(m, CAT_DOOR_IN, catCabinOk)) return; pre.push(P2(m, CAT_DY)); }
+    pre.push(P2(CAT_DOOR_IN, CAT_DY), P2(CAT_DOOR_OUT, CAT_DY)); start = CAT_DOOR_OUT;
+  }
+  const route = catGraphPath(start, goal); if (!route) return;
+  CAT.path = pre.concat(route.map((q) => P2(q, CAT_DY))); CAT.path[CAT.path.length - 1].fetch = h.idx; CAT.onBunk = false; h.claim = 'cat';
+  toast(`เจ้าส้มเห็นคันปัก${h.def.side}กินอยู่ เดินไปดูให้แล้ว`, 'good');
+}
+function catFetchDone() {
+  const i = CAT.fetching; CAT.fetching = null; CAT.moveT = rand(8, 20); const h = holders[i];
+  if (h && h.state === 'bite') { landHolder(h); toast('เจ้าส้มเขี่ยคันปักจนหมึกขึ้นมา! ใส่ถังให้แล้ว', 'good'); }
+}
 function updateCat(dt) {
   if (!S.up.cat) return;
   let moving = false;
@@ -5828,7 +5872,7 @@ function updateCat(dt) {
       const t = CAT.path[0], dx = t.x - catG.position.x, dz = t.z - catG.position.z, d = Math.hypot(dx, dz), sp = 0.85 * dt;
       if (d <= sp) {
         catG.position.x = t.x; catG.position.z = t.z; catG.position.y = t.y; if (t.zone) CAT.zone = t.zone; CAT.path.shift();
-        if (!CAT.path.length) { CAT.onBunk = !!t.bunk; CAT.moveT = t.bunk ? rand(45, 100) : CAT.zone === 'hold' ? rand(15, 35) : rand(8, 30); }
+        if (!CAT.path.length) { CAT.onBunk = !!t.bunk; CAT.moveT = t.bunk ? rand(45, 100) : CAT.zone === 'hold' ? rand(15, 35) : rand(8, 30); if (t.fetch !== undefined) { CAT.fetching = t.fetch; CAT.fetchT = 1.5; } }
       } else {
         catG.position.x += dx / d * sp; catG.position.z += dz / d * sp;
         let wantY = t.bunk && d < 0.5 ? t.y : CAT.zone === 'hold' ? CAT_HY : CAT_DY;
@@ -5836,6 +5880,9 @@ function updateCat(dt) {
         catG.position.y += (wantY - catG.position.y) * Math.min(1, dt * 8); // hops up onto the bunk at the end
         const want = Math.atan2(-dx, -dz); catG.rotation.y += Math.atan2(Math.sin(want - catG.rotation.y), Math.cos(want - catG.rotation.y)) * Math.min(1, dt * 6);
       }
+    } else if (CAT.fetching != null) {
+      const hd = holders[CAT.fetching]; if (hd) { const want = Math.atan2(-(hd.def.pos.x - catG.position.x), -(hd.def.pos.z - catG.position.z)); catG.rotation.y += Math.atan2(Math.sin(want - catG.rotation.y), Math.cos(want - catG.rotation.y)) * Math.min(1, dt * 6); }
+      CAT.fetchT -= dt; if (CAT.fetchT <= 0) catFetchDone();
     } else { CAT.moveT -= dt; if (CAT.moveT <= 0) catPlanTrip(); }
   }
   // pose: 1 = walking/standing, 0 = loaf (legs tucked, body low)
