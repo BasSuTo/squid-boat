@@ -217,6 +217,21 @@ body.touch #waterBox{display:none}
 #ytHost{position:fixed;left:0;bottom:0;width:200px;height:200px;opacity:0;pointer-events:none;overflow:hidden;z-index:-1}
 #ytHost iframe{width:200px;height:200px;border:0}
 #hMusT{display:block;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#helmHud{position:absolute;right:calc(16px + env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));width:min(380px,calc(100% - 32px));padding:9px 12px;border-radius:12px;background:var(--panel);border:1px solid var(--line);text-shadow:none;font-size:13px}
+body.helm #ctrl,body.helm #cross{display:none}
+#helmHud .hhTop{display:flex;align-items:center;gap:14px}
+#helmHud .hhSpd b{font:700 30px/1 var(--display);font-variant-numeric:tabular-nums}
+#helmHud .hhSpd span,#helmHud .hhMid span{display:block;color:var(--mute);font-size:12px}
+#helmHud .hhMid b{font:600 17px var(--display)}
+#hhSpots{display:grid;grid-template-columns:1fr 1fr;gap:2px 12px;margin-top:6px}
+#helmHud .hhRow{display:flex;align-items:center;gap:6px;min-width:0}
+#helmHud .hhRow i{font-style:normal;color:#ffd166;display:inline-block;width:12px;text-align:center;flex:none}
+#helmHud .hhRow span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
+#helmHud .hhRow b{color:var(--mute);font-weight:500;flex:none}
+#helmHud .hhRow.here b{color:var(--good)}
+#hhWho{margin-top:6px;color:var(--mute);font-size:12px}
+body.touch #helmHud{right:auto;left:50%;transform:translateX(-50%);bottom:calc(8px + env(safe-area-inset-bottom,0px));width:min(300px,calc(100% - 490px));min-width:230px;font-size:11px;padding:7px 10px}
+body.touch #helmHud .hhSpd b{font-size:24px}
 #toasts{position:absolute;left:50%;top:calc(16px + env(safe-area-inset-top,0px));transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;width:min(560px,calc(100% - 32px))}
 .toast{padding:7px 15px;border-radius:10px;background:var(--panel);border:1px solid var(--line);font-size:14.5px;font-weight:600;text-align:center;animation:tin .25s ease-out}
 .toast.bad{border-color:rgba(255,90,60,.6);color:#ffd3c8}
@@ -278,6 +293,8 @@ body.touch .need span{font-size:10.5px}
 #bUse{right:calc(150px + env(safe-area-inset-right,0px));bottom:calc(30px + env(safe-area-inset-bottom,0px));width:84px;height:84px;font-size:13px;color:#1c0e02;background:var(--good);border-color:#fff;text-align:center;line-height:1.1;padding:4px}
 #bLamp{right:calc(150px + env(safe-area-inset-right,0px));bottom:calc(126px + env(safe-area-inset-bottom,0px));width:56px;height:56px;font-size:12px}
 #bReel{right:calc(150px + env(safe-area-inset-right,0px));bottom:calc(196px + env(safe-area-inset-bottom,0px));width:56px;height:56px;font-size:11px;background:rgba(240,122,26,.55)}
+#bAnchor{right:calc(30px + env(safe-area-inset-right,0px));bottom:calc(30px + env(safe-area-inset-bottom,0px));width:96px;height:96px;font-size:14px;font-weight:700;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;background:linear-gradient(160deg,#9fd4ff,#2c86c9);color:#04121e}
+#bAnchor span:first-child{font-size:30px;line-height:1}
 #bMenu{right:calc(16px + env(safe-area-inset-right,0px));top:calc(14px + env(safe-area-inset-top,0px));width:52px;height:52px;border-radius:14px;font-size:12px}
 #bMusic{right:calc(16px + env(safe-area-inset-right,0px));top:calc(74px + env(safe-area-inset-top,0px));width:52px;height:52px;border-radius:14px;font-size:11px}
 body.touch #ctrl,body.touch #cross,body.touch #hudTR #questBox,body.touch #players{display:none}
@@ -452,6 +469,7 @@ body.touch #alerts{top:calc(56px + env(safe-area-inset-top,0px))}
   </div>
 
   <div id="toasts"></div>
+  <div id="helmHud" hidden><div class="hhTop"><div class="hhSpd"><b id="hhSpd">0.0</b><span>นอต</span></div><div class="hhMid"><b id="hhHdg">N 0°</b><span id="hhState">จอดนิ่ง</span></div></div><div id="hhSpots"></div><div id="hhWho"></div></div>
 
   <div id="card" hidden>
     <div class="tag" id="cTag">จับได้แล้ว</div>
@@ -477,6 +495,7 @@ body.touch #alerts{top:calc(56px + env(safe-area-inset-top,0px))}
       <li><kbd>L</kbd><span>ไฟล่อหมึก · <kbd>H</kbd> ไฟดาดฟ้า · <kbd>R</kbd> วิทยุ</span></li>
       <li><kbd>P</kbd><span>เครื่องเล่นเพลงชิวๆ ตกหมึก</span></li>
       <li><kbd>J</kbd><span>ชวนเพื่อน (คัดลอกลิงก์เข้าเรือ)</span></li>
+      <li><kbd>E</kbd><span>ที่พวงมาลัย: ขับเรือ (<kbd>G</kbd> สมอ)</span></li>
       <li><kbd>M</kbd><span>เสียง · <kbd>Esc</kbd> หยุดพัก</span></li>
     </ul>
   </div>
@@ -499,6 +518,7 @@ body.touch #alerts{top:calc(56px + env(safe-area-inset-top,0px))}
   <button class="tbtn" id="bCast" type="button">
     <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 20L18 4"></path><path d="M18 4c2 3 2 7 0 11"></path><circle cx="18" cy="17" r="1.6"></circle></svg><span id="bCastLbl">เหวี่ยง</span>
   </button>
+  <button class="tbtn" id="bAnchor" type="button" hidden aria-label="ทิ้งหรือถอนสมอ"><span aria-hidden="true">⚓</span><span id="bAnchorLbl">ถอนสมอ</span></button>
   <button class="tbtn" id="bMenu" type="button">เมนู</button>
   <button class="tbtn" id="bMusic" type="button" aria-label="เปิดเครื่องเล่นเพลง">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l11-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="17" cy="16" r="3"></circle></svg>
@@ -875,6 +895,7 @@ function setupComposer() {
   composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(innerWidth, innerHeight);
 }
 setupComposer();
+if (!qUserSet) { try { const gl = renderer.getContext(), ext = gl.getExtension('WEBGL_debug_renderer_info'), gpu = ext ? String(gl.getParameter(ext.UNMASKED_RENDERER_WEBGL)) : ''; if (/swiftshader|llvmpipe|software|mali-[4t]|adreno[^0-9]*[1-5]\d\d\b|powervr sgx|intel.*hd graphics [2-5]\d{3}/i.test(gpu) || !renderer.capabilities.isWebGL2) { qName = 'low'; Q = QUAL.low; renderer.setPixelRatio(1); renderer.shadowMap.type = THREE.PCFShadowMap; setupComposer(); } } catch (e) {} }
 
 // =============== sky ===============
 function makeSky() { const s = new Sky(); s.scale.setScalar(3000); const u = s.material.uniforms; u.turbidity.value = 6; u.rayleigh.value = 2; u.mieCoefficient.value = 0.006; u.mieDirectionalG.value = 0.86; return s; }
@@ -942,7 +963,7 @@ function disp(x, z, t, o) {
 function waveH(x, z, t) { let px = x, pz = z; for (let i = 0; i < 3; i++) { disp(px, pz, t, _d); px = x - _d.x; pz = z - _d.z; } return disp(px, pz, t, _d).y; }
 const f4 = (n) => n.toFixed(4);
 const WAVE_GLSL = `
-uniform float uTime; uniform float uAmp;
+uniform float uTime; uniform float uAmp; uniform vec2 uOff;
 varying float vWH; varying vec3 vGW;
 vec3 gWave(vec4 w, vec3 p, inout vec3 T, inout vec3 B){
   float k = 6.2831853 / w.w; float c = sqrt(9.8 / k); vec2 d = normalize(w.xy);
@@ -957,9 +978,10 @@ vec3 gWaves(vec3 p, inout vec3 T, inout vec3 B){
   return o;
 }
 `;
-const WU = { uTime: { value: 0 }, uAmp: { value: AMP }, uBoat: { value: new THREE.Vector2() }, uLamp: { value: 0 }, uGlowCol: { value: new THREE.Color(0.03, 0.5, 0.34) } };
+let WATER = null;
+const WU = { uTime: { value: 0 }, uAmp: { value: AMP }, uOff: { value: new THREE.Vector2() }, uBoat: { value: new THREE.Vector2() }, uLamp: { value: 0 }, uGlowCol: { value: new THREE.Color(0.03, 0.5, 0.34) } };
 function waterNormalTex() {
-  const N = 512, c = document.createElement('canvas'); c.width = c.height = N;
+  const N = qName === 'low' ? 256 : 512, c = document.createElement('canvas'); c.width = c.height = N;
   const x = c.getContext('2d'), img = x.createImageData(N, N), ws = [];
   for (let i = 0; i < 26; i++) { let fx = Math.round(rand(-1, 1) * (2 + i)), fy = Math.round(rand(-1, 1) * (2 + i)); if (fx === 0 && fy === 0) fx = 1; ws.push([fx, fy, 1 / (1 + Math.hypot(fx, fy) * 0.55), Math.random() * 6.283]); }
   const h = new Float32Array(N * N);
@@ -980,13 +1002,13 @@ function waterNormalTex() {
   m.onBeforeCompile = (sh) => {
     Object.assign(sh.uniforms, WU);
     sh.vertexShader = WAVE_GLSL + sh.vertexShader
-      .replace('#include <beginnormal_vertex>', 'vec3 gT = vec3(1.0,0.0,0.0); vec3 gB = vec3(0.0,0.0,1.0); vec3 gP = position + gWaves(position, gT, gB); vec3 objectNormal = normalize(cross(gB, gT));')
-      .replace('#include <begin_vertex>', 'vec3 transformed = gP; vWH = gP.y; vGW = (modelMatrix * vec4(gP, 1.0)).xyz;\n#ifdef USE_NORMALMAP\nvNormalMapUv = gP.xz / 9.0 + vec2(uTime * 0.031, uTime * 0.017);\n#endif');
+      .replace('#include <beginnormal_vertex>', 'vec3 gT = vec3(1.0,0.0,0.0); vec3 gB = vec3(0.0,0.0,1.0); vec3 gW0 = position + vec3(uOff.x, 0.0, uOff.y); vec3 gP = position + gWaves(gW0, gT, gB); vec3 objectNormal = normalize(cross(gB, gT));')
+      .replace('#include <begin_vertex>', 'vec3 transformed = gP; vWH = gP.y; vGW = (modelMatrix * vec4(gP, 1.0)).xyz;\n#ifdef USE_NORMALMAP\nvNormalMapUv = (gP.xz + uOff) / 9.0 + vec2(uTime * 0.031, uTime * 0.017);\n#endif');
     sh.fragmentShader = 'uniform float uTime; uniform vec2 uBoat; uniform float uLamp; uniform vec3 uGlowCol; varying float vWH; varying vec3 vGW;\n' + sh.fragmentShader
       .replace('#include <color_fragment>', '#include <color_fragment>\n float sss = clamp(vWH * 0.4 + 0.25, 0.0, 1.0); diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * vec3(1.5, 2.4, 2.2), sss);\n float fnz = texture2D(normalMap, vGW.xz * 0.07 + vec2(uTime * 0.011, -uTime * 0.008)).r; float foam = smoothstep(0.5, 1.05, vWH + (fnz - 0.5) * 0.6) * smoothstep(0.3, 0.7, fnz); diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.62, 0.7, 0.72), foam * 0.55);')
       .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n float gd = length(vGW.xz - uBoat); totalEmissiveRadiance += uGlowCol * uLamp * (exp(-gd*gd/220.0) * 0.8 + exp(-gd*gd/40.0) * 0.55);');
   };
-  const mesh = new THREE.Mesh(g, m); mesh.frustumCulled = false; mesh.receiveShadow = true; mesh.renderOrder = 2; scene.add(mesh);
+  const mesh = new THREE.Mesh(g, m); mesh.frustumCulled = false; mesh.receiveShadow = true; mesh.renderOrder = 2; scene.add(mesh); WATER = mesh;
 })();
 
 // =============== textures ===============
@@ -1021,6 +1043,8 @@ function labelTex(text, color) {
 // =============== boat ===============
 const BOAT_YAW = 0.5;
 const boat = new THREE.Group(); boat.rotation.order = 'YXZ'; boat.rotation.y = BOAT_YAW; scene.add(boat);
+// the boat's place on the sea (world x/z, heading, speed, yaw rate) - see "steering the boat"
+const BW = { x: 0, z: 0, yaw: BOAT_YAW, v: 0, w: 0, anchor: true, q: 0, src: '' };
 const std = (c, r, m, extra = {}) => new THREE.MeshStandardMaterial(Object.assign({ color: c, roughness: r, metalness: m }, extra));
 const M = {
   white: std(0xd8dcdf, 0.55, 0.1, { map: grimeTex() }), navy: std(0x15273c, 0.5, 0.3), steel: std(0xb9c1c6, 0.38, 0.75), dark: std(0x24292e, 0.6, 0.4),
@@ -1898,11 +1922,12 @@ const gull = { g: new THREE.Group(), state: 'none', t: 0, from: new V3(), wings:
 const SPL = 90, splGeo = new THREE.BufferGeometry(); splGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(SPL * 3), 3));
 const splVel = new Float32Array(SPL * 3), splLife = new Float32Array(SPL);
 const splash = new THREE.Points(splGeo, new THREE.PointsMaterial({ color: 0xdff4ff, size: 0.07, transparent: true, opacity: 0.85, depthWrite: false })); splash.frustumCulled = false; scene.add(splash);
-let splIdx = 0; const rings = []; const ringGeo = new THREE.RingGeometry(0.32, 0.4, 40); ringGeo.rotateX(-Math.PI / 2);
+// splash rings are reused, not created and thrown away each splash
+let splIdx = 0; const rings = [], ringPool = []; const ringGeo = new THREE.RingGeometry(0.32, 0.4, 40); ringGeo.rotateX(-Math.PI / 2);
 function spawnSplash(p, size = 1) {
   const pa = splGeo.attributes.position.array, n = Math.round(26 * size);
   for (let i = 0; i < n; i++) { const k = splIdx++ % SPL; pa[k * 3] = p.x; pa[k * 3 + 1] = p.y; pa[k * 3 + 2] = p.z; const a = Math.random() * 6.283, sp = rand(0.4, 1.8) * size; splVel[k * 3] = Math.cos(a) * sp; splVel[k * 3 + 1] = rand(1.5, 3.8) * size; splVel[k * 3 + 2] = Math.sin(a) * sp; splLife[k] = 1.2; }
-  const m = new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: 0xe8f6ff, transparent: true, opacity: 0.6, depthWrite: false })); m.position.copy(p); m.userData = { t: 0, x: p.x, z: p.z, size }; scene.add(m); rings.push(m);
+  const m = ringPool.pop() || new THREE.Mesh(ringGeo, new THREE.MeshBasicMaterial({ color: 0xe8f6ff, transparent: true, opacity: 0.6, depthWrite: false })); m.position.copy(p); m.userData = { t: 0, x: p.x, z: p.z, size }; m.visible = true; if (!m.parent) scene.add(m); rings.push(m);
 }
 const RAIN_N = Q.rain, rainGeo = new THREE.BufferGeometry(); rainGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(RAIN_N * 6), 3));
 const rainOff = new Float32Array(RAIN_N * 3); for (let i = 0; i < RAIN_N; i++) { rainOff[i * 3] = rand(-18, 18); rainOff[i * 3 + 1] = rand(-6, 14); rainOff[i * 3 + 2] = rand(-18, 18); }
@@ -1921,7 +1946,7 @@ function updateFx(dt) {
   for (let i = rings.length - 1; i >= 0; i--) {
     const r = rings[i], u = r.userData; u.t += dt; const s = (1 + u.t * 4) * u.size; r.scale.set(s, 1, s);
     r.position.set(u.x, waveH(u.x, u.z, T) + 0.03, u.z); r.material.opacity = 0.6 * (1 - u.t / 1.6);
-    if (u.t > 1.6) { scene.remove(r); r.material.dispose(); rings.splice(i, 1); }
+    if (u.t > 1.6) { r.visible = false; rings.splice(i, 1); if (ringPool.length < 24) ringPool.push(r); else { scene.remove(r); r.material.dispose(); } }
   }
   // rain
   rainMat.opacity = WX.rain * 0.38 * (isIndoors() ? 0 : 1);
@@ -2808,7 +2833,7 @@ function updateSchool(dt) {
   if (school.t <= 0) { school.t = rand(sp.id === 'front' ? 30 : 60, sp.id === 'front' ? 80 : 160); const shallow = night * 0.35; school.target = lerp(sp.sd[0], sp.sd[1], clamp(Math.random() - shallow, 0, 1)); }
   school.depth += (school.target - school.depth) * Math.min(1, dt * 0.08);
   school.spread = 3.5 + Math.sin(T * 0.05) * 1.2;
-  school.dens = sp.dens * (0.35 + 0.65 * night) * (0.75 + 0.25 * Math.sin(T * 0.03 + 1));
+  school.dens = sp.dens * (0.35 + 0.65 * night) * (0.75 + 0.25 * Math.sin(T * 0.03 + 1)) * spotDensityK();
 }
 const sonarCv = $('sonar'), sc2 = sonarCv.getContext('2d');
 const sonarHist = document.createElement('canvas'); sonarHist.width = sonarCv.width; sonarHist.height = sonarCv.height; const sh2 = sonarHist.getContext('2d');
@@ -2907,14 +2932,226 @@ function updateTime(dt) {
 
 // =============== boat motion ===============
 const B = { y: 0, pitch: 0, roll: 0 };
+// the water plane, sky dome, clouds, stars and moon travel with the boat (waves are computed in world space, so the
+// sea itself doesn't slide along with it)
+function seaFollow() {
+  const sx = Math.round(BW.x), sz = Math.round(BW.z);
+  if (WATER) { WATER.position.x = sx; WATER.position.z = sz; } WU.uOff.value.set(sx, sz);
+  sky.position.set(BW.x, 0, BW.z); clouds.position.set(BW.x, clouds.position.y, BW.z); stars.position.set(BW.x, 0, BW.z);
+  moon.position.copy(MOON_DIR).multiplyScalar(1450); moon.position.x += BW.x; moon.position.z += BW.z; moonGlow.position.copy(moon.position);
+}
 function updateBoat(dt) {
+  safe('helm', () => updateHelm(dt));
+  boat.position.x = BW.x; boat.position.z = BW.z; boat.rotation.y = BW.yaw; seaFollow();
   if (ISL.on) { const k = 1 - Math.exp(-dt * 2); B.y += (0.08 - B.y) * k; B.pitch -= B.pitch * k; B.roll -= B.roll * k; boat.position.y = B.y - 0.12; boat.rotation.x = -B.pitch; boat.rotation.z = -B.roll; WU.uBoat.value.set(boat.position.x, boat.position.z); return; }
-  const c = Math.cos(BOAT_YAW), s = Math.sin(BOAT_YAW), h = (lx, lz) => waveH(lx * c + lz * s, -lx * s + lz * c, T);
+  const c = Math.cos(BW.yaw), s = Math.sin(BW.yaw), h = (lx, lz) => waveH(BW.x + lx * c + lz * s, BW.z - lx * s + lz * c, T);
   const hb = h(0, 10), hs = h(0, -10), hp = h(-3, 0), hst = h(3, 0), hc = h(0, 0);
   const y = (hb + hs + hp + hst + hc * 2) / 6, k = 1 - Math.exp(-dt * 2.2);
-  B.y += (y - B.y) * k; B.pitch += (Math.atan2(hb - hs, 20) - B.pitch) * k; B.roll += (Math.atan2(hp - hst, 6) * 0.8 * (1 + 1.4 * FLOOD.lvl) - B.roll) * k;
+  B.y += (y - B.y) * k; B.pitch += (Math.atan2(hb - hs, 20) - B.pitch) * k; B.roll += (Math.atan2(hp - hst, 6) * 0.8 * (1 + 1.4 * FLOOD.lvl) + BW.w * BW.v * 0.12 - B.roll) * k; B.pitch -= Math.abs(BW.v) * 0.0009 * dt * 60 * k; // leans into turns, bow lifts a little at speed
   boat.position.y = B.y - 0.12; boat.rotation.x = -B.pitch; boat.rotation.z = -B.roll; radar.rotation.y += dt * 2.4;
   WU.uBoat.value.set(boat.position.x, boat.position.z);
+}
+
+// =============== steering the boat ===============
+// The boat now has a real position/heading in the world (BW). Fishing spots are places on the sea you can drive
+// to (or still fast-travel to from the menu). Physics is a cheap 2D model: speed + yaw rate with inertia, no
+// per-frame wave forces. On a shared boat one person drives at a time; the driver's pose rides on their player
+// node (players/<uid>/bt) and everyone else dead-reckons from it with a soft correction, so the boat never warps.
+const SPOT_POS = [[0, 0], [-420, 300], [180, -330], [520, 120]];
+const ROCKS = [[0.9, 560, 1], [1.45, 640, 1.7], [4.25, 600, 1.25], [5.35, 660, 0.8], [3.2, 700, 1.4]].map(([a, d, sc]) => ({ x: Math.cos(a) * d, z: Math.sin(a) * d, rx: 60 * 1.7 * sc * 1.08 + 12, rz: 60 * 1.05 * sc * 1.08 + 12 }));
+const SEA_R = 1300, VMAX = 7, VREV = 2.5;
+const HELM = { on: false, rud: 0, cy: 0, cp: 0.32, cd: 28, hitT: 0, reelT: 0, saveT: 0, spotT: 0, hum: null, told: false };
+const F = { x: 0, z: 0, yaw: 0, v: 0, w: 0, an: true, t: 0 }; // last pose received from the driver
+{ const b = S.boat; if (b && [b.x, b.z, b.h].every((n) => typeof n === 'number' && isFinite(n)) && Math.hypot(b.x, b.z) <= SEA_R) { BW.x = b.x; BW.z = b.z; BW.yaw = b.h; BW.anchor = b.an !== 0; } else { const sp = SPOT_POS[S.spot] || SPOT_POS[0]; BW.x = sp[0]; BW.z = sp[1]; } }
+const netNow = () => { try { return Date.now() + (MS.skew || 0); } catch (e) { return Date.now(); } };
+const knots = (v) => v * 1.9438;
+// fleet boats sitting on a fishing spot would be in the way: move them aside once
+for (const f of fleet) for (const [sx, sz] of SPOT_POS) { const dx = f.g.position.x - sx, dz = f.g.position.z - sz, d = Math.hypot(dx, dz); if (d < 120) { const k = 120 / Math.max(d, 1); f.g.position.x = sx + dx * k + (d < 1 ? 120 : 0); f.g.position.z = sz + dz * k; } }
+function nearestSpot(x, z) { let bi = 0, bd = 1e9; SPOT_POS.forEach(([sx, sz], i) => { const d = Math.hypot(x - sx, z - sz); if (d < bd) { bd = d; bi = i; } }); return { i: bi, d: bd }; }
+// squid are concentrated at the spots: full density within ~120 m, thinning out to 30% in open water
+function spotDensityK() { const n = nearestSpot(BW.x, BW.z); return 1 - 0.7 * smooth(120, 320, n.d); }
+function bearingOf(dx, dz) { return (Math.atan2(dx, -dz) * 180 / Math.PI + 360) % 360; } // north = -z, east = +x (same as the radar)
+const COMPASS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+const compassName = (deg) => COMPASS[Math.round(deg / 45) % 8];
+function helmTakenBy() { for (const r of NET.remotes.values()) if (r.bt && r.bt.d && performance.now() - (r.btT || 0) < 3000) return r.name || 'เพื่อน'; return ''; }
+function helmEnter() {
+  if (HELM.on || !inputOn()) return;
+  if (eng.broken) { toast('เครื่องยนต์เรือเสียอยู่ ต้องลงไปซ่อมที่ห้องเครื่องใต้ท้องเรือก่อนถึงจะขับได้', 'bad'); return; }
+  if (st !== 'idle') { toast('เก็บสายเบ็ดก่อนค่อยไปขับเรือ (กด Q เก็บสายทันที)', 'bad'); return; }
+  const who = helmTakenBy(); if (who) { toast(`${who} กำลังขับเรืออยู่ ขับได้ทีละคน`, 'bad'); return; }
+  HELM.on = true; HELM.rud = 0; HELM.cy = 0; HELM.cp = 0.32; primaryHeld = false; useHeld = false;
+  BW.src = ''; BW.q = netNow(); P.x = -0.45; P.z = 6.5; P.yaw = 0; P.pitch = 0;
+  if (rodRig) rodRig.visible = false;
+  helmTouch(); sfx('engine'); document.body.classList.add('helm');
+  toast(TOUCH ? 'ขับเรือ: จอยซ้ายเร่ง/ถอย/เลี้ยว · ปุ่มสมอ · ปุ่มเขียวออก' : 'ขับเรือ: W เร่ง · S ถอย · A/D เลี้ยว · Space เบรก · G สมอ · E ออก', 'good');
+  if (BW.anchor) setTimeout(() => { if (HELM.on && BW.anchor) toast(TOUCH ? 'ทอดสมออยู่ แตะปุ่มสมอเพื่อถอนก่อนออกเรือ' : 'ทอดสมออยู่ กด G ถอนสมอก่อนออกเรือ'); }, 1600);
+  if (!HELM.told && crew.visible) { HELM.told = true; setTimeout(() => crewSay('ขับดีๆ นะ ระวังกองหินกับเรือลำอื่น'), 1200); }
+}
+function helmExit(why) {
+  if (!HELM.on) return;
+  HELM.on = false; BW.q = netNow(); keys.KeyW = keys.KeyS = keys.KeyA = keys.KeyD = keys.Space = false;
+  if (rodRig) rodRig.visible = true;
+  P.x = -0.45; P.z = 6.5; P.yaw = 0; P.pitch = -0.1; helmTouch(); saveBoat(true); document.body.classList.remove('helm');
+  toast(why ? `ออกจากพวงมาลัย · ${why}` : Math.abs(BW.v) > 0.5 ? 'ปล่อยพวงมาลัยแล้ว เรือจะค่อยๆ ลอยลำช้าลงเอง' : 'ออกจากพวงมาลัยแล้ว');
+}
+function helmAnchor() {
+  if (!BW.anchor && Math.abs(BW.v) > 1.5) { toast('ลดความเร็วก่อนค่อยทิ้งสมอ (กด S หรือ Space)', 'bad'); return; }
+  BW.anchor = !BW.anchor; BW.q = netNow(); BW.src = ''; sfx(BW.anchor ? 'splash' : 'click'); tone(BW.anchor ? 140 : 220, 0.3, 0.06, 'square');
+  toast(BW.anchor ? 'ทิ้งสมอแล้ว เรือจอดนิ่ง' : 'ถอนสมอแล้ว พร้อมออกเรือ', 'good'); saveBoat(true); helmTouch();
+}
+function helmTouch() {
+  if (!TOUCH) return;
+  const a = $('bAnchor'), c = $('bCast'); if (a) a.hidden = !HELM.on; if (c) c.hidden = HELM.on;
+  const l = $('bAnchorLbl'); if (l) l.textContent = BW.anchor ? 'ถอนสมอ' : 'ทิ้งสมอ';
+}
+function saveBoat(now) { S.boat = { x: +BW.x.toFixed(2), z: +BW.z.toFixed(2), h: +BW.yaw.toFixed(4), an: BW.anchor ? 1 : 0 }; if (now) save(); }
+function enterSpot(i) {
+  if (i === S.spot) return;
+  S.spot = i; save(); resetSchool(); renderQuests(); renderWater(); CREW.probeDone = false;
+}
+function helmPhysics(dt) {
+  const drive = HELM.on && inputOn();
+  let thr = 0, steer = 0, brake = false;
+  if (drive) {
+    thr = clamp((keys.KeyW || keys.ArrowUp ? 1 : 0) - (keys.KeyS || keys.ArrowDown ? 1 : 0) + joy.y, -1, 1);
+    steer = clamp((keys.KeyA || keys.ArrowLeft ? 1 : 0) - (keys.KeyD || keys.ArrowRight ? 1 : 0) - joy.x, -1, 1);
+    brake = !!keys.Space;
+    if (BW.anchor && Math.abs(thr) > 0.5 && T > HELM.hitT) { HELM.hitT = T + 4; toast(TOUCH ? 'ทอดสมออยู่ แตะปุ่มสมอเพื่อถอนก่อน' : 'ทอดสมออยู่ กด G ถอนสมอก่อน', 'bad'); }
+  }
+  HELM.thr = thr; HELM.brake = brake;
+  HELM.rud += (steer - HELM.rud) * Math.min(1, dt * 2.5); // the wheel turns over a moment, not instantly
+  let v = BW.v; const sg = Math.sign(v);
+  if (BW.anchor) v -= sg * Math.min(Math.abs(v), 2.5 * dt);
+  else if (brake) v -= sg * Math.min(Math.abs(v), 3 * dt);
+  else if (thr > 0.05) v += (v < -0.05 ? 2.2 : 0.9 * (1 - Math.max(0, v) / VMAX)) * thr * dt;
+  else if (thr < -0.05) v += (v > 0.05 ? -2.2 : -0.6 * (1 + Math.min(0, v) / VREV)) * -thr * dt;
+  else v -= sg * Math.min(Math.abs(v), (0.16 + 0.045 * Math.abs(v)) * dt); // coasting: slows down by itself
+  BW.v = clamp(v, -VREV, VMAX);
+  const turnK = clamp(Math.abs(BW.v) / 3, 0, 1) * (BW.v < 0 ? -1 : 1);
+  BW.w += (HELM.rud * 0.16 * turnK - BW.w) * Math.min(1, dt * 0.9); // the hull answers the rudder slowly
+}
+function helmCollide() {
+  let hit = false;
+  for (const r of ROCKS) {
+    const ex = (BW.x - r.x) / r.rx, ez = (BW.z - r.z) / r.rz, e = Math.hypot(ex, ez);
+    if (e < 1) { const k = 1 / Math.max(e, 0.01); BW.x = r.x + ex * k * r.rx; BW.z = r.z + ez * k * r.rz; hit = true; }
+  }
+  for (const f of fleet) {
+    if (!f.g.visible) continue;
+    const dx = BW.x - f.g.position.x, dz = BW.z - f.g.position.z, d = Math.hypot(dx, dz);
+    if (d < 16) { const k = 16 / Math.max(d, 0.01); BW.x = f.g.position.x + dx * k; BW.z = f.g.position.z + dz * k; hit = true; }
+  }
+  const dc = Math.hypot(BW.x, BW.z);
+  if (dc > SEA_R) { BW.x *= SEA_R / dc; BW.z *= SEA_R / dc; BW.v *= 0.5; if (T > HELM.hitT) { HELM.hitT = T + 4; toast('ออกนอกเขตทำประมงไม่ได้ หันหัวเรือกลับ', 'bad'); } }
+  if (hit) {
+    if (Math.abs(BW.v) > 1.2 && T > HELM.hitT) { HELM.hitT = T + 2; sfx('thud'); P.shake = 0.35; toast('โครม! เรือชน ระวังกองหินกับเรือลำอื่น', 'bad'); }
+    BW.v *= -0.15; BW.w *= 0.3;
+  }
+}
+// follow the driver: same velocity, plus a gentle pull toward where their last report says the boat is now
+function helmFollow(dt) {
+  const age = Math.min(1.2, (performance.now() - F.t) / 1000);
+  const px = F.x + Math.sin(F.yaw) * F.v * age, pz = F.z + Math.cos(F.yaw) * F.v * age, pyaw = F.yaw + F.w * age;
+  BW.v = F.v; BW.w = F.w; BW.anchor = F.an;
+  const k = Math.min(1, dt * 2.2);
+  BW.x += (px - BW.x) * k; BW.z += (pz - BW.z) * k;
+  let dy = pyaw - BW.yaw; dy = Math.atan2(Math.sin(dy), Math.cos(dy)); BW.yaw += dy * k;
+}
+function updateHelm(dt) {
+  if (HELM.on && (nightOver || ISL.on || traveling || eng.broken || !started)) helmExit(eng.broken ? 'เครื่องยนต์เรือดับ' : '');
+  if (ISL.on || traveling) { BW.v = 0; BW.w = 0; return; }
+  if (BW.src && (!NET.code || !NET.remotes.has(BW.src))) BW.src = ''; // the driver left: carry on (coast) locally
+  if (BW.src) {
+    BW.x += Math.sin(BW.yaw) * BW.v * dt; BW.z += Math.cos(BW.yaw) * BW.v * dt; BW.yaw += BW.w * dt;
+    helmFollow(dt);
+  } else {
+    helmPhysics(dt);
+    BW.x += Math.sin(BW.yaw) * BW.v * dt; BW.z += Math.cos(BW.yaw) * BW.v * dt; BW.yaw += BW.w * dt;
+    helmCollide();
+    if (HELM.on || Math.abs(BW.v) > 0.01 || Math.abs(BW.w) > 0.0005) BW.q = netNow();
+  }
+  if (Math.abs(BW.v) < 0.003) BW.v = 0;
+  const moving = Math.abs(BW.v) > 1.2;
+  // fishing lines can't trail behind a moving boat
+  if (moving && (st === 'water' || st === 'bite' || st === 'flying')) {
+    st = 'idle'; fish = null; lure.pos.copy(tipW); lure.vel.set(0, 0, 0); primaryHeld = false;
+    if (T > HELM.reelT) { HELM.reelT = T + 20; toast('เรือกำลังแล่น เก็บสายเบ็ดให้แล้ว รอเรือจอดค่อยตกต่อ'); }
+  }
+  if (moving && S.pots.length && Math.hypot(S.pots[0].wx - BW.x, S.pots[0].wz - BW.z) > 45) { const n = autoCollectPots(); toast(`เรือออกห่างลอบปู พี่ชัยกู้ลอบขึ้นมาก่อน ได้ปู ${n} ตัวใส่กล่องพี่ชัย`, 'say'); }
+  HELM.spotT -= dt; if (HELM.spotT <= 0) {
+    HELM.spotT = 0.5; const n = nearestSpot(BW.x, BW.z); if (n.i !== S.spot) enterSpot(n.i);
+    const at = n.d < 150 ? n.i : -1; // arrival message only once actually there (squid thin out away from the spots)
+    if (at !== HELM.at) { if (at >= 0 && HELM.at !== undefined) toast(`ถึง${SPOTS[at].name}แล้ว · ${SPOTS[at].desc}`, 'good'); else if (at < 0 && HELM.at >= 0 && Math.abs(BW.v) > 0.5) toast('ออกจากจุดตกหมึก ทะเลเปิดหมึกน้อยลง'); HELM.at = at; }
+  }
+  HELM.saveT -= dt; if (HELM.saveT <= 0) { HELM.saveT = 4; saveBoat(false); if (Q.far) applyViewDist(); }
+  if (Math.abs(BW.v) > 2.5 && Math.random() < dt * 3) { const wk = boat.localToWorld(tmp3.set(rand(-2.5, 2.5), 0, BW.v > 0 ? -11.8 : 12.6)); wk.y = waveH(wk.x, wk.z, T); spawnSplash(wk, 0.3); }
+  helmHum(dt);
+}
+function helmHum(dt) {
+  if (!A.ctx || !A.sfx) return;
+  if (!HELM.hum) {
+    try {
+      const ctx = A.ctx, o1 = ctx.createOscillator(), o2 = ctx.createOscillator(), lp = ctx.createBiquadFilter(), g = ctx.createGain();
+      o1.type = 'sawtooth'; o2.type = 'square'; o1.frequency.value = 36; o2.frequency.value = 72; lp.type = 'lowpass'; lp.frequency.value = 170; g.gain.value = 0;
+      o1.connect(lp); o2.connect(lp); lp.connect(g).connect(A.sfx); o1.start(); o2.start(); HELM.hum = { o1, o2, g };
+    } catch (e) { HELM.hum = { g: null }; return; }
+  }
+  const h = HELM.hum; if (!h.g) return;
+  const run = HELM.on || Math.abs(BW.v) > 0.3, a = Math.abs(BW.v) / VMAX, want = run && !BW.anchor ? 0.035 + 0.06 * a + 0.02 * Math.abs(HELM.thr || 0) : HELM.on ? 0.02 : 0;
+  h.g.gain.value += (want - h.g.gain.value) * Math.min(1, dt * 3);
+  const f = 34 + 26 * a + 8 * Math.abs(HELM.thr || 0); h.o1.frequency.value = f; h.o2.frequency.value = f * 2.01;
+}
+// chase camera while driving: behind the stern, looking toward the bow; mouse/finger orbits it
+function helmCamera() {
+  const d = HELM.cd, cy = HELM.cy, cp = HELM.cp, c = Math.cos(BW.yaw), s = Math.sin(BW.yaw);
+  const lx = -Math.sin(cy) * d * Math.cos(cp), ly = 3.5 + d * Math.sin(cp), lz = -Math.cos(cy) * d * Math.cos(cp) + 2;
+  // the camera is a child of the boat: place it in world space (so it doesn't rock with the hull) and convert
+  boat.updateMatrix(); boat.matrixWorld.copy(boat.matrix);
+  camera.position.set(BW.x + lx * c + lz * s, boat.position.y + ly, BW.z - lx * s + lz * c); boat.worldToLocal(camera.position);
+  tmp3.set(BW.x + 4 * s, boat.position.y + 3.2, BW.z + 4 * c); camera.lookAt(tmp3);
+}
+// network: what we publish, and what we take from the others
+function boatNetOut() { return { x: +BW.x.toFixed(2), z: +BW.z.toFixed(2), h: +BW.yaw.toFixed(4), v: +BW.v.toFixed(2), w: +BW.w.toFixed(4), an: BW.anchor ? 1 : 0, d: HELM.on ? 1 : 0, q: BW.q }; }
+function boatPeers(all, myUid) {
+  let best = null, bu = '';
+  for (const [uid, pr] of Object.entries(all || {})) {
+    if (uid === myUid) continue; const b = pr && pr.bt;
+    if (!b || typeof b !== 'object' || ![b.x, b.z, b.h, b.v, b.w, b.q].every((n) => typeof n === 'number' && isFinite(n))) continue;
+    const r = NET.remotes.get(uid); if (r) { if (!r.bt || r.bt.q !== b.q || r.bt.d !== b.d) r.btT = performance.now(); r.bt = b; }
+    if (!best || b.q > best.q) { best = b; bu = uid; }
+  }
+  if (!NET.boatSynced) { NET.boatSynced = true; if (!best) { BW.q = Math.max(BW.q, netNow()); return; } BW.q = 0; } // first one on the boat: our boat is the room's boat
+  if (!best) return;
+  if (HELM.on) { if (best.d && bu < myUid) helmExit(`${(NET.remotes.get(bu) || {}).name || 'เพื่อน'} ขับอยู่แล้ว`); else return; }
+  if (best.q < BW.q || (best.q === BW.q && BW.src !== bu)) return;
+  const fresh = BW.src !== bu || Math.hypot(best.x - BW.x, best.z - BW.z) > 60;
+  BW.src = bu; BW.q = best.q;
+  F.x = clamp(best.x, -SEA_R, SEA_R); F.z = clamp(best.z, -SEA_R, SEA_R); F.yaw = best.h; F.v = clamp(best.v, -VREV, VMAX); F.w = clamp(best.w, -0.5, 0.5); F.an = !!best.an; F.t = performance.now();
+  if (fresh && Math.hypot(F.x - BW.x, F.z - BW.z) > 60) { BW.x = F.x; BW.z = F.z; BW.yaw = F.yaw; BW.v = F.v; BW.w = F.w; BW.anchor = F.an; }
+}
+// HUD: speed, heading, anchor, the way to each fishing spot
+let helmHudT = 0;
+function helmHud() {
+  const box = $('helmHud'); if (!box) return; if (T < helmHudT) return; helmHudT = T + 0.1;
+  const show = started && !ISL.on && (HELM.on || Math.abs(BW.v) > 0.3);
+  box.hidden = !show; if (!show) return;
+  const hd = bearingOf(Math.sin(BW.yaw), Math.cos(BW.yaw)), kn = knots(BW.v);
+  $('hhSpd').textContent = (kn < 0 ? '−' : '') + Math.abs(kn).toFixed(1);
+  $('hhHdg').textContent = `${compassName(hd)} ${Math.round(hd)}°`;
+  $('hhState').textContent = BW.anchor ? '⚓ ทอดสมอ' : HELM.brake ? 'เบรก' : (HELM.thr || 0) > 0.05 ? 'เร่ง' : (HELM.thr || 0) < -0.05 ? (BW.v > 0.05 ? 'ชะลอ' : 'ถอยหลัง') : Math.abs(BW.v) > 0.05 ? 'ลอยลำ' : 'จอดนิ่ง';
+  let drv = ''; if (!HELM.on) { for (const r of NET.remotes.values()) if (r.bt && r.bt.d) drv = r.name; }
+  $('hhWho').textContent = HELM.on ? (TOUCH ? 'จอย = เร่ง/เลี้ยว · ปุ่มเขียว = ออก' : 'W/S เร่ง/ถอย · A/D เลี้ยว · Space เบรก · G สมอ · E ออก') : drv ? `${drv} กำลังขับ` : 'เรือกำลังแล่น';
+  const rows = SPOT_POS.map(([sx, sz], i) => { const dx = sx - BW.x, dz = sz - BW.z, d = Math.hypot(dx, dz); let rel = bearingOf(dx, dz) - hd; rel = ((rel + 540) % 360) - 180; return { i, d, rel }; });
+  const html = rows.map((r) => `<div class="hhRow${r.i === S.spot && r.d < 200 ? ' here' : ''}"><i style="transform:rotate(${Math.round(r.rel)}deg)">▲</i><span>${SPOTS[r.i].name}</span><b>${r.d < 150 ? 'อยู่ที่นี่' : r.d < 1000 ? Math.round(r.d / 10) * 10 + ' ม.' : (r.d / 1000).toFixed(1) + ' กม.'}</b></div>`).join('');
+  const sp = $('hhSpots'); if (sp.dataset.k !== html) { sp.dataset.k = html; sp.innerHTML = html; }
+}
+// anchor rope from the bow while anchored
+const anchorLine = makeLine(0x8b6c43, 0.9);
+function updateAnchorLine() {
+  anchorLine.visible = BW.anchor && !ISL.on;
+  if (!anchorLine.visible) return;
+  const a = boat.localToWorld(tmp3.set(0, 2.5, 12.1)), b = boat.localToWorld(tmp2.set(0, 0, 18)); b.y = waveH(b.x, b.z, T) - 0.6;
+  setLine(anchorLine, a, b, 0.25);
 }
 
 // =============== input ===============
@@ -2943,6 +3180,7 @@ const floorY = () => P.zone === 'hold' ? HOLD.floor : P.zone === 'land' ? landFl
 let blockMsgT = 0;
 const inputOn = () => started && !paused && !menuOpen && !nightOver && !traveling && !pageOpen && !chatOpen && !kitchenOpen && !musicOpen;
 function updatePlayer(dt) {
+  if (HELM.on) { P.moving = 0; P.y = UP_Y; helmCamera(); return; }
   let mx = 0, my = 0;
   if (keys.KeyW || keys.ArrowUp) my += 1; if (keys.KeyS || keys.ArrowDown) my -= 1; if (keys.KeyD || keys.ArrowRight) mx += 1; if (keys.KeyA || keys.ArrowLeft) mx -= 1;
   mx += joy.x; my += joy.y; const l = Math.hypot(mx, my); if (l > 1) { mx /= l; my /= l; }
@@ -2963,10 +3201,11 @@ function updatePlayer(dt) {
   const sh = P.shake * 0.06; camera.position.set(P.x + rand(-sh, sh), P.y + 1.62 + Math.sin(P.bob) * 0.035 * P.moving + rand(-sh, sh), P.z); camera.rotation.set(P.pitch, P.yaw, 0);
   rodRig.position.set(0.3 + Math.cos(P.bob * 0.5) * 0.012 * P.moving, -0.36 + Math.abs(Math.sin(P.bob * 0.5)) * 0.012 * P.moving, -0.46);
 }
-function look(dx, dy, k) { P.yaw -= dx * k; P.pitch = clamp(P.pitch - dy * k, -1.35, 1.25); }
+function look(dx, dy, k) { if (HELM.on) { HELM.cy -= dx * k; HELM.cp = clamp(HELM.cp + dy * k * 0.7, 0.05, 1.15); return; } P.yaw -= dx * k; P.pitch = clamp(P.pitch - dy * k, -1.35, 1.25); }
 
 // one-button fishing: hold/release in every state
 function primaryDown() {
+  if (HELM.on) return; // driving: Space is the brake, the touch cast button is replaced by the anchor button
   if (inputOn() && rep.repairing) { skillPress(); return; }
   if (inputOn() && P.seated) { biteNext(); return; }
   if (inputOn() && BOIL.active) { boilAction3D(); return; }
@@ -3025,7 +3264,7 @@ window.addEventListener('keydown', (e) => {
   keys[e.code] = true; if (e.repeat) return;
   if (BOIL.active && K.boil && K.boil.done && (e.code === 'KeyF' || e.code === 'Digit2')) { finishKitchen('pack'); return; }
   if (BOIL.active && K.boil && K.boil.done && e.code === 'Digit1') { finishKitchen('eat'); return; }
-  if (e.code === 'Space' || e.code === 'KeyF') primaryDown();
+  if (HELM.on) { if (e.code === 'KeyG') helmAnchor(); } else if (e.code === 'Space' || e.code === 'KeyF') primaryDown();
   if (e.code === 'KeyE') { if (rep.repairing) { skillPress(); return; } useHeld = true; useT = 0; tryUse(true); }
   if (e.code === 'KeyB') openMenu('market');
   if (e.code === 'KeyK' && tut.on) endTut();
@@ -3053,6 +3292,7 @@ try { if (localStorage.getItem('squid-ctrl') === '1') $('ctrl').classList.add('m
   lk.addEventListener('pointermove', (e) => { if (e.pointerId !== lid || !inputOn()) return; look(e.clientX - lx, e.clientY - ly, 0.0048); lx = e.clientX; ly = e.clientY; });
   const lEnd = (e) => { if (e.pointerId === lid) lid = null; }; lk.addEventListener('pointerup', lEnd); lk.addEventListener('pointercancel', lEnd);
   const bc = $('bCast');
+  $('bAnchor').addEventListener('click', (e) => { e.preventDefault(); if (HELM.on) helmAnchor(); });
   bc.addEventListener('pointerdown', (e) => { e.preventDefault(); bc.setPointerCapture(e.pointerId); primaryDown(); bc.classList.add('held'); });
   const bEnd = (e) => { e.preventDefault(); primaryUp(); bc.classList.remove('held'); }; bc.addEventListener('pointerup', bEnd); bc.addEventListener('pointercancel', bEnd);
   const bu = $('bUse');
@@ -3081,14 +3321,15 @@ function interactables() {
   if (crew.visible) list.push({ pos: new V3(CREW.x, 0, CREW.z), r: 2.3, label: 'คุยกับพี่ชัย', act: openChat });
   list.push({ pos: CRATE, r: 1.8, label: `เปิดกล่องหมึกพี่ชัย (${S.crewBox.length} ตัว)`, act: openCrate });
   list.push({ pos: new V3(0.6, 0, 3.6), r: 1.5, label: A.radio ? 'ปิดวิทยุ' : 'เปิดวิทยุ', act: toggleRadio });
-  list.push({ pos: new V3(-0.45, 0, 6.45), r: 1.2, lvl: 1, in: true, label: ISL.on ? 'จับพวงมาลัย: ออกเรือคืนต่อไป' : 'จับพวงมาลัย: ย้ายจุดตกหมึก', act: () => ISL.on ? leaveIsland() : openMenu('map') });
+  list.push({ pos: new V3(-0.45, 0, 6.45), r: 1.2, lvl: 1, in: true, label: ISL.on ? 'จับพวงมาลัย: ออกเรือคืนต่อไป' : 'จับพวงมาลัย: ขับเรือ', act: () => ISL.on ? leaveIsland() : helmEnter() });
   for (const [i, se] of SEATS.entries()) { const t = TABLE[i]; const occupied = [...NET.remotes.values()].some((r) => r.seat === i); const lbl = occupied ? 'มีเพื่อนนั่งกินอยู่' : t ? 'นั่งลงกินที่โต๊ะ' : 'นั่งที่โต๊ะ'; list.push({ pos: { x: se.x + 0.85, z: se.z }, r: 1.0, in: true, label: lbl, act: () => sitDown(i) }); }
   list.push({ pos: new V3(-0.1, 0, 8.7), r: 1.3, in: true, label: 'เปิดครัว: ทำซาชิมิหมึก หรือต้มปู', act: openKitchen });
   list.push({ pos: new V3(1.75, 0, 7.3), r: 1.25, in: true, label: 'ค้างไว้: งีบบนเตียง 30 นาที', hold: 1.6, act: napBunk });
   return list;
 }
 let curUse = null;
-function nearestUse() { let best = null, bd = 99; const L = P.zone === 'upper' ? 1 : P.zone === 'deck' ? 0 : P.zone === 'land' ? 2 : P.zone === 'hold' ? 3 : -1, IN = isIndoors(); for (const it of interactables()) { if ((it.lvl || 0) !== L || !!it.in !== IN) continue; const d = toLocalDist(it.pos); if (d < it.r && d < bd) { bd = d; best = it; } } return best; }
+const HELM_EXIT = { label: 'ออกจากพวงมาลัย', act: () => helmExit() };
+function nearestUse() { if (HELM.on) return HELM_EXIT; let best = null, bd = 99; const L = P.zone === 'upper' ? 1 : P.zone === 'deck' ? 0 : P.zone === 'land' ? 2 : P.zone === 'hold' ? 3 : -1, IN = isIndoors(); for (const it of interactables()) { if ((it.lvl || 0) !== L || !!it.in !== IN) continue; const d = toLocalDist(it.pos); if (d < it.r && d < bd) { bd = d; best = it; } } return best; }
 function tryUse(press) { if (!inputOn()) return; const it = nearestUse(); if (!it) return; if (!it.hold && press) { it.act(); useHeld = false; } }
 function updateUse(dt) {
   curUse = inputOn() && !rep.repairing ? nearestUse() : null;
@@ -3168,7 +3409,7 @@ function updateHolders(dt) {
     h.tip.getWorldPosition(tmp); const wp = boat.localToWorld(tmp2.copy(h.def.out)); wp.y = waveH(wp.x, wp.z, T);
     if (h.state === 'idle') {
       h.g.rotation.x = 0.75; if (!started || traveling || ISL.on) continue;
-      const r = biteRate(14, 10, false) * 0.35;
+      const r = Math.abs(BW.v) > 0.8 ? 0 : biteRate(14, 10, false) * 0.35;
       if (Math.random() < r * dt) { h.state = 'bite'; h.t = rand(420, 600); h.ring = 0; h.age = 0; h.claim = null; h.lost = false; toast(`คันปัก${h.def.side}กิน! ${CREW.watch ? 'ถ้าไม่มีใครมา พี่ชัย' + (S.up.cat ? 'หรือเจ้าส้ม' : '') + 'จะไปเก็บให้' : 'รีบมากด E เก็บนะ'}`, 'good'); }
     } else if (h.state === 'bite') {
       h.t -= dt; h.age = (h.age || 0) + dt; h.ring -= dt; h.g.rotation.x = 0.6 + Math.sin(T * 30) * 0.08; if (h.claim && h.age > 200) h.claim = null; /* a helper who never arrived: let someone else try */
@@ -3411,10 +3652,11 @@ function travel(idx, who) {
   if (traveling || idx === S.spot) return;
   if (!who && eng.broken) { toast('เครื่องยนต์เรือเสียอยู่ ต้องลงไปซ่อมที่ห้องเครื่องก่อนถึงจะออกเรือได้', 'bad'); return; }
   if (S.pots.length) { const n = autoCollectPots(); toast(`พี่ชัยกู้ลอบปูก่อนออกเรือ ได้ปู ${n} ตัวใส่กล่องพี่ชัย`, 'say'); }
+  if (HELM.on) helmExit();
   traveling = true; primaryHeld = false; st = 'idle'; fish = null; landing = null;
   $('fadeTxt').textContent = `กำลังเดินเรือไป${SPOTS[idx].name}…`; $('fade').classList.add('on'); sfx('engine');
   if (who) toast(`${who} ย้ายเรือไป${SPOTS[idx].name}`, 'say');
-  setTimeout(() => { S.spot = idx; save(); resetSchool(); gameMin += 25; renderQuests(); renderWater(); CREW.probeDone = false; $('fade').classList.remove('on'); traveling = false; toast(`ถึง${SPOTS[idx].name}แล้ว · ${SPOTS[idx].desc}`, 'good'); }, 3000);
+  setTimeout(() => { S.spot = idx; BW.x = SPOT_POS[idx][0]; BW.z = SPOT_POS[idx][1]; BW.v = 0; BW.w = 0; BW.anchor = true; BW.src = ''; BW.q = netNow(); saveBoat(false); save(); resetSchool(); gameMin += 25; renderQuests(); renderWater(); CREW.probeDone = false; $('fade').classList.remove('on'); traveling = false; toast(`ถึง${SPOTS[idx].name}แล้ว · ${SPOTS[idx].desc}`, 'good'); }, 3000);
 }
 
 // =============== menu ===============
@@ -3524,7 +3766,7 @@ function renderMenu() {
     }
     body.appendChild(g);
   } else if (menuTab === 'map') {
-    body.appendChild(el('div', 'hint', 'ย้ายเรือไปจุดอื่นเสียค่าน้ำมันและเวลา 25 นาทีในเกม แต่ละจุดมีความลึกและหมึกต่างกัน' + (NET.code ? ' · ถ้าเล่นกับเพื่อน ทุกคนบนเรือจะย้ายไปด้วยกัน' : '')));
+    body.appendChild(el('div', 'hint', 'ขับเรือไปเองได้ฟรีที่พวงมาลัยบนห้องบังคับเรือ (ดูทิศจากเรดาร์) หรือย้ายเร็วจากตรงนี้ เสียค่าน้ำมันและเวลา 25 นาทีในเกม แต่ละจุดมีความลึกและหมึกต่างกัน' + (NET.code ? ' · ถ้าเล่นกับเพื่อน ทุกคนบนเรือจะย้ายไปด้วยกัน' : '')));
     const list = el('div', 'spots');
     SPOTS.forEach((sp, i) => {
       const d = el('div', 'spot' + (i === S.spot ? ' here' : '')), t = el('div'); t.appendChild(el('b', '', sp.name)); t.appendChild(el('p', '', sp.desc)); d.appendChild(t);
@@ -3630,11 +3872,13 @@ async function bindCrewBox(code) {
 function unbindCrewBox() { if (crewBoxUnsub) { crewBoxUnsub(); crewBoxUnsub = null; } NET.crewBoxRef = null; }
 function netState(txt, ok) { for (const id of ['netState']) { const e = $(id); if (e) { e.textContent = txt; e.classList.toggle('ok', !!ok); } } }
 // ---- inviting friends: copy the boat code / an invite link, and join straight from a ?boat=CODE link ----
+let PENDING_REJOIN = false;
 let PENDING_BOAT = ''; // a boat code from an invite link, joined automatically as soon as we are signed in
 try {
   const sp = new URLSearchParams(location.search), raw = String(sp.get('boat') || ''), c = /^[A-Za-z0-9]{4,8}$/.test(raw) ? raw.toLowerCase() : '';
   if (validCode(c)) { PENDING_BOAT = c; try { sessionStorage.setItem('squid-boat-pending', c); } catch (e) {} }
   else { try { const o = sessionStorage.getItem('squid-boat-pending') || ''; if (validCode(o)) PENDING_BOAT = o; } catch (e) {} }
+  if (!PENDING_BOAT) { try { const l = sessionStorage.getItem('squid-boat-last') || ''; if (validCode(l)) { PENDING_BOAT = l; PENDING_REJOIN = true; } } catch (e) {} }
   if (sp.has('boat')) { sp.delete('boat'); const q = sp.toString(); try { history.replaceState(null, '', location.pathname + (q ? '?' + q : '') + location.hash); } catch (e) {} }
 } catch (e) {}
 function clearPending() { PENDING_BOAT = ''; try { sessionStorage.removeItem('squid-boat-pending'); } catch (e) {} renderInvite(); }
@@ -3674,7 +3918,7 @@ function renderInvite() {
   const on = !!NET.code, row = $('inviteRow'); if (row) { row.hidden = !on; if (on) $('invCode').textContent = NET.code.toUpperCase(); }
   const bn = $('invBanner');
   if (bn) {
-    const t = PENDING_BOAT && !on ? (NET.fbUser ? 'กำลังขึ้นเรือ ' + PENDING_BOAT.toUpperCase() + ' ตามที่เพื่อนชวน…' : 'เพื่อนชวนขึ้นเรือ ' + PENDING_BOAT.toUpperCase() + ' · เข้าสู่ระบบด้วย Google แล้วจะขึ้นเรือให้เอง') : '';
+    const t = PENDING_BOAT && !on ? PENDING_REJOIN ? (NET.fbUser ? 'กำลังกลับเข้าเรือ ' + PENDING_BOAT.toUpperCase() + '…' : 'เข้าสู่ระบบด้วย Google เพื่อกลับเข้าเรือ ' + PENDING_BOAT.toUpperCase()) : (NET.fbUser ? 'กำลังขึ้นเรือ ' + PENDING_BOAT.toUpperCase() + ' ตามที่เพื่อนชวน…' : 'เพื่อนชวนขึ้นเรือ ' + PENDING_BOAT.toUpperCase() + ' · เข้าสู่ระบบด้วย Google แล้วจะขึ้นเรือให้เอง') : '';
     bn.hidden = !t; bn.textContent = t;
   }
 }
@@ -3711,7 +3955,7 @@ async function googleSignIn() {
 async function googleSignOut() { await fbReady; await leaveBoat(true); try { await signOut(fbAuth); } catch (e) {} }
 async function netInit() {
   await fbReady;
-  onAuthStateChanged(fbAuth, (u) => { NET.fbUser = u; NET.ready = !!u; updateAuthUI(); if (u && PENDING_BOAT && !NET.code) { const c = PENDING_BOAT; joinBoat(c).then(() => { if (NET.code === c) toast('ขึ้นเรือ ' + c.toUpperCase() + ' ตามที่เพื่อนชวนแล้ว', 'good'); }); } });
+  onAuthStateChanged(fbAuth, (u) => { NET.fbUser = u; NET.ready = !!u; updateAuthUI(); if (u && PENDING_BOAT && !NET.code) { const c = PENDING_BOAT; joinBoat(c).then(() => { if (NET.code === c) toast(PENDING_REJOIN ? 'กลับเข้าเรือ ' + c.toUpperCase() + ' แล้ว' : 'ขึ้นเรือ ' + c.toUpperCase() + ' ตามที่เพื่อนชวนแล้ว', 'good'); }); } });
   onValue(ref(fbDb, 'lobby'), (snap) => { LOBBY = snap.val() || {}; renderBoats(); }, () => {});
 }
 function openBoats() {
@@ -3733,10 +3977,10 @@ async function joinBoat(raw) {
   const code = String(raw || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 8);
   if (!validCode(code)) { toast('รหัสเรือต้องมี 4–8 ตัวอักษร a–z หรือ 0–9', 'bad'); return; }
   if (NET.code === code) { clearPending(); return; }
-  clearPending();
+  clearPending(); if (HELM.on) helmExit();
   await leaveBoat(true);
   try {
-    NET.code = code; NET.synced = false; NET.islSynced = false; NET.joinedAt = Date.now();
+    NET.code = code; NET.synced = false; NET.islSynced = false; NET.boatSynced = false; NET.joinedAt = Date.now(); BW.src = '';
     const uid = NET.fbUser.uid;
     NET.playersRef = ref(fbDb, `rooms/${code}/players`);
     NET.eventsRef = ref(fbDb, `rooms/${code}/events`);
@@ -3744,6 +3988,7 @@ async function joinBoat(raw) {
     NET.lobbyMeRef = ref(fbDb, `lobby/${code}/${uid}`);
     const colHex = PALETTE[[...uid].reduce((a, c) => a + c.charCodeAt(0), 0) % PALETTE.length];
     const initData = { name: NET.fbUser.displayName || 'ผู้เล่น', col: '#' + colHex.toString(16).padStart(6, '0'), x: 0, z: -6, y: 2, yaw: 0, s: 'idle', lx: 0, lz: 0, ld: 0, c: 0, gm: Math.round(gameMin), t: Date.now() };
+    NET.initData = initData; NET.last = {}; NET.conn = true;
     await set(NET.myRef, initData);
     onDisconnect(NET.myRef).remove();
     await set(NET.lobbyMeRef, true);
@@ -3751,17 +3996,32 @@ async function joinBoat(raw) {
     NET.subs.push(onChildAdded(NET.playersRef, (snap) => { if (snap.key === uid) return; if (!NET.remotes.has(snap.key)) addRemote(snap.key, snap.val() || {}); }));
     NET.subs.push(onChildRemoved(NET.playersRef, (snap) => { if (snap.key === uid) return; const r = NET.remotes.get(snap.key); if (r) { removeRemote(r); NET.remotes.delete(snap.key); syncRemoteSeats(); toast(`${r.name || 'เพื่อน'} ออกจากเรือแล้ว`); renderPlayers(); } }));
     NET.subs.push(onValue(NET.playersRef, (snap) => onBoatPeers(snap.val() || {}, uid)));
+    NET.subs.push(onValue(ref(fbDb, '.info/connected'), (snap) => {
+      if (snap.val() !== true) { if (NET.conn) { NET.conn = false; netState('สัญญาณหลุด กำลังเชื่อมต่อใหม่…'); toast('สัญญาณหลุด กำลังเชื่อมต่อเรือใหม่…', 'bad'); } return; }
+      if (!NET.conn) { NET.conn = true; netRearm(); }
+    }));
     NET.subs.push(onChildAdded(NET.eventsRef, (snap) => { const m = snap.val(); if (!m || m.by === uid || m.t < NET.joinedAt) return; onNetEvent(m); }));
     bindCrewBox(code);
     msReset(); try { NET.subs.push(onValue(ref(fbDb, '.info/serverTimeOffset'), (s) => { const v = +s.val(); if (isFinite(v)) MS.skew = v; })); } catch (e) {}
     netState(`อยู่บนเรือ ${code.toUpperCase()} · บอกรหัสนี้ให้เพื่อน`, true);
     toast(`ขึ้นเรือ ${code.toUpperCase()} แล้ว บอกรหัสนี้ให้เพื่อนเพื่อมาเล่นด้วยกัน`, 'good');
+    try { sessionStorage.setItem('squid-boat-last', code); } catch (e) {} PENDING_REJOIN = false;
     $('players').hidden = false; $('pCode').textContent = code.toUpperCase(); renderBoats(); renderPlayers(); renderInvite(); if (menuOpen) renderMenu();
   } catch (e) { NET.code = null; renderInvite(); toast('ขึ้นเรือไม่ได้ ลองใหม่อีกครั้ง', 'bad'); }
 }
+// back online after a drop: the server already ran our onDisconnect (removed our player + lobby entry), so put them
+// back and re-arm onDisconnect; the next network tick then resends our full state (NET.last cleared)
+async function netRearm() {
+  if (!NET.code || !NET.myRef || !NET.fbUser) return;
+  try {
+    NET.last = {}; await set(NET.myRef, Object.assign({}, NET.initData, { t: Date.now() })); onDisconnect(NET.myRef).remove();
+    if (NET.lobbyMeRef) { await set(NET.lobbyMeRef, true); onDisconnect(NET.lobbyMeRef).remove(); }
+    netState(`อยู่บนเรือ ${NET.code.toUpperCase()} · บอกรหัสนี้ให้เพื่อน`, true); toast('เชื่อมต่อกลับมาแล้ว', 'good');
+  } catch (e) { NET.conn = false; }
+}
 async function leaveBoat(silent) {
   if (!NET.code) return;
-  msReset();
+  msReset(); BW.src = ''; if (HELM.on) helmExit(); try { sessionStorage.removeItem('squid-boat-last'); } catch (e) {}
   unbindCrewBox(); // keeps whatever was last in the shared box as our own local one, rather than losing it
   for (const unsub of NET.subs) { try { unsub(); } catch (e) {} } NET.subs = [];
   try { if (NET.myRef) await remove(NET.myRef); } catch (e) {}
@@ -3842,6 +4102,7 @@ function syncRemoteSeats() {
 const num = (v, a, b, d) => (typeof v === 'number' && isFinite(v) ? clamp(v, a, b) : d);
 function onBoatPeers(all, myUid) {
   try { msPeers(all, myUid); } catch (e) {}
+  try { boatPeers(all, myUid); } catch (e) { console.warn('boatPeers', e); }
   let maxGm = null, minFl = null, peerGenBroken = false, peerEngBroken = false, maxFd = 0;
   for (const [uid, pr] of Object.entries(all)) {
     if (uid === myUid || typeof pr.x !== 'number') continue;
@@ -3974,7 +4235,13 @@ function updateNet(dt) {
     // friend sees it land on the table the moment cooking finishes - not only once we actually sit down to eat it
     const dishOf = (t) => (t && t.owner === 'local') ? { k: t.k, id: t.id, kg: +t.kg.toFixed(2), q: +t.q.toFixed(2), f: +(t.f || 1).toFixed(2) } : null;
     const potsOut = S.pots.map((q) => ({ wx: +q.wx.toFixed(2), wz: +q.wz.toFixed(2), t: Math.round(q.t), bait: !!q.bait }));
-    update(NET.myRef, { x: +P.x.toFixed(2), z: +P.z.toFixed(2), y: +P.y.toFixed(2), yaw: +P.yaw.toFixed(3), s: st, lx: +lure.x.toFixed(2), lz: +lure.z.toFixed(2), ld: +lure.depth.toFixed(1), c: NIGHT.stats.count, gm: Math.round(gameMin), t: Date.now(), seat: sIdx, p0: dishOf(TABLE[0]), p1: dishOf(TABLE[1]), cr: P.carry || null, isl: ISL.on, pt: potsOut, fl: +S.fuel.toFixed(1), gb: gen.broken, eb: eng.broken, fd: +FLOOD.lvl.toFixed(2), ck: CONTEST.on ? +CONTEST.kg.toFixed(2) : null }).catch(() => {});
+    // only what changed since the last send goes out (an idle player used to resend ~25 fields 6-7 times a second)
+    const full = { x: +P.x.toFixed(2), z: +P.z.toFixed(2), y: +P.y.toFixed(2), yaw: +P.yaw.toFixed(3), s: st, lx: +lure.x.toFixed(2), lz: +lure.z.toFixed(2), ld: +lure.depth.toFixed(1), c: NIGHT.stats.count, gm: Math.round(gameMin), seat: sIdx, p0: dishOf(TABLE[0]), p1: dishOf(TABLE[1]), cr: P.carry || null, isl: ISL.on, pt: potsOut, fl: +S.fuel.toFixed(1), gb: gen.broken, eb: eng.broken, fd: +FLOOD.lvl.toFixed(2), ck: CONTEST.on ? +CONTEST.kg.toFixed(2) : null };
+    const L = NET.last || (NET.last = {}), diff = {}; let n = 0;
+    for (const k in full) { const v = full[k] === undefined ? null : full[k], js = JSON.stringify(v); if (L[k] !== js) { diff[k] = v; L[k] = js; n++; } }
+    NET.beat = (NET.beat || 0) - 0.15; if (NET.beat <= 0) { NET.beat = 10; diff.t = Date.now(); n++; }
+    if (n) update(NET.myRef, diff).catch(() => {});
+    const bt = boatNetOut(), bjs = JSON.stringify(bt); if (L.bt !== bjs) { L.bt = bjs; update(NET.myRef, { bt }).catch(() => {}); } // separate write: a rule rejecting it can't block the rest
   }
   for (const r of NET.remotes.values()) {
     // while a peer's island state doesn't match ours (briefly, mid-sync, or if netcode drops a packet), their
@@ -5614,7 +5881,7 @@ let hudAcc = 0, sweep = 0, lastPrompt = '', lastAlerts = '';
 function promptFor() {
   const T1 = TOUCH;
   switch (st) {
-    case 'idle': if (rep.repairing) return ''; if (P.carry === 'pot') return 'เดินไปที่ขอบเรือ แล้วค้าง E เพื่อหย่อนลอบปู'; if (P.carry === 'fuel') return 'เอาแกลลอนไปเติมที่เครื่องปั่นไฟกราบซ้าย (ค้าง E)'; if (P.carry) return P.carry === 'sea' ? 'เอาน้ำทะเลไปเทใส่เครื่องกรองน้ำข้างเครื่องปั่นไฟ' : 'วางถังคืนที่กรอบสีเหลือง · หรือเดินไปที่ขอบเรือ แล้วค้าง E เพื่อหย่อนถังตักน้ำทะเล'; if (isIndoors()) return ''; return T1 ? 'กดปุ่มส้มค้างไว้ แล้วปล่อยเพื่อเหวี่ยง' : 'หันไปทางทะเล กดค้างแล้วปล่อยเพื่อเหวี่ยง';
+    case 'idle': if (rep.repairing || HELM.on) return ''; if (P.carry === 'pot') return 'เดินไปที่ขอบเรือ แล้วค้าง E เพื่อหย่อนลอบปู'; if (P.carry === 'fuel') return 'เอาแกลลอนไปเติมที่เครื่องปั่นไฟกราบซ้าย (ค้าง E)'; if (P.carry) return P.carry === 'sea' ? 'เอาน้ำทะเลไปเทใส่เครื่องกรองน้ำข้างเครื่องปั่นไฟ' : 'วางถังคืนที่กรอบสีเหลือง · หรือเดินไปที่ขอบเรือ แล้วค้าง E เพื่อหย่อนถังตักน้ำทะเล'; if (isIndoors()) return ''; return T1 ? 'กดปุ่มส้มค้างไว้ แล้วปล่อยเพื่อเหวี่ยง' : 'หันไปทางทะเล กดค้างแล้วปล่อยเพื่อเหวี่ยง';
     case 'charge': return 'ปล่อยเพื่อเหวี่ยง';
     case 'water': {
       if (holdT >= 0.22 && primaryHeld) return 'กำลังม้วนเก็บสาย… ปล่อยเพื่อหยุด';
@@ -5629,6 +5896,7 @@ function promptFor() {
   }
 }
 function updateHUD(dt, timeStr) {
+  helmHud();
   if (cardTimer > 0) { cardTimer -= dt; if (cardTimer <= 0) $('card').hidden = true; }
   const pb = $('powerBar'); pb.hidden = st !== 'charge';
   if (st === 'charge') { $('pFill').style.width = (power * 100).toFixed(1) + '%'; const sp = 6 + power * 18; $('pDist').textContent = '~ ' + Math.round(sp * sp / 9.8 * 0.85) + ' ม.'; }
@@ -5685,11 +5953,12 @@ function drawRadar(dt) {
   ['N', 'E', 'S', 'W'].forEach((t, i) => { rc.save(); rc.rotate(i * Math.PI / 2); rc.fillText(t, 0, -R * 0.82); rc.restore(); });
   const sc = R / 45;
   if (st === 'water' || st === 'bite' || st === 'fight') { rc.fillStyle = '#ffb347'; rc.beginPath(); rc.arc((lure.x - boat.position.x) * sc, (lure.z - boat.position.z) * sc, 6, 0, 7); rc.fill(); }
+  rc.font = '700 15px Sarabun, sans-serif'; SPOT_POS.forEach(([sx, sz], i) => { const dx = sx - BW.x, dz = sz - BW.z, d = Math.hypot(dx, dz); if (d < 40) return; const px = dx / d * R * 0.9, py = dz / d * R * 0.9; rc.fillStyle = i === S.spot ? '#7ff0b0' : '#ffd166'; rc.beginPath(); rc.arc(px, py, 5.5, 0, 7); rc.fill(); rc.fillStyle = '#04121e'; rc.fillText(String(i + 1), px, py + 0.5); });
   for (const r of NET.remotes.values()) if (r.line.visible) { rc.fillStyle = '#ffe2b0'; rc.beginPath(); rc.arc((r.lx - boat.position.x) * sc, (r.lz - boat.position.z) * sc, 5, 0, 7); rc.fill(); }
   rc.rotate(sweep); const sg = rc.createLinearGradient(0, 0, R, 0); sg.addColorStop(0, 'rgba(140,220,255,0)'); sg.addColorStop(1, 'rgba(140,220,255,.28)'); rc.fillStyle = sg; rc.beginPath(); rc.moveTo(0, 0); rc.arc(0, 0, R - 4, -0.5, 0); rc.closePath(); rc.fill();
   rc.restore();
   rc.fillStyle = 'rgba(255,255,255,.14)'; rc.beginPath(); rc.moveTo(0, 0); rc.arc(0, 0, R * 0.95, -Math.PI / 2 - 0.55, -Math.PI / 2 + 0.55); rc.closePath(); rc.fill();
-  rc.save(); rc.rotate(-heading); rc.rotate(Math.atan2(Math.sin(BOAT_YAW), -Math.cos(BOAT_YAW)));
+  rc.save(); rc.rotate(-heading); rc.rotate(Math.atan2(Math.sin(BW.yaw), -Math.cos(BW.yaw)));
   rc.fillStyle = '#e9f2f7'; rc.strokeStyle = '#0d3a5c'; rc.lineWidth = 2; rc.beginPath(); rc.moveTo(0, -24); rc.quadraticCurveTo(9, -14, 9, 2); rc.lineTo(8, 22); rc.lineTo(-8, 22); rc.lineTo(-9, 2); rc.quadraticCurveTo(-9, -14, 0, -24); rc.fill(); rc.stroke();
   rc.fillStyle = '#2c86c9'; rc.fillRect(-5, -10, 10, 9); rc.restore(); rc.restore();
 }
@@ -6062,7 +6331,7 @@ function frame() {
   safe('updateCrew', () => updateCrew(dt)); safe('updateVisuals', () => updateVisuals(dt)); safe('updateRepair', () => updateRepair(dt)); safe('updateSparks', () => updateSparks(dt));
   safe('updateNeeds', () => updateNeeds(dt)); safe('updateWater', () => updateWater(dt)); safe('updateEat', () => { updateEat(dt); updateBoil3D(dt); }); safe('updateCrate', () => { updateCrate(dt); updateStations(dt); updatePots(dt); updateFuel(dt); }); safe('updateBelowDeck', () => updateBelowDeck(dt));
   if (started) { safe('updateHUD', () => updateHUD(dt, ts)); HUDC.acc += dt; if (HUDC.acc >= 0.05) { const a = HUDC.acc; HUDC.acc = 0; safe('drawRadar', () => drawRadar(a)); safe('drawSonar', () => drawSonar(a)); } }
-  safe('lights', lightSlots);
+  safe('lights', lightSlots); safe('anchor', updateAnchorLine);
   HUDC.n++; renderer.shadowMap.needsUpdate = sunL.intensity > 0.02 && (qName !== 'low' || HUDC.n % 2 === 0);
   safe('render', () => { if (composer && !ERRS.has('composer')) { try { composer.render(); } catch (e) { ERRS.add('composer'); console.error(e); renderer.render(scene, camera); } } else renderer.render(scene, camera); });
 }
