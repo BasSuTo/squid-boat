@@ -194,6 +194,35 @@ body.touch #waterBox{display:none}
 .mrow.playing .eq i:nth-child(2){animation-delay:-.3s}
 .mrow.playing .eq i:nth-child(3){animation-delay:-.6s}
 @keyframes eq{from{height:20%}to{height:100%}}
+.mph{order:-3}
+.mtabs{order:-2;display:flex;gap:6px;padding:4px 12px 8px}
+.mtab{flex:1;min-height:34px;border:1px solid var(--line);border-radius:999px;background:none;color:var(--mute);font:600 13px var(--body);cursor:pointer}
+.mtab:hover{background:rgba(255,255,255,.07)}
+.mtab[aria-selected="true"]{background:rgba(240,138,43,.16);border-color:rgba(240,138,43,.55);color:var(--ink)}
+.mtab:focus-visible{outline:3px solid var(--sea);outline-offset:1px}
+.mpane{flex:1 1 auto;min-width:0;min-height:0;display:flex;flex-direction:column}
+#musPaneS{overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;border-top:1px solid var(--line)}
+.spform{display:flex;gap:8px;padding:10px 12px 6px}
+.spform input{flex:1;min-width:0;font:500 14px var(--body);min-height:40px;padding:6px 10px;border-radius:10px;border:1px solid var(--line);background:rgba(0,0,0,.35);color:var(--ink);-webkit-user-select:text;user-select:text}
+.spform input:focus-visible{outline:3px solid var(--sea)}
+#spMsg{padding:0 14px 6px}
+#spMsg.ok{color:var(--mute)}
+#spBox{flex:none;padding:2px 12px 8px}
+#spBox:empty{display:none}
+#spBox iframe{display:block;width:100%;max-width:100%;border:0;border-radius:12px}
+.spq{display:flex;flex-wrap:wrap;gap:6px;padding:0 12px 8px}
+.spq .btn{min-height:32px;padding:4px 12px;font-size:12.5px;border-radius:999px}
+.spnote{padding:0 14px 12px;font-size:11.5px;line-height:1.5;color:var(--mute)}
+/* Spotify playing: the embed stays visible (never hidden) as a slim bar, on the game tab or when the panel is closed */
+#mus.slim #musPaneS{order:-1;border-top:0;overflow:visible;flex:none}
+#mus.slim #musPaneG{border-top:1px solid var(--line)}
+#mus.mini{left:50%;right:auto;bottom:auto;top:calc(60px + env(safe-area-inset-top,0px));transform:translateX(-50%);width:min(320px,calc(100% - 32px));max-height:none}
+#mus.mini .mpl{background:none;border:0;box-shadow:none;border-radius:12px}
+#mus.mini .mph,#mus.mini .mtabs,#mus.mini #musPaneG{display:none}
+#mus.mini #musPaneS{border-top:0;overflow:visible}
+#mus.mini #spBox{padding:0}
+#mus.mini .spform,#mus.mini #spMsg,#mus.mini .spq,#mus.mini .spnote,#mus.slim .spform,#mus.slim #spMsg,#mus.slim .spq,#mus.slim .spnote{display:none}
+#mus.mini #spBox iframe,#mus.slim #spBox iframe{height:80px!important}
 #hMusT{display:block;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #toasts{position:absolute;left:50%;top:calc(16px + env(safe-area-inset-top,0px));transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;width:min(560px,calc(100% - 32px))}
 .toast{padding:7px 15px;border-radius:10px;background:var(--panel);border:1px solid var(--line);font-size:14.5px;font-weight:600;text-align:center;animation:tin .25s ease-out}
@@ -586,6 +615,8 @@ body.touch #alerts{top:calc(56px + env(safe-area-inset-top,0px))}
       <h2 id="musH">เพลงชิวๆ ตกหมึก</h2>
       <button class="btn x" type="button" id="musClose" aria-label="ปิดเครื่องเล่นเพลง">×</button>
     </div>
+    <div class="mtabs" role="tablist" aria-label="แหล่งเพลง"><button class="mtab" type="button" role="tab" id="musTabG" aria-controls="musPaneG" aria-selected="true">เพลงในเกม</button><button class="mtab" type="button" role="tab" id="musTabS" aria-controls="musPaneS" aria-selected="false" tabindex="-1">Spotify</button></div>
+    <div class="mpane" id="musPaneG" role="tabpanel" aria-labelledby="musTabG">
     <div class="mnp"><img id="musCover" alt="" width="84" height="84"><div class="mti"><b id="musTitle">—</b><span id="musArtist"></span></div></div>
     <div class="mseek"><span id="musCur">0:00</span><input type="range" id="musSeek" min="0" max="1000" value="0" aria-label="ตำแหน่งในเพลง"><span id="musDur">0:00</span></div>
     <div class="mctl">
@@ -598,6 +629,14 @@ body.touch #alerts{top:calc(56px + env(safe-area-inset-top,0px))}
     <div class="mvol"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H3v6h3l5 4zM15.5 8.5a5 5 0 010 7"></path></svg><input type="range" id="musVol" min="0" max="100" value="70" aria-label="ความดังของเพลง"><span id="musVolV">70%</span></div>
     <div class="mnote" id="musMuted" hidden>ตอนนี้ปิดเสียงทั้งเกมอยู่ · กด M เพื่อเปิดเสียง</div>
     <div class="mlist" id="musList" role="group" aria-label="รายการเพลง"></div>
+    </div>
+    <div class="mpane" id="musPaneS" role="tabpanel" aria-labelledby="musTabS" hidden>
+      <form class="spform" id="spForm" autocomplete="off"><label class="sr" for="spIn">ลิงก์ Spotify</label><input id="spIn" type="text" inputmode="url" maxlength="300" spellcheck="false" autocapitalize="off" placeholder="วางลิงก์เพลง / เพลย์ลิสต์ Spotify"><button class="btn pri" type="submit">เล่น</button></form>
+      <div class="mnote" id="spMsg" role="status" hidden></div>
+      <div id="spBox"></div>
+      <div class="spq" id="spQuick" role="group" aria-label="เพลย์ลิสต์แนะนำจาก Spotify"></div>
+      <div class="spnote">เล่นผ่านเพลเยอร์ของ Spotify เอง ล็อกอิน Spotify ในเบราว์เซอร์นี้ไว้จะฟังได้เต็มเพลง ถ้าไม่ล็อกอินจะได้แค่ตัวอย่างสั้นๆ<br>ปรับเสียงที่เพลเยอร์ Spotify (แถบเสียงของเกมไม่คุม) ปิดกล่องนี้ระหว่างเล่น เพลเยอร์จะหดเป็นแถบเล็กด้านบนจอ<br>ถ้าคลิกในเพลเยอร์แล้วปุ่ม P/Esc ไม่ติด ให้กด × หรือคลิกที่ฉากเกม</div>
+    </div>
   </div>
 </div>
 
@@ -2307,16 +2346,19 @@ function radioTick() {
 setInterval(radioTick, 90);
 function toggleRadio() { audioInit(); if (!A.radio && MUS.playing) musPause(); A.radio = !A.radio; if (A.radioG) A.radioG.gain.value = A.radio ? 0.5 : 0; toast(A.radio ? 'เปิดวิทยุ FM ลูกทุ่ง' : 'ปิดวิทยุ'); sfx('click'); }
 function applyVol() { if (!A.ctx) return; A.master.gain.value = A.muted ? 0 : S.vol.master; for (const k of ['sfx', 'amb', 'music']) A[k].gain.value = S.vol[k]; }
-function setMuted(m) { A.muted = m; S.vol.muted = m; save(); applyVol(); toast(m ? 'ปิดเสียงแล้ว (กด M อีกครั้งเพื่อเปิด)' : 'เปิดเสียงแล้ว'); if (menuOpen && menuTab === 'settings') renderMenu(); if (musicOpen) musRefresh(); }
+function setMuted(m) { A.muted = m; S.vol.muted = m; save(); applyVol(); if (m) spPause(); toast(m ? 'ปิดเสียงแล้ว (กด M อีกครั้งเพื่อเปิด)' : 'เปิดเสียงแล้ว'); if (menuOpen && menuTab === 'settings') renderMenu(); if (musicOpen) musRefresh(); }
 A.muted = !!S.vol.muted;
 $('volStart').value = Math.round(S.vol.master * 100);
 $('volStart').addEventListener('input', (e) => { S.vol.master = e.target.value / 100; applyVol(); save(); });
 // @@MUSIC-UI-START
 // =============== music player (control + panel UI) ===============
 let musicOpen = false;
-S.mus = Object.assign({ i: 0, shuffle: false, loop: 'all', on: false }, S.mus);
+S.mus = Object.assign({ i: 0, shuffle: false, loop: 'all', on: false, tab: 'g', sp: '' }, S.mus);
 S.mus.i = clamp(Math.floor(+S.mus.i) || 0, 0, MUSIC.TRACKS.length - 1); S.mus.shuffle = !!S.mus.shuffle; S.mus.on = !!S.mus.on; if (!['all', 'one', 'off'].includes(S.mus.loop)) S.mus.loop = 'all';
+S.mus.tab = S.mus.tab === 's' ? 's' : 'g'; if (typeof S.mus.sp !== 'string' || !/^spotify:(track|album|playlist|artist|episode|show):[A-Za-z0-9]{22}$/.test(S.mus.sp)) S.mus.sp = '';
 const MUS = { T: MUSIC.TRACKS, built: {}, sess: null, playing: false, p0: 0, seeking: false, covers: {}, hist: [], ui: false };
+// Spotify tab state (the embed itself is Spotify's own player, loaded lazily the first time the tab is opened)
+const SPF = { api: null, apiP: null, ctl: null, h: 0, want: '', auto: false, creating: false, playing: false, quiet: 0, offT: 0, qui: false };
 const MUS_ICON = {
   play: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"></path></svg>',
   pause: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.6v14H7zM13.4 5H17v14h-3.6z" fill="currentColor"></path></svg>',
@@ -2328,7 +2370,7 @@ function musStop() { if (MUS.sess) { MUSIC.dispose(MUS.sess); MUS.sess = null; }
 function musStart(i, pos = 0) {
   audioInit(); if (!A.ctx || !A.music) return false;
   if (A.ctx.state === 'suspended') A.ctx.resume();
-  musStop();
+  musStop(); spPause();
   if (A.radio) { A.radio = false; if (A.radioG) A.radioG.gain.value = 0; }
   S.mus.i = i; MUS.p0 = pos;
   try { MUS.sess = MUSIC.createSession(A.ctx, A.music, MUS.T[i], musBuilt(i), pos, { lite: qName === 'low' }); MUSIC.pump(MUS.sess, A.ctx.currentTime + 1.2); }
@@ -2381,7 +2423,7 @@ function musBuild() {
 function musRefreshTime() { if (!MUS.ui || MUS.seeking) return; const T = MUS.T[S.mus.i], p = musPos(); $('musCur').textContent = musFmt(p); $('musSeek').value = Math.round(p / T.dur * 1000); }
 function musRefresh() {
   const T = MUS.T[S.mus.i];
-  $('hMusic').hidden = !MUS.playing; $('hMusT').textContent = T.title;
+  $('hMusic').hidden = !MUS.playing && !SPF.playing; $('hMusT').textContent = MUS.playing || !SPF.playing ? T.title : 'Spotify';
   if (!MUS.ui) return;
   $('musCover').src = musCover(S.mus.i); $('musTitle').textContent = T.title; $('musArtist').textContent = T.artist + ' · ' + T.mood; $('musDur').textContent = musFmt(T.dur);
   const pl = $('musPlay'); pl.innerHTML = MUS.playing ? MUS_ICON.pause : MUS_ICON.play; pl.setAttribute('aria-label', MUS.playing ? 'หยุดเพลง' : 'เล่นเพลง');
@@ -2396,11 +2438,12 @@ function openMusic() {
   if (musicOpen || !inputOn()) return;
   audioInit(); musBuild(); musicOpen = true; primaryHeld = false; useHeld = false; if (st === 'charge') st = 'idle';
   if (document.pointerLockElement) document.exitPointerLock();
-  $('mus').hidden = false; musRefresh();
-  setTimeout(() => { const on = $('musList').querySelector('.mrow.on'); if (on && on.scrollIntoView) on.scrollIntoView({ block: 'nearest' }); const p = $('musPlay'); if (p) p.focus({ preventScroll: true }); }, 30);
+  $('mus').hidden = false; musPanes(); musRefresh(); if (S.mus.tab === 's') spEnter();
+  setTimeout(() => { const on = $('musList').querySelector('.mrow.on'); if (on && on.scrollIntoView) on.scrollIntoView({ block: 'nearest' }); const p = S.mus.tab === 's' ? $('musTabS') : $('musPlay'); if (p) p.focus({ preventScroll: true }); }, 30);
 }
 function closeMusic(relock = true) {
-  if (!musicOpen) return; musicOpen = false; $('mus').hidden = true; MUS.seeking = false;
+  if (!musicOpen) return; musicOpen = false; MUS.seeking = false;
+  musPanes(); // Spotify still playing -> the embed stays on screen as a slim bar (Spotify's terms: don't hide the player)
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   if (relock) requestLock();
 }
@@ -2420,11 +2463,100 @@ $('musLoop').addEventListener('click', () => { S.mus.loop = S.mus.loop === 'all'
   vl.addEventListener('change', save);
 }
 $('mus').addEventListener('keydown', (e) => {
-  if (e.code === 'Escape' || e.code === 'KeyP') { e.preventDefault(); e.stopPropagation(); closeMusic(); return; }
-  if (e.target && e.target.type === 'range') return;
+  const tg = e.target, typing = !!tg && tg.tagName === 'INPUT' && tg.type === 'text';
+  if (e.code === 'Escape' || (e.code === 'KeyP' && !typing)) { e.preventDefault(); e.stopPropagation(); closeMusic(); return; }
+  if (typing || (tg && tg.type === 'range')) return;
+  if (tg && tg.classList && tg.classList.contains('mtab') && (e.code === 'ArrowRight' || e.code === 'ArrowLeft')) { e.preventDefault(); const t = S.mus.tab === 'g' ? 's' : 'g'; musTab(t); $(t === 's' ? 'musTabS' : 'musTabG').focus(); return; }
+  if (S.mus.tab !== 'g') return;
   if (e.code === 'ArrowRight') { e.preventDefault(); musNext(false); } else if (e.code === 'ArrowLeft') { e.preventDefault(); musPrev(); }
 });
 setInterval(() => { if (musicOpen) musRefreshTime(); }, 250);
+// ---- Spotify tab: Spotify's own embedded player (iFrame API), left unaltered and kept on screen while it plays ----
+const SP_QUICK = [['Lofi Beats', 'spotify:playlist:37i9dQZF1DWWQRwui0ExPn'], ['Peaceful Piano', 'spotify:playlist:37i9dQZF1DX4sWSpwq3LiO'], ['Chill Hits', 'spotify:playlist:37i9dQZF1DX4WYpdgoIcn6']];
+const SP_RE_URI = /^spotify:(track|album|playlist|artist|episode|show):([A-Za-z0-9]{22})$/i;
+const SP_RE_URL = /^(?:https?:\/\/)?(?:open|play)\.spotify\.com\/(?:embed\/)?(?:intl-[a-z]{2}(?:-[a-z]{2})?\/)?(?:user\/[^\/?#]+\/)?(track|album|playlist|artist|episode|show)\/([A-Za-z0-9]{22})(?:[\/?#].*)?$/i;
+function spParse(raw) {
+  const s = String(raw || '').trim(); if (!s || s.length > 300) return null;
+  const m = s.match(SP_RE_URI) || s.match(SP_RE_URL);
+  return m ? 'spotify:' + m[1].toLowerCase() + ':' + m[2] : null;
+}
+// Spotify's standard sizes: 152 compact (track/episode/show), 352 full (album/playlist/artist); short screens always get the compact one
+const spHeight = (uri) => (/^spotify:(track|episode|show):/.test(uri) || window.innerHeight < 700 ? 152 : 352);
+function spMsg(t, bad) { const m = $('spMsg'); m.hidden = !t; m.textContent = t || ''; m.classList.toggle('ok', !bad); }
+function spApi() {
+  if (SPF.api) return Promise.resolve(SPF.api);
+  if (SPF.apiP) return SPF.apiP;
+  SPF.apiP = new Promise((res, rej) => {
+    let s = null, to = 0;
+    const fail = (why) => { clearTimeout(to); window.onSpotifyIframeApiReady = undefined; if (s && s.parentNode) s.parentNode.removeChild(s); SPF.apiP = null; rej(new Error(why)); };
+    window.onSpotifyIframeApiReady = (api) => { clearTimeout(to); SPF.api = api; res(api); };
+    s = document.createElement('script'); s.src = 'https://open.spotify.com/embed/iframe-api/v1'; s.async = true;
+    s.onerror = () => fail('script'); to = setTimeout(() => fail('timeout'), 15000);
+    document.head.appendChild(s);
+  });
+  return SPF.apiP;
+}
+function spDestroy() { if (SPF.ctl) { try { SPF.ctl.destroy(); } catch (e) {} SPF.ctl = null; } $('spBox').textContent = ''; }
+function spPlayNow() { const c = SPF.ctl; if (!c) return; try { c.play(); } catch (e) {} }
+function spOnReady() { spMsg(''); if (SPF.auto) { SPF.auto = false; spPlayNow(); } }
+function spLoadInto(uri) {
+  try { if (SPF.ctl.loadEntity) SPF.ctl.loadEntity(uri); else SPF.ctl.loadUri(uri); } catch (e) { spMsg('สั่งให้ Spotify เปลี่ยนเพลงไม่สำเร็จ ลองกด “เล่น” อีกครั้ง', true); return; }
+  setTimeout(() => { if (SPF.auto && SPF.want === uri) { SPF.auto = false; spPlayNow(); spMsg(''); } }, 1300); // 'ready' may not fire again after a reload; this is the fallback
+}
+function spShow(uri, autoplay) {
+  SPF.want = uri; SPF.auto = !!autoplay; S.mus.sp = uri; save(); spMsg('กำลังโหลดเพลเยอร์ Spotify…');
+  if (SPF.creating) return;
+  spApi().then((api) => {
+    if (SPF.ctl && SPF.h === spHeight(SPF.want)) { spLoadInto(SPF.want); return; }
+    if (SPF.creating) return;
+    spDestroy(); SPF.creating = true; SPF.h = spHeight(SPF.want); const first = SPF.want;
+    const host = document.createElement('div'); $('spBox').appendChild(host);
+    const to = setTimeout(() => { if (SPF.creating) { SPF.creating = false; spMsg('เพลเยอร์ Spotify ไม่ตอบสนอง กด “เล่น” อีกครั้งเพื่อลองใหม่', true); } }, 15000);
+    api.createController(host, { uri: first, width: '100%', height: SPF.h }, (ctl) => {
+      clearTimeout(to); SPF.creating = false; SPF.ctl = ctl;
+      ctl.addListener('ready', spOnReady); ctl.addListener('playback_update', spOnUpdate);
+      if (SPF.want !== first) spLoadInto(SPF.want);
+    });
+  }).catch(() => { SPF.creating = false; spMsg('โหลดเพลเยอร์ Spotify ไม่สำเร็จ ลองเช็กอินเทอร์เน็ต (หรือปิดตัวบล็อกโฆษณา) แล้วกด “เล่น” อีกครั้ง', true); });
+}
+function spPause() { SPF.auto = false; if (!SPF.ctl || !SPF.playing) return; try { SPF.ctl.pause(); } catch (e) {} SPF.playing = false; SPF.quiet = performance.now() + 900; musPanes(); }
+function spOnUpdate(e) {
+  const d = e && e.data; if (!d) return;
+  const pl = !d.isPaused;
+  if (pl && performance.now() < SPF.quiet) return; // late 'playing' message right after we paused it
+  if (pl === SPF.playing) return;
+  SPF.playing = pl; clearTimeout(SPF.offT);
+  if (pl) { if (MUS.playing) musPause(); if (A.radio) { A.radio = false; if (A.radioG) A.radioG.gain.value = 0; } musPanes(); musRefresh(); }
+  else SPF.offT = setTimeout(() => { musPanes(); musRefresh(); }, 700); // a short pause between tracks shouldn't flash the bar away
+}
+function spPick(uri) { audioInit(); if (MUS.playing) musPause(); spShow(uri, true); }
+function spEnter() {
+  if (!SPF.qui) {
+    SPF.qui = true;
+    for (const [name, uri] of SP_QUICK) { const b = el('button', 'btn', name); b.type = 'button'; b.addEventListener('click', () => spPick(uri)); $('spQuick').appendChild(b); }
+  }
+  if (S.mus.sp && !SPF.ctl && !SPF.creating) spShow(S.mus.sp, false);
+  else if (!S.mus.sp) spMsg('วางลิงก์เพลง อัลบั้ม หรือเพลย์ลิสต์จาก Spotify ในช่องด้านบน (ใน Spotify กด ⋯ › แชร์ › คัดลอกลิงก์) หรือเลือกเพลย์ลิสต์ด้านล่าง');
+}
+// which panes show: open panel -> the chosen tab; Spotify playing -> its embed is always visible (slim bar on the game tab / when the panel is closed)
+function musPanes() {
+  const m = $('mus'), sp = SPF.playing && !!SPF.ctl, mini = !musicOpen && sp, onS = S.mus.tab === 's';
+  if (!musicOpen && !mini) { m.hidden = true; m.classList.remove('mini', 'slim'); return; }
+  m.hidden = false; m.classList.toggle('mini', mini); m.classList.toggle('slim', musicOpen && !onS && sp);
+  $('musPaneG').hidden = mini || onS; $('musPaneS').hidden = !(mini || onS || sp);
+  $('musTabG').setAttribute('aria-selected', String(!onS)); $('musTabS').setAttribute('aria-selected', String(onS));
+  $('musTabG').tabIndex = onS ? -1 : 0; $('musTabS').tabIndex = onS ? 0 : -1;
+}
+function musTab(t) { S.mus.tab = t === 's' ? 's' : 'g'; save(); musPanes(); if (S.mus.tab === 's') spEnter(); }
+$('musTabG').addEventListener('click', () => musTab('g'));
+$('musTabS').addEventListener('click', () => musTab('s'));
+$('spForm').addEventListener('submit', (e) => {
+  e.preventDefault(); const raw = $('spIn').value.trim();
+  if (!raw) { if (S.mus.sp) spPick(S.mus.sp); else spMsg('วางลิงก์ Spotify ก่อนนะ (ใน Spotify กด ⋯ › แชร์ › คัดลอกลิงก์)', true); return; }
+  const uri = spParse(raw);
+  if (!uri) { spMsg(/spotify\.link|link\.tospotify/i.test(raw) ? 'ลิงก์สั้นแบบ spotify.link ใช้ไม่ได้ ให้เปิดเพลงในเว็บ open.spotify.com แล้วคัดลอกลิงก์จากแถบที่อยู่' : 'ลิงก์นี้ไม่ใช่ลิงก์ Spotify ที่รองรับ (เพลง อัลบั้ม เพลย์ลิสต์ ศิลปิน พอดแคสต์)', true); return; }
+  $('spIn').value = ''; spPick(uri);
+});
 // @@MUSIC-UI-END
 
 // =============== HUD helpers ===============
