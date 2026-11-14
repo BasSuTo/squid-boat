@@ -145,6 +145,56 @@ body.touch #waterBox{display:none}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 #lineInfo b{color:var(--ink);font-size:17px}
 
+/* music player: small card, opens with P (or the note button on touch) */
+#mus{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:max(16px,env(safe-area-inset-bottom,0px));width:min(324px,calc(100% - 32px));max-height:calc(100% - 32px);display:flex;z-index:5;touch-action:pan-y}
+.mpl{flex:1;min-width:0;min-height:0;display:flex;flex-direction:column;background:var(--solid);border:1px solid var(--line);border-radius:16px;box-shadow:0 24px 70px rgba(0,0,0,.6);overflow:hidden}
+.mph{display:flex;align-items:center;gap:8px;padding:8px 8px 2px 14px}
+.mph>svg{width:18px;height:18px;flex:none;color:var(--hull)}
+.mph h2{margin:0;flex:1;min-width:0;font:600 15px var(--display);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mph .x{min-height:34px;min-width:34px;padding:0;font-size:20px;line-height:1}
+.mnp{display:flex;gap:12px;align-items:center;padding:6px 14px 2px}
+#musCover{width:84px;height:84px;flex:none;border-radius:10px;object-fit:cover;background:#13222d;box-shadow:0 6px 18px rgba(0,0,0,.45)}
+.mti{min-width:0;display:flex;flex-direction:column;gap:3px}
+.mti b{font:600 16.5px/1.25 var(--display);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mti span{font-size:12.5px;color:var(--mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mseek{display:grid;grid-template-columns:36px minmax(0,1fr) 36px;gap:8px;align-items:center;padding:2px 14px 0;font-size:12px;color:var(--mute);font-variant-numeric:tabular-nums}
+.mseek span:last-child{text-align:right}
+#mus input[type=range]{width:100%;accent-color:var(--hull);min-height:28px;margin:0;touch-action:pan-y}
+.mctl{display:flex;align-items:center;justify-content:space-between;padding:0 14px}
+.mb{display:flex;align-items:center;justify-content:center;width:40px;height:40px;padding:0;border:0;border-radius:50%;background:none;color:var(--ink);cursor:pointer;position:relative}
+.mb svg{width:22px;height:22px}
+.mb:hover{background:rgba(255,255,255,.1)}
+.mb:focus-visible{outline:3px solid var(--sea);outline-offset:1px}
+.mb.big{width:52px;height:52px;background:var(--hull);color:#1c0e02}
+.mb.big:hover{background:#ff9d44}
+.mb.big svg{width:26px;height:26px}
+.mb.tg{color:var(--mute)}
+.mb.tg[aria-pressed="true"]{color:var(--hull)}
+.mb.tg[aria-pressed="true"]::after{content:"";position:absolute;bottom:4px;left:50%;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:var(--hull)}
+#musLoop[data-mode="one"]::before{content:"1";position:absolute;top:7px;left:50%;margin-left:-2px;font:700 9px/1 var(--body);color:var(--hull);pointer-events:none}
+.mvol{display:grid;grid-template-columns:20px minmax(0,1fr) 40px;gap:8px;align-items:center;padding:0 14px 6px;font-size:12px;color:var(--mute)}
+.mvol svg{width:18px;height:18px}
+.mvol span{text-align:right;font-variant-numeric:tabular-nums}
+.mnote{padding:0 14px 6px;font-size:12px;color:#ffb4a3}
+.mlist{flex:1 1 150px;min-height:76px;overflow-y:auto;border-top:1px solid var(--line);padding:6px;touch-action:pan-y;overscroll-behavior:contain}
+.mrow{display:flex;align-items:center;gap:10px;width:100%;min-height:52px;padding:5px 8px 5px 5px;border:0;border-radius:10px;background:none;color:var(--ink);text-align:left;cursor:pointer}
+.mrow:hover{background:rgba(255,255,255,.07)}
+.mrow:focus-visible{outline:3px solid var(--sea);outline-offset:-2px}
+.mrow.on{background:rgba(240,138,43,.14)}
+.mrow img{width:40px;height:40px;flex:none;border-radius:7px;object-fit:cover;background:#13222d}
+.mrt{flex:1;min-width:0;display:flex;flex-direction:column}
+.mrt b{font:600 14px/1.3 var(--display);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mrow.on .mrt b{color:var(--hull)}
+.mrt i{font-style:normal;font-size:12px;color:var(--mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mrd{font-size:12px;color:var(--mute);font-variant-numeric:tabular-nums}
+.eq{display:none;align-items:flex-end;gap:2px;width:14px;height:14px}
+.mrow.on .eq{display:flex}
+.eq i{width:3px;height:35%;border-radius:1px;background:var(--hull)}
+.mrow.playing .eq i{animation:eq .9s ease-in-out infinite alternate}
+.mrow.playing .eq i:nth-child(2){animation-delay:-.3s}
+.mrow.playing .eq i:nth-child(3){animation-delay:-.6s}
+@keyframes eq{from{height:20%}to{height:100%}}
+#hMusT{display:block;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #toasts{position:absolute;left:50%;top:calc(16px + env(safe-area-inset-top,0px));transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;width:min(560px,calc(100% - 32px))}
 .toast{padding:7px 15px;border-radius:10px;background:var(--panel);border:1px solid var(--line);font-size:14.5px;font-weight:600;text-align:center;animation:tin .25s ease-out}
 .toast.bad{border-color:rgba(255,90,60,.6);color:#ffd3c8}
@@ -207,6 +257,7 @@ body.touch .need span{font-size:10.5px}
 #bLamp{right:calc(150px + env(safe-area-inset-right,0px));bottom:calc(126px + env(safe-area-inset-bottom,0px));width:56px;height:56px;font-size:12px}
 #bReel{right:calc(150px + env(safe-area-inset-right,0px));bottom:calc(196px + env(safe-area-inset-bottom,0px));width:56px;height:56px;font-size:11px;background:rgba(240,122,26,.55)}
 #bMenu{right:calc(16px + env(safe-area-inset-right,0px));top:calc(14px + env(safe-area-inset-top,0px));width:52px;height:52px;border-radius:14px;font-size:12px}
+#bMusic{right:calc(16px + env(safe-area-inset-right,0px));top:calc(74px + env(safe-area-inset-top,0px));width:52px;height:52px;border-radius:14px;font-size:11px}
 body.touch #ctrl,body.touch #cross,body.touch #hudTR #questBox,body.touch #players{display:none}
 body.touch #hudTR{right:calc(80px + env(safe-area-inset-right,0px));width:150px}
 body.touch #sonar{height:78px}
@@ -307,7 +358,7 @@ body.touch #alerts{top:calc(56px + env(safe-area-inset-top,0px))}
 .emotes{display:flex;flex-wrap:wrap;gap:8px}
 .code{font:700 30px var(--display);letter-spacing:.2em}
 @media (max-height:520px){.brief{gap:9px}.brief p{font-size:14px}.keys{font-size:13px;gap:4px 10px}.go{padding:10px 26px}}
-@media (prefers-reduced-motion:reduce){#prompt.alertp,#bCast.hot,.alert{animation:none}.toast,#card{animation:none}}
+@media (prefers-reduced-motion:reduce){#prompt.alertp,#bCast.hot,.alert{animation:none}.toast,#card{animation:none}.mrow.playing .eq i{animation:none;height:70%}}
 </style>
 
 <div id="view"></div>
@@ -322,6 +373,7 @@ body.touch #alerts{top:calc(56px + env(safe-area-inset-top,0px))}
     <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><path d="M3 9h18l-2 11H5z"></path><path d="M8 9V6a4 4 0 018 0v3"></path></svg><div><b id="hTub" class="num">ถัง 0 / 15</b><small id="hFresh">ความสด 100%</small></div></div>
     <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M7 4c4 1 8 5 9 10l-2 2C9 15 5 11 4 7z"></path><path d="M15 16l2 4M16 15l4 2M16.5 15.5l3 3"></path></svg><b id="hLure">โยกุ้ง 3.0</b></div>
     <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M9 18h6M10 21h4"></path><path d="M12 3a6 6 0 00-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0012 3z"></path></svg><b id="hLamp">ไฟล่อหมึก ปิด</b></div>
+    <div class="row" id="hMusic" hidden><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l11-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="17" cy="16" r="3"></circle></svg><div><b id="hMusT">เพลง</b><small>กด P เปิดเครื่องเล่นเพลง</small></div></div>
     <div class="row needs"><div class="need"><span>อาหาร</span><div class="nb"><i id="nFood"></i></div></div><div class="need"><span>น้ำ</span><div class="nb"><i id="nWater"></i></div></div><div class="need"><span>แรง</span><div class="nb"><i id="nEnergy"></i></div></div></div>
     <div class="row"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><path d="M5 5h9l3 3v12H5z"></path><path d="M14 5v3h3M8 2h4v3H8z"></path><path d="M9 12h5M9 15.5h5"></path></svg><div><b id="hFuel" class="num">น้ำมัน 60%</b><small id="hFuelS">สำรอง 3 แกลลอน</small></div></div>
     <div class="row" id="curseRow" hidden><svg viewBox="0 0 24 24" fill="none" stroke="#ff8a7a" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M5 4l2 2M19 4l-2 2"></path></svg><b id="hCurse" class="curse"></b></div>
@@ -394,6 +446,7 @@ body.touch #alerts{top:calc(56px + env(safe-area-inset-top,0px))}
       <li><kbd>E</kbd><span>ใช้ของ ซ่อม กิน ดื่ม ตักน้ำ</span></li>
       <li><kbd>Tab</kbd><span>เมนู ตลาด อัปเกรด (<kbd>B</kbd> ปิด)</span></li>
       <li><kbd>L</kbd><span>ไฟล่อหมึก · <kbd>H</kbd> ไฟดาดฟ้า · <kbd>R</kbd> วิทยุ</span></li>
+      <li><kbd>P</kbd><span>เครื่องเล่นเพลงชิวๆ ตกหมึก</span></li>
       <li><kbd>M</kbd><span>เสียง · <kbd>Esc</kbd> หยุดพัก</span></li>
     </ul>
   </div>
@@ -417,6 +470,9 @@ body.touch #alerts{top:calc(56px + env(safe-area-inset-top,0px))}
     <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 20L18 4"></path><path d="M18 4c2 3 2 7 0 11"></path><circle cx="18" cy="17" r="1.6"></circle></svg><span id="bCastLbl">เหวี่ยง</span>
   </button>
   <button class="tbtn" id="bMenu" type="button">เมนู</button>
+  <button class="tbtn" id="bMusic" type="button" aria-label="เปิดเครื่องเล่นเพลง">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l11-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="17" cy="16" r="3"></circle></svg>
+  </button>
 </div>
 
 <div class="screen" id="start">
@@ -520,6 +576,28 @@ body.touch #alerts{top:calc(56px + env(safe-area-inset-top,0px))}
     <div class="cchips" id="chatChips"></div>
     <form class="cform" id="chatForm"><label for="chatIn" class="sr">ข้อความถึงพี่ชัย</label><input id="chatIn" maxlength="300" autocomplete="off" placeholder="พิมพ์คุยกับพี่ชัย…"><button class="btn pri" type="submit" id="chatSend">ส่ง</button></form>
     <div class="cnote" id="chatNote">พี่ชัยใช้ Claude ช่วยคิดคำตอบ ครั้งแรกจะมีหน้าต่างขออนุญาต และจะใช้โควตา Claude ของคุณ</div>
+  </div>
+</div>
+
+<div id="mus" hidden>
+  <div class="mpl" role="dialog" aria-labelledby="musH">
+    <div class="mph">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l11-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="17" cy="16" r="3"></circle></svg>
+      <h2 id="musH">เพลงชิวๆ ตกหมึก</h2>
+      <button class="btn x" type="button" id="musClose" aria-label="ปิดเครื่องเล่นเพลง">×</button>
+    </div>
+    <div class="mnp"><img id="musCover" alt="" width="84" height="84"><div class="mti"><b id="musTitle">—</b><span id="musArtist"></span></div></div>
+    <div class="mseek"><span id="musCur">0:00</span><input type="range" id="musSeek" min="0" max="1000" value="0" aria-label="ตำแหน่งในเพลง"><span id="musDur">0:00</span></div>
+    <div class="mctl">
+      <button class="mb tg" type="button" id="musShuf" aria-label="สุ่มเพลง" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"></path></svg></button>
+      <button class="mb" type="button" id="musPrev" aria-label="เพลงก่อนหน้า"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h2.4v14H6zM20 5.5v13L9.5 12z" fill="currentColor"></path></svg></button>
+      <button class="mb big" type="button" id="musPlay" aria-label="เล่นเพลง"></button>
+      <button class="mb" type="button" id="musNext" aria-label="เพลงถัดไป"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.6 5H18v14h-2.4zM4 5.5v13L14.5 12z" fill="currentColor"></path></svg></button>
+      <button class="mb tg" type="button" id="musLoop" aria-label="เล่นวนทุกเพลง" aria-pressed="true" data-mode="all"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 2l4 4-4 4M3 11V9a3 3 0 013-3h15M7 22l-4-4 4-4M21 13v2a3 3 0 01-3 3H3"></path></svg></button>
+    </div>
+    <div class="mvol"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H3v6h3l5 4zM15.5 8.5a5 5 0 010 7"></path></svg><input type="range" id="musVol" min="0" max="100" value="70" aria-label="ความดังของเพลง"><span id="musVolV">70%</span></div>
+    <div class="mnote" id="musMuted" hidden>ตอนนี้ปิดเสียงทั้งเกมอยู่ · กด M เพื่อเปิดเสียง</div>
+    <div class="mlist" id="musList" role="group" aria-label="รายการเพลง"></div>
   </div>
 </div>
 
@@ -1829,6 +1907,386 @@ function sfx(n) {
     case 'escape': burst({ freq: 600, q: 1, dur: 0.3, vol: 0.2 }); tone(300, 0.25, 0.1, 'sine', 0, null, 150); break;
   }
 }
+// @@MUSIC-ENGINE-START
+// =============== music engine: generated lo-fi tracks (no audio files) ===============
+// Pure: depends only on WebAudio objects passed in. Tracks are composed deterministically from a seed into an event
+// list; a session plays that list through a small mixer graph (groups -> reverb/echo -> filter -> compressor -> out).
+const MUSIC = (() => {
+  const mtof = (n) => 440 * Math.pow(2, (n - 69) / 12);
+  const mod12 = (n) => ((n % 12) + 12) % 12;
+  const mulberry = (a) => () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  const PC = { C: 0, 'C#': 1, Db: 1, D: 2, Eb: 3, E: 4, F: 5, 'F#': 6, Gb: 6, G: 7, Ab: 8, 'G#': 8, A: 9, Bb: 10, B: 11 };
+  const QUAL = { maj7: [0, 4, 7, 11], maj9: [0, 4, 7, 11, 14], m7: [0, 3, 7, 10], m9: [0, 3, 7, 10, 14], 7: [0, 4, 7, 10], 9: [0, 4, 7, 10, 14], 6: [0, 4, 7, 9, 14], add9: [0, 4, 7, 14] };
+
+  // ---------- tracks ----------
+  const splitForm = (s) => s.split(' ');
+  const TRACKS = [
+    { id: 'dawn', title: 'ท่าเรือยามเช้า', artist: 'เจ้าส้ม & The Deck Cats', mood: 'lo-fi · เช้าตรู่', bpm: 76, sw: 0.2, seed: 11,
+      prog: [['F', 'maj9', 4], ['E', 'm7', 4], ['D', 'm9', 4], ['G', '9', 2], ['C', 'maj9', 2]],
+      keys: 'slow', keysV: 'ep', bass: 'walk1', drums: 'boom', fill: true,
+      lead: { voice: 'kalimba', scale: [0, 2, 4, 7, 9], root: 'C', lo: 72, hi: 91, dens: 0.5, style: 'sparse' },
+      form: splitForm('kp kb kbh kbd kbdl kbdl kbd kl kbdl kbdl kbd kp'), vinyl: 0.5, lp: 6500, rev: 0.45, dly: 0.28, trim: 0.9,
+      cover: { sky: ['#ffd9a0', '#f2916a'], sun: { x: 0.7, y: 0.5, r: 0.15, c: '#fff1c9' }, waves: ['#3f8099', '#2c6482', '#1d4a66'], boat: 1 } },
+    { id: 'tide', title: 'คลื่นกระซิบ', artist: 'Slow Tide Radio', mood: 'ambient · ฟังเพลินๆ', bpm: 62, sw: 0.1, seed: 23,
+      prog: [['A', 'm9', 4], ['F', 'maj9', 4], ['C', 'maj9', 4], ['G', '6', 4]],
+      keys: 'slow', keysV: 'ep', bass: 'sparse', drums: 'air',
+      lead: { voice: 'kalimba', scale: [0, 3, 5, 7, 10], root: 'A', lo: 69, hi: 88, dens: 0.35, style: 'sparse' },
+      form: splitForm('kp kpb kpbl kpbh kpbl kpl kpbh kpbl kpbh kpl kp'), vinyl: 0.2, waves: 0.3, lp: 5200, rev: 0.6, dly: 0.35, trim: 0.95,
+      cover: { sky: ['#8fc1d2', '#dcebe6'], sun: { x: 0.3, y: 0.55, r: 0.1, c: '#fffbe8' }, waves: ['#5fa3b8', '#3f87a2', '#2a6a8a', '#1d5276'], boat: 0 } },
+    { id: 'lantern', title: 'ตะเกียงริมเรือ', artist: 'ป้าแดง Jazz Club', mood: 'jazzy · ยามเย็น', bpm: 84, sw8: 0.5, seed: 37,
+      prog: [['Bb', 'maj9', 4], ['G', 'm9', 4], ['C', 'm9', 4], ['F', '9', 4]],
+      keys: 'offbeat', keysV: 'ep', bass: 'jazz', drums: 'brush', fill: false,
+      lead: { voice: 'ep', scale: [0, 2, 4, 7, 9], root: 'Bb', lo: 70, hi: 86, dens: 0.5, style: 'steady' },
+      form: splitForm('kp kb kbh kbdl kbdl kbd kbdl kbdl kbd kbdl kbdl kp'), vinyl: 0.4, lp: 6000, rev: 0.4, dly: 0.2, trim: 0.9,
+      cover: { sky: ['#35305e', '#e0766b'], sun: { x: 0.3, y: 0.6, r: 0.07, c: '#ffe3a1' }, waves: ['#2a3f66', '#1f3254', '#162645'], boat: 1, lantern: 1, stars: 1 } },
+    { id: 'squid', title: 'หมึกใต้แสงจันทร์', artist: 'Squid Moon', mood: 'ค่ำคืน · เหงาๆ', bpm: 70, sw: 0.16, seed: 41,
+      prog: [['D', 'm9', 4], ['Bb', 'maj7', 4], ['G', 'm9', 4], ['A', '7', 4]],
+      keys: 'slow', keysV: 'ep', bass: 'walk1', drums: 'half', fill: false,
+      lead: { voice: 'pluck', scale: [0, 3, 5, 7, 10], root: 'D', lo: 62, hi: 81, dens: 0.45, style: 'sparse' },
+      form: splitForm('kp kb kbh kbd kbdl kbdl kbd kl kbdl kbdl kbd kp'), vinyl: 0.55, lp: 5600, rev: 0.55, dly: 0.4, trim: 0.95,
+      cover: { sky: ['#08142e', '#27406e'], sun: { x: 0.68, y: 0.3, r: 0.11, c: '#f4f1dc' }, waves: ['#16305a', '#10264a', '#0a1c3a'], stars: 1, squid: 1 } },
+    { id: 'rope', title: 'เกลือกับเชือก', artist: 'พี่ชัย Trio', mood: 'โฟล์ก · จังหวะวอลต์ซ', bpm: 96, beats: 3, seed: 53,
+      prog: [['G', 'maj7', 3], ['E', 'm7', 3], ['C', 'maj7', 3], ['D', '7', 3]],
+      keys: 'arp', keysV: 'pluck', bass: 'waltz', drums: 'waltz',
+      lead: { voice: 'kalimba', scale: [0, 2, 4, 7, 9], root: 'G', lo: 71, hi: 90, dens: 0.5, style: 'sparse' },
+      form: splitForm('kp kb kb kbh kbd kbd kbdl kbdl kbdl kbd kl kl kbdl kbdl kbdl kbd kb kp'), vinyl: 0.35, lp: 6800, rev: 0.35, dly: 0.25, trim: 1.1,
+      cover: { sky: ['#bfe3e8', '#f7efd8'], sun: { x: 0.25, y: 0.35, r: 0.12, c: '#ffe27a' }, waves: ['#52a3b4', '#3a869d', '#2a6a82'], boat: 1 } },
+    { id: 'rain', title: 'ฝนวันมรสุม', artist: 'Monsoon Radio', mood: 'ฝนตก · ใจเย็นๆ', bpm: 68, sw: 0.15, seed: 67,
+      prog: [['E', 'm9', 4], ['C', 'maj9', 4], ['A', 'm9', 4], ['B', '7', 4]],
+      keys: 'slow', keysV: 'ep', bass: 'walk1', drums: 'half', fill: false,
+      lead: { voice: 'kalimba', scale: [0, 3, 5, 7, 10], root: 'E', lo: 64, hi: 88, dens: 0.35, style: 'sparse' },
+      form: splitForm('kp kb kbh kbd kbdl kbdl kbd kl kbdl kbdl kbd kp'), vinyl: 0.3, rain: 0.2, lp: 4800, rev: 0.55, dly: 0.3, trim: 0.95,
+      cover: { sky: ['#56606c', '#8d98a4'], waves: ['#46586a', '#364859', '#27384a'], rain: 1, boat: 1 } },
+    { id: 'hammock', title: 'เปลญวนเกาะเสม็ด', artist: 'Island Breeze', mood: 'บอสซา · ชายหาด', bpm: 92, seed: 79,
+      prog: [['A', 'maj9', 4], ['F#', 'm7', 4], ['B', 'm7', 4], ['E', '9', 4]],
+      keys: 'bossa', keysV: 'pluck', bass: 'bossa', drums: 'bossa',
+      lead: { voice: 'kalimba', scale: [0, 2, 4, 7, 9], root: 'A', lo: 73, hi: 92, dens: 0.5, style: 'sparse' },
+      form: splitForm('kp kb kbh kbd kbdl kbdl kbd kbdl kbdl kbd kl kbdl kbdl kp'), vinyl: 0.2, lp: 7200, rev: 0.4, dly: 0.25, trim: 0.95,
+      cover: { sky: ['#ffb36b', '#ff6f91'], sun: { x: 0.62, y: 0.48, r: 0.16, c: '#fff0b8' }, waves: ['#2f94a8', '#1f7b92', '#17617a'], island: 1 } },
+    { id: 'ranat', title: 'ระนาดยามเย็น', artist: 'ลุงแดง ระนาดเอก', mood: 'ไทยๆ · พระอาทิตย์ตก', bpm: 80, sw: 0.1, seed: 97,
+      prog: [['D', 'add9', 4], ['G', 'maj9', 4], ['B', 'm7', 4], ['A', '6', 4]],
+      keys: 'slow', keysV: 'ep', bass: 'steady', drums: 'half', fill: false,
+      lead: { voice: 'ranat', scale: [0, 2, 4, 7, 9], root: 'D', lo: 74, hi: 93, dens: 0.8, style: 'run' },
+      form: splitForm('kp kpb kpbl kpbl kpbdl kpbdl kpbl kpl kpbdl kpbdl kpbl kp'), vinyl: 0.3, lp: 6500, rev: 0.5, dly: 0.3, trim: 0.9,
+      cover: { sky: ['#2d3a6e', '#ff9a5c'], sun: { x: 0.5, y: 0.6, r: 0.2, c: '#ffd27a' }, waves: ['#2a4c78', '#203c64', '#162d50'], boat: 1 } },
+  ];
+  const loopBeatsOf = (T) => T.prog.reduce((a, c) => a + c[2], 0);
+  const trackDur = (T) => T.form.length * loopBeatsOf(T) * 60 / T.bpm + 2;
+  for (const T of TRACKS) T.dur = trackDur(T);
+
+  // ---------- composition ----------
+  // pick a chord voicing (3rd/5th/7th/9th stacked upward) whose centre stays close to the previous chord
+  function voicing(rootPc, q, prevMean) {
+    const iv = QUAL[q].slice(1).map((x) => mod12(rootPc + x));
+    let best = null;
+    for (let rot = 0; rot < iv.length; rot++) {
+      const pcs = iv.slice(rot).concat(iv.slice(0, rot));
+      for (let start = 52; start <= 64; start++) {
+        if (mod12(start) !== pcs[0]) continue;
+        const notes = [start]; let bad = 0;
+        for (let i = 1; i < pcs.length; i++) { let n = notes[i - 1] + 1; while (mod12(n) !== pcs[i]) n++; if (n - notes[i - 1] === 1) bad = 1; notes.push(n); }
+        const top = notes[notes.length - 1]; if (top > 77 || bad) continue;
+        const mean = notes.reduce((a, b) => a + b, 0) / notes.length, spread = top - notes[0];
+        const cost = Math.abs(mean - prevMean) + (spread > 14 ? (spread - 14) * 0.6 : 0) + Math.abs(mean - 63) * 0.15;
+        if (!best || cost < best.cost) best = { notes, mean, cost };
+      }
+    }
+    return best;
+  }
+  const COMP = {
+    sustain: (L) => [[0, L, 0.8]],
+    slow: (L) => (L >= 12 ? [[0, 9, 0.85], [9, L - 9, 0.5]] : [[0, L, 0.8]]),
+    offbeat: (L) => (L >= 16 ? [[0, 5, 0.85], [6, 3, 0.55], [10, 6, 0.7]] : [[0, Math.min(5, L), 0.8], ...(L > 6 ? [[6, L - 6, 0.55]] : [])]),
+    bossa: (L) => (L >= 16 ? [[0, 3, 0.7], [3, 3, 0.5], [6, 4, 0.7], [10, 3, 0.5], [13, 3, 0.6]] : [[0, L, 0.7]]),
+    waltz: (L) => [[4, 4, 0.6], [8, Math.max(2, L - 8), 0.55]],
+  };
+  // bass hits: [step in chord, tone (0 root, 1 fifth, 2 octave, 3 third, 4 approach to next root), length in steps (0 = to end), velocity]
+  const BASS = {
+    walk1: [[0, 0, 6, 0.9], [7, 0, 2, 0.55], [10, 1, 5, 0.7]],
+    sparse: [[0, 0, 0, 0.8]],
+    jazz: [[0, 0, 4, 0.85], [4, 3, 4, 0.65], [8, 1, 4, 0.7], [12, 4, 4, 0.7]],
+    bossa: [[0, 0, 6, 0.9], [6, 1, 2, 0.55], [8, 0, 6, 0.8], [14, 1, 2, 0.5]],
+    waltz: [[0, 0, 4, 0.9], [8, 1, 4, 0.6]],
+    steady: [[0, 0, 4, 0.85], [4, 0, 4, 0.5], [8, 1, 4, 0.7], [12, 0, 4, 0.5]],
+  };
+  // drum patterns: one char per 16th step, digit = velocity (0-9)
+  const DR = {
+    boom: { k: '9000000600900000', s: '0000900000009000', h: '7042604070426043' },
+    half: { k: '9000000000900000', s: '0000000090000000', h: '6040504060405040' },
+    air: { k: '7000000000000000', h: '3000200030002000' },
+    brush: { k: '5000000040000000', s: '0000300000003000', h: '7000605070006050' },
+    bossa: { k: '8000007080000070', r: '6006006000600600', sh: '5253525352535253' },
+    waltz: { k: '800000000000', h: '000040004000', sh: '202020202020' },
+  };
+  const dig = (str, i) => { const c = str && str.charCodeAt(i) - 48; return c > 0 && c <= 9 ? c / 9 : 0; };
+
+  function scaleNotes(Ld) { const r = PC[Ld.root], out = []; for (let o = 0; o < 9; o++) for (const d of Ld.scale) { const m = o * 12 + r + d; if (m >= Ld.lo && m <= Ld.hi) out.push(m); } return out.sort((a, b) => a - b); }
+  // a 4-bar lead phrase: stepwise motion on the scale, chord tones on strong beats, rests by density
+  function genPhrase(rg, T, loopCh, spb, bars) {
+    const Ld = T.lead, sn = scaleNotes(Ld), out = [];
+    const chordAt = (g) => { for (const c of loopCh) if (g >= c.s0 && g < c.s0 + c.L) return c; return loopCh[loopCh.length - 1]; };
+    const sp16 = Ld.style === 'steady' ? [0, 2, 4, 6, 8, 10, 12, 14] : Ld.style === 'run' ? [0, 2, 3, 6, 8, 10, 11, 14] : [0, 3, 6, 8, 10, 12, 14];
+    const sp12 = Ld.style === 'steady' ? [0, 2, 4, 6, 8, 10] : Ld.style === 'run' ? [0, 2, 3, 6, 8, 10] : [0, 3, 4, 6, 8, 10];
+    const cand = spb === 12 ? sp12 : sp16;
+    let idx = Math.floor(sn.length / 2), prev = null;
+    const nearIdx = (target) => { let b = 0; for (let i = 1; i < sn.length; i++) if (Math.abs(sn[i] - target) < Math.abs(sn[b] - target)) b = i; return b; };
+    for (let b = 0; b < bars; b++) {
+      let first = true;
+      for (const st of cand) {
+        const g = b * spb + st, strong = st % 4 === 0;
+        if (!first || b > 0) { const p = strong ? Math.min(0.95, Ld.dens + 0.35) : Ld.dens * 0.7; if (rg() > p) continue; }
+        const ch = chordAt(g);
+        if (strong || first) {
+          const opts = []; for (let i = 0; i < sn.length; i++) if (ch.pcs.has(mod12(sn[i]))) opts.push(i);
+          if (opts.length) {
+            opts.sort((a, c) => Math.abs(a - idx) - Math.abs(c - idx)); const r = rg();
+            let pick = Math.min(opts.length - 1, r < 0.55 ? 0 : r < 0.85 ? 1 : 2);
+            if (opts[pick] === idx && rg() < 0.8) pick = Math.min(opts.length - 1, pick + 1); // avoid parking on one note
+            idx = opts[pick];
+          }
+        } else {
+          const r = rg(); let dlt = r < 0.07 ? 0 : r < 0.5 ? 1 : r < 0.78 ? 2 : 3; const dir = rg() < (idx > sn.length * 0.65 ? 0.7 : idx < sn.length * 0.35 ? 0.3 : 0.5) ? -1 : 1; idx = Math.max(0, Math.min(sn.length - 1, idx + dir * dlt));
+        }
+        first = false;
+        const ph = { g, n: sn[idx], d: 4, v: 0.5 + rg() * 0.35 + (strong ? 0.1 : 0) };
+        if (prev) prev.d = Math.max(2, Math.min(Ld.style === 'run' ? 3 : 8, ph.g - prev.g));
+        out.push(ph); prev = ph;
+      }
+    }
+    if (prev) { const ch = chordAt(prev.g); const opts = sn.map((m, i) => i).filter((i) => ch.pcs.has(mod12(sn[i]))); if (opts.length) { opts.sort((a, c) => Math.abs(sn[a] - prev.n) - Math.abs(sn[c] - prev.n)); prev.n = sn[opts[0]]; } prev.d = Math.min(8, bars * spb - prev.g); }
+    void nearIdx;
+    return out;
+  }
+
+  function buildTrack(T) {
+    const rng = mulberry(T.seed), bpb = T.beats || 4, spb = bpb * 4, stepD = 60 / T.bpm / 4, sw = T.sw || 0, sw8 = T.sw8 || 0;
+    const tOf = (s) => s * stepD + ((s & 1) ? sw * stepD : 0) + ((s % 4 === 2) ? sw8 * stepD : 0);
+    const loopBeats = loopBeatsOf(T), loopSteps = loopBeats * 4, loopBars = loopBeats / bpb, loops = T.form.length, lay = T.form.map((f) => new Set(f.split('')));
+    // chords for one loop (voicings repeat identically every loop)
+    const loopCh = []; let pm = 63, s0 = 0;
+    for (const [r, q, b] of T.prog) { const rp = PC[r], vo = voicing(rp, q, pm); pm = vo.mean; const pcs = new Set(QUAL[q].map((x) => mod12(rp + x))); loopCh.push({ r: rp, q, s0, L: b * 4, vo: vo.notes, pcs }); s0 += b * 4; }
+    const chords = []; for (let li = 0; li < loops; li++) for (let ci = 0; ci < loopCh.length; ci++) chords.push(Object.assign({}, loopCh[ci], { s0: li * loopSteps + loopCh[ci].s0, li }));
+    const ev = [], push = (t, k, n, d, v) => ev.push({ t: Math.max(0, t), k, n, d, v });
+    const bassMidi = (c, tone, nx) => {
+      const rt = 36 + mod12(c.r - 36);
+      if (tone === 0) return rt; if (tone === 1) return rt + 7 > 47 ? rt - 5 : rt + 7; if (tone === 2) return rt + 12; if (tone === 3) return rt + QUAL[c.q][1];
+      let n = 36 + mod12(nx.r - 36) - 1; while (n - rt > 7) n -= 12; while (rt - n > 7) n += 12; return n;
+    };
+    chords.forEach((c, ci) => {
+      const L = lay[c.li], nx = chords[(ci + 1) % chords.length], dt = c.L * stepD;
+      if (L.has('k')) {
+        if (T.keys === 'arp') {
+          const order = [0, 1, 2, 3, 2, 1];
+          for (let o = 0, j = 0; o < c.L; o += 2, j++) push(tOf(c.s0 + o) + (rng() - 0.5) * 0.008, 'keys', c.vo[order[j % order.length] % c.vo.length] + (j % 6 === 2 ? 0 : 0), 3 * stepD, (o === 0 ? 0.75 : 0.5) * (0.88 + rng() * 0.2));
+        } else for (const [off, d, v] of COMP[T.keys](c.L)) {
+          if (off >= c.L) continue;
+          c.vo.forEach((n, i) => push(tOf(c.s0 + off) + i * 0.014 * (0.6 + rng() * 0.8), 'keys', n, Math.min(d, c.L - off) * stepD, v * (0.88 + rng() * 0.2) * (i === c.vo.length - 1 ? 0.9 : 1)));
+        }
+      }
+      if (L.has('p')) { const rt = 48 + mod12(c.r - 48); for (const n of [rt, ...c.vo.slice(0, 3)]) push(tOf(c.s0), 'pad', n, dt + 0.5, 0.8); }
+      if (L.has('b')) for (const [off, tone, d, v] of BASS[T.bass]) { if (off >= c.L) continue; push(tOf(c.s0 + off), 'bass', bassMidi(c, tone, nx), (d ? Math.min(d, c.L - off) : c.L - off) * stepD * 0.95, v * (0.92 + rng() * 0.16)); }
+    });
+    // drums
+    const P = DR[T.drums], bars = loops * loopBars;
+    for (let B = 0; B < bars; B++) {
+      const li = Math.floor(B / loopBars), l = lay[li], full = l.has('d'), hatsOnly = l.has('h') && !full; if (!full && !hatsOnly) continue;
+      const lastBar = B % loopBars === loopBars - 1, fill = full && T.fill && li % 2 === 1 && lastBar;
+      for (let i = 0; i < spb; i++) {
+        const s = B * spb + i, t = tOf(s), j = () => (rng() - 0.5) * 0.008;
+        if (full) {
+          const k = dig(P.k, i); if (k) push(t, 'kick', 0, 0.3, k * (0.92 + rng() * 0.16));
+          const sn = dig(P.s, i); if (sn) push(t + j(), 'snare', 0, 0.2, sn * (0.9 + rng() * 0.2));
+          const r = dig(P.r, i); if (r) push(t + j(), 'rim', 0, 0.05, r * (0.9 + rng() * 0.2));
+        }
+        const h = dig(P.h, i); if (h && !(h < 0.5 && rng() < 0.06)) push(t + j(), 'hat', 0, 0.05, h * (hatsOnly ? 0.6 : 0.85) * (0.85 + rng() * 0.3));
+        const sh = dig(P.sh, i); if (sh) push(t + j(), 'shk', 0, 0.07, sh * (hatsOnly ? 0.6 : 0.9) * (0.85 + rng() * 0.3));
+        if (fill && (i === 13 || i === 14 || i === 15)) push(t + j(), 'snare', 0, 0.12, (i === 15 ? 0.7 : i === 14 ? 0.5 : 0.35) * (0.9 + rng() * 0.2));
+      }
+    }
+    // lead
+    const phA = genPhrase(mulberry(T.seed * 7 + 1), T, loopCh, spb, loopBars), phB = genPhrase(mulberry(T.seed * 13 + 5), T, loopCh, spb, loopBars), pat = [phA, phA, phB, phA];
+    let lk = 0;
+    for (let li = 0; li < loops; li++) { if (!lay[li].has('l')) continue; const ph = pat[lk++ % 4]; for (const p of ph) push(tOf(li * loopSteps + p.g) + (rng() - 0.5) * 0.01, 'lead', p.n, p.d * stepD, p.v * (0.92 + rng() * 0.16)); }
+    ev.sort((a, b) => a.t - b.t);
+    return { ev, dur: trackDur(T), loops, loopBars };
+  }
+
+  // ---------- audio ----------
+  const cacheOf = new WeakMap();
+  function bufs(c) {
+    let b = cacheOf.get(c); if (b) return b; b = {}; cacheOf.set(c, b);
+    const sr = c.sampleRate, rg = mulberry(12345);
+    b.noise = c.createBuffer(1, sr * 2, sr); { const d = b.noise.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = rg() * 2 - 1; }
+    b.crackle = c.createBuffer(1, sr * 4, sr); {
+      const d = b.crackle.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = (rg() * 2 - 1) * 0.012;
+      let i = 0; while (true) { i += Math.max(1, Math.floor(-Math.log(1 - rg()) * sr / 7)); if (i >= d.length - 3) break; const a = (Math.pow(rg(), 2.5) * 0.9 + 0.05) * (rg() < 0.5 ? -1 : 1); d[i] += a; d[i + 1] -= a * 0.6; d[i + 2] += a * 0.25; }
+    }
+    b.brown = c.createBuffer(1, sr * 4, sr); { const d = b.brown.getChannelData(0); let last = 0; for (let i = 0; i < d.length; i++) { last = (last + 0.02 * (rg() * 2 - 1)) / 1.02; d[i] = last * 3.5; } const n = Math.floor(sr * 0.5); for (let i = 0; i < n; i++) { const w = i / n; d[d.length - n + i] = d[d.length - n + i] * (1 - w) + d[i] * w; } }
+    const mkIR = (len) => { const irl = Math.floor(sr * len), ir = c.createBuffer(2, irl, sr); for (let ch = 0; ch < 2; ch++) { const d = ir.getChannelData(ch); let lp = 0; for (let i = 0; i < irl; i++) { const x = rg() * 2 - 1, k = 0.55 - 0.45 * (i / irl); lp += (x - lp) * k; d[i] = lp * Math.pow(1 - i / irl, 2.6); } } return ir; };
+    b.ir = mkIR(1.2); b.irLite = mkIR(0.7);
+    b.sat = new Float32Array(1024); for (let i = 0; i < 1024; i++) { const x = i / 511.5 - 1; b.sat[i] = Math.tanh(1.4 * x) / Math.tanh(1.4); }
+    return b;
+  }
+  function createSession(c, dest, T, built, startPos, opts) {
+    const lite = !!(opts && opts.lite), B = bufs(c), E = { c, T, ev: built.ev, g: {}, srcs: [], noise: B.noise }, now = c.currentTime;
+    const node = (type, fn) => { const n = c['create' + type](); fn && fn(n); return n; };
+    const out = node('Gain', (g) => { g.gain.value = 1; }); out.connect(dest); E.out = out;
+    const fade = node('Gain'); fade.gain.setValueAtTime(0.0001, now); fade.gain.linearRampToValueAtTime(1, now + 0.06);
+    const tEnd = now + Math.max(0.5, built.dur - startPos), tf = Math.max(now + 0.1, tEnd - 5.5); fade.gain.setValueAtTime(1, tf); fade.gain.linearRampToValueAtTime(0.0001, tEnd - 0.15);
+    const sat = node('WaveShaper', (w) => { w.curve = B.sat; w.oversample = lite ? 'none' : '2x'; });
+    const trim = node('Gain', (g) => { g.gain.value = (T.trim || 1) * 0.62; });
+    const comp = node('DynamicsCompressor', (k) => { k.threshold.value = -17; k.knee.value = 14; k.ratio.value = 3; k.attack.value = 0.012; k.release.value = 0.25; });
+    const lp = node('BiquadFilter', (f) => { f.type = 'lowpass'; f.frequency.value = T.lp || 6500; f.Q.value = 0.5; });
+    const hp = node('BiquadFilter', (f) => { f.type = 'highpass'; f.frequency.value = 32; f.Q.value = 0.6; });
+    const bus = node('Gain', (g) => { g.gain.value = 0.4; });
+    bus.connect(hp); hp.connect(lp); lp.connect(comp); comp.connect(trim); trim.connect(sat); sat.connect(fade); fade.connect(out);
+    const revIn = node('Gain'), conv = node('Convolver', (k) => { k.buffer = lite ? B.irLite : B.ir; }), revOut = node('Gain', (g) => { g.gain.value = T.rev == null ? 0.4 : T.rev; });
+    revIn.connect(conv); conv.connect(revOut); revOut.connect(bus);
+    const dlyIn = node('Gain'), dly = node('Delay', (d) => { d.delayTime.value = T.dly ? 60 / T.bpm * 0.75 : 0.3; }), dlp = node('BiquadFilter', (f) => { f.type = 'lowpass'; f.frequency.value = 2300; }), fb = node('Gain', (g) => { g.gain.value = 0.36; });
+    dlyIn.connect(dly); dly.connect(dlp); dlp.connect(bus); dlp.connect(fb); fb.connect(dly);
+    const dlyAmt = T.dly || 0;
+    const grp = (name, gain, o = {}) => {
+      const g = node('Gain', (x) => { x.gain.value = gain; }); let tail = g;
+      if (o.lp) { const f = node('BiquadFilter', (x) => { x.type = 'lowpass'; x.frequency.value = o.lp; x.Q.value = 0.5; }); g.connect(f); tail = f; }
+      tail.connect(bus);
+      if (o.rev) { const s = node('Gain', (x) => { x.gain.value = o.rev; }); tail.connect(s); s.connect(revIn); }
+      if (o.dly) { const s = node('Gain', (x) => { x.gain.value = o.dly * dlyAmt / 0.3; }); tail.connect(s); s.connect(dlyIn); }
+      E.g[name] = g;
+    };
+    grp('keys', 0.75, { rev: 0.35 }); grp('pad', 0.6, { lp: 1500, rev: 0.5 }); grp('bass', 0.9, { lp: 700 }); grp('drums', 0.8, { rev: 0.1 }); grp('lead', 0.62, { rev: 0.4, dly: 0.35 }); grp('fx', 0.8);
+    // tape wobble shared by all pitched voices (cents)
+    const wob = node('Gain'); E.wob = wob;
+    for (const [fq, depth] of [[0.5, 7], [4.4, 1.3]]) { const o = node('Oscillator', (x) => { x.frequency.value = fq; }), g = node('Gain', (x) => { x.gain.value = depth; }); o.connect(g); g.connect(wob); o.start(now); E.srcs.push(o); }
+    const loopSrc = (buf, filt, gain, lfo) => {
+      const s = node('BufferSource', (x) => { x.buffer = buf; x.loop = true; }); let tail = s;
+      for (const [type, f, q] of filt) { const bq = node('BiquadFilter', (x) => { x.type = type; x.frequency.value = f; x.Q.value = q; }); tail.connect(bq); tail = bq; }
+      const g = node('Gain', (x) => { x.gain.value = gain; }); tail.connect(g); g.connect(E.g.fx);
+      if (lfo) { const o = node('Oscillator', (x) => { x.frequency.value = lfo[0]; }), og = node('Gain', (x) => { x.gain.value = gain * lfo[1]; }); o.connect(og); og.connect(g.gain); o.start(now); E.srcs.push(o); }
+      s.start(now, Math.random() * 3); E.srcs.push(s);
+    };
+    if (T.vinyl) loopSrc(B.crackle, [['highpass', 700, 0.5], ['lowpass', 9000, 0.5]], T.vinyl * 0.7);
+    if (T.rain) loopSrc(B.noise, [['highpass', 1600, 0.5], ['lowpass', 7500, 0.5]], T.rain, [0.17, 0.25]);
+    if (T.waves) loopSrc(B.brown, [['lowpass', 520, 0.6]], T.waves, [0.07, 0.7]);
+    // start position (+ ring notes already sounding)
+    E.t0 = now + 0.08 - startPos; let i = 0, lo = 0, hi = E.ev.length; while (lo < hi) { const m = (lo + hi) >> 1; if (E.ev[m].t < startPos) lo = m + 1; else hi = m; } i = lo; E.i = i;
+    if (startPos > 0) for (let j = i - 1; j >= 0 && E.ev[j].t > startPos - 14; j--) { const e = E.ev[j]; if ((e.k === 'keys' || e.k === 'pad' || e.k === 'bass') && e.t + e.d > startPos + 0.4) play(E, { t: startPos, k: e.k, n: e.n, d: e.t + e.d - startPos, v: e.v * 0.85 }, E.t0 + startPos + 0.01); }
+    return E;
+  }
+  function pump(E, until) {
+    const now = E.c.currentTime;
+    while (E.i < E.ev.length) { const e = E.ev[E.i], when = E.t0 + e.t; if (when >= until) break; E.i++; if (when < now - 0.25) continue; play(E, e, Math.max(when, now)); }
+  }
+  function dispose(E) {
+    const c = E.c, now = c.currentTime;
+    try { E.out.gain.cancelScheduledValues(now); E.out.gain.setValueAtTime(E.out.gain.value, now); E.out.gain.linearRampToValueAtTime(0, now + 0.06); } catch (e) {}
+    setTimeout(() => { for (const s of E.srcs) { try { s.stop(); } catch (e) {} } try { E.out.disconnect(); } catch (e) {} }, 160);
+  }
+  const pos = (E) => E.c.currentTime - E.t0;
+
+  // ---------- voices ----------
+  function ep(E, t, n, d, v, grp, depth, pk) {
+    const c = E.c, f = mtof(n), car = c.createOscillator(), mod = c.createOscillator(), mg = c.createGain(), eg = c.createGain();
+    car.frequency.value = f; mod.frequency.value = f;
+    const dep = f * (0.5 + 1.4 * v) * depth; mg.gain.setValueAtTime(dep, t); mg.gain.setTargetAtTime(dep * 0.08, t, 0.16);
+    mod.connect(mg); mg.connect(car.frequency); E.wob.connect(car.detune);
+    const p = pk * v, end = t + Math.max(0.1, d);
+    eg.gain.setValueAtTime(0.0001, t); eg.gain.linearRampToValueAtTime(p, t + 0.005); eg.gain.setTargetAtTime(p * 0.3, t + 0.005, 0.7); eg.gain.setTargetAtTime(0.0001, end, 0.16);
+    car.connect(eg); eg.connect(E.g[grp]); car.start(t); mod.start(t); car.stop(end + 1.4); mod.stop(end + 1.4);
+  }
+  function pluck(E, t, n, d, v, grp, pk) {
+    const c = E.c, f = mtof(n), o = c.createOscillator(), fl = c.createBiquadFilter(), eg = c.createGain();
+    o.type = 'sawtooth'; o.frequency.value = f; E.wob.connect(o.detune);
+    fl.type = 'lowpass'; fl.Q.value = 0.7; fl.frequency.setValueAtTime(Math.min(7000, f * 7), t); fl.frequency.setTargetAtTime(f * 1.3, t, 0.1);
+    const p = pk * v, end = t + Math.max(0.1, d);
+    eg.gain.setValueAtTime(0.0001, t); eg.gain.linearRampToValueAtTime(p, t + 0.004); eg.gain.setTargetAtTime(p * 0.2, t + 0.004, 0.22); eg.gain.setTargetAtTime(0.0001, end, 0.12);
+    o.connect(fl); fl.connect(eg); eg.connect(E.g[grp]); o.start(t); o.stop(end + 1);
+  }
+  function pad(E, t, n, d, v) {
+    const c = E.c, f = mtof(n), o1 = c.createOscillator(), o2 = c.createOscillator(), eg = c.createGain();
+    o1.type = 'triangle'; o2.type = 'sine'; o1.frequency.value = f; o2.frequency.value = f; o1.detune.value = -7; o2.detune.value = 6; E.wob.connect(o1.detune); E.wob.connect(o2.detune);
+    const att = Math.min(1.3, d * 0.45); eg.gain.setValueAtTime(0.0001, t); eg.gain.linearRampToValueAtTime(0.085 * v, t + att); eg.gain.setTargetAtTime(0.0001, t + d, 0.45);
+    o1.connect(eg); o2.connect(eg); eg.connect(E.g.pad); o1.start(t); o2.start(t); o1.stop(t + d + 2.6); o2.stop(t + d + 2.6);
+  }
+  function bass(E, t, n, d, v) {
+    const c = E.c, f = mtof(n), o = c.createOscillator(), o2 = c.createOscillator(), m = c.createGain(), fl = c.createBiquadFilter(), eg = c.createGain();
+    o.type = 'sine'; o2.type = 'triangle'; o.frequency.value = f; o2.frequency.value = f; m.gain.value = 0.3; E.wob.connect(o.detune); E.wob.connect(o2.detune);
+    fl.type = 'lowpass'; fl.frequency.value = 520; fl.Q.value = 0.6;
+    const p = 0.34 * v, end = t + Math.max(0.1, d);
+    eg.gain.setValueAtTime(0.0001, t); eg.gain.linearRampToValueAtTime(p, t + 0.012); eg.gain.setTargetAtTime(p * 0.6, t + 0.012, 0.3); eg.gain.setTargetAtTime(0.0001, end, 0.07);
+    o.connect(eg); o2.connect(m); m.connect(eg); eg.connect(fl); fl.connect(E.g.bass); o.start(t); o2.start(t); o.stop(end + 0.6); o2.stop(end + 0.6);
+  }
+  function kalimba(E, t, n, d, v) {
+    const c = E.c, f = mtof(n), o1 = c.createOscillator(), o2 = c.createOscillator(), o3 = c.createOscillator(), e1 = c.createGain(), e2 = c.createGain(), e3 = c.createGain();
+    o1.frequency.value = f; o2.frequency.value = f * 3; o3.frequency.value = f * 5.4; E.wob.connect(o1.detune);
+    const set = (g, p, tau) => { g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(p, t + 0.002); g.gain.setTargetAtTime(0.0001, t + 0.002, tau); };
+    set(e1, 0.3 * v, 0.34); set(e2, 0.08 * v, 0.05); set(e3, 0.03 * v, 0.02);
+    o1.connect(e1); o2.connect(e2); o3.connect(e3); e1.connect(E.g.lead); e2.connect(E.g.lead); e3.connect(E.g.lead);
+    o1.start(t); o2.start(t); o3.start(t); o1.stop(t + 2.4); o2.stop(t + 0.5); o3.stop(t + 0.3);
+  }
+  function ranat(E, t, n, d, v) {
+    const c = E.c, f = mtof(n), o1 = c.createOscillator(), o2 = c.createOscillator(), o3 = c.createOscillator(), e1 = c.createGain(), e2 = c.createGain();
+    o1.frequency.value = f; o2.frequency.value = f * 3.01; o3.frequency.value = f * 1.004; E.wob.connect(o1.detune);
+    const set = (g, p, tau) => { g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(p, t + 0.0015); g.gain.setTargetAtTime(0.0001, t + 0.0015, tau); };
+    set(e1, 0.27 * v, 0.2); set(e2, 0.1 * v, 0.045);
+    o1.connect(e1); o3.connect(e1); o2.connect(e2); e1.connect(E.g.lead); e2.connect(E.g.lead);
+    o1.start(t); o2.start(t); o3.start(t); o1.stop(t + 1.6); o3.stop(t + 1.6); o2.stop(t + 0.4);
+  }
+  const nz = (E, t, dur) => { const s = E.c.createBufferSource(); s.buffer = E.noise; s.start(t, Math.random() * 1.4, dur + 0.03); return s; };
+  function env(E, t, p, atk, dur, dest, src) { const g = E.c.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(p, t + atk); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); src.connect(g); g.connect(dest); return g; }
+  function kick(E, t, v) { const c = E.c, o = c.createOscillator(); o.frequency.setValueAtTime(135, t); o.frequency.exponentialRampToValueAtTime(48, t + 0.12); env(E, t, 0.95 * v, 0.004, 0.38, E.g.drums, o); o.start(t); o.stop(t + 0.42); }
+  function snare(E, t, v) {
+    const c = E.c, s = nz(E, t, 0.22), bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1800; bp.Q.value = 0.9; s.connect(bp); env(E, t, 0.5 * v, 0.002, 0.2, E.g.drums, bp);
+    const o = c.createOscillator(); o.type = 'triangle'; o.frequency.setValueAtTime(190, t); o.frequency.exponentialRampToValueAtTime(140, t + 0.07); env(E, t, 0.26 * v, 0.002, 0.1, E.g.drums, o); o.start(t); o.stop(t + 0.14);
+  }
+  function hat(E, t, v) { const s = nz(E, t, 0.06), hp = E.c.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 7200; s.connect(hp); env(E, t, 0.2 * v, 0.001, 0.05, E.g.drums, hp); }
+  function rim(E, t, v) {
+    const c = E.c, s = nz(E, t, 0.05), bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 2600; bp.Q.value = 4; s.connect(bp); env(E, t, 0.34 * v, 0.001, 0.04, E.g.drums, bp);
+    const o = c.createOscillator(); o.frequency.value = 900; env(E, t, 0.14 * v, 0.001, 0.045, E.g.drums, o); o.start(t); o.stop(t + 0.06);
+  }
+  function shk(E, t, v) { const s = nz(E, t, 0.09), bp = E.c.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 6000; bp.Q.value = 0.8; s.connect(bp); env(E, t, 0.13 * v, 0.012, 0.075, E.g.drums, bp); }
+  function play(E, e, t) {
+    const T = E.T;
+    switch (e.k) {
+      case 'keys': if (T.keysV === 'pluck') pluck(E, t, e.n, e.d, e.v, 'keys', 0.13); else ep(E, t, e.n, e.d, e.v, 'keys', 1, 0.22); break;
+      case 'pad': pad(E, t, e.n, e.d, e.v); break;
+      case 'bass': bass(E, t, e.n, e.d, e.v); break;
+      case 'lead': { const vc = T.lead.voice; if (vc === 'kalimba') kalimba(E, t, e.n, e.d, e.v); else if (vc === 'ranat') ranat(E, t, e.n, e.d, e.v); else if (vc === 'pluck') pluck(E, t, e.n, e.d, e.v, 'lead', 0.15); else ep(E, t, e.n, e.d, e.v, 'lead', 0.7, 0.17); break; }
+      case 'kick': kick(E, t, e.v); break;
+      case 'snare': snare(E, t, e.v); break;
+      case 'hat': hat(E, t, e.v); break;
+      case 'rim': rim(E, t, e.v); break;
+      case 'shk': shk(E, t, e.v); break;
+    }
+  }
+
+  // ---------- cover art (little painted scene per track) ----------
+  function drawCover(cv, N, spec, seed) {
+    const g = cv.getContext('2d'), rg = mulberry(seed || 1); cv.width = cv.height = N;
+    const hz = N * 0.62;
+    const sky = g.createLinearGradient(0, 0, 0, hz); sky.addColorStop(0, spec.sky[0]); sky.addColorStop(1, spec.sky[1]); g.fillStyle = sky; g.fillRect(0, 0, N, N);
+    if (spec.stars) for (let i = 0; i < 46; i++) { g.fillStyle = 'rgba(255,255,255,' + (0.35 + rg() * 0.65).toFixed(2) + ')'; const s = rg() < 0.12 ? 2 : 1; g.fillRect(Math.floor(rg() * N), Math.floor(rg() * hz * 0.9), s, s); }
+    if (spec.sun) { const { x, y, r, c } = spec.sun, cx = x * N, cy = y * N, R = r * N, gl = g.createRadialGradient(cx, cy, R * 0.4, cx, cy, R * 3.2); gl.addColorStop(0, c + 'aa'); gl.addColorStop(1, c + '00'); g.fillStyle = gl; g.fillRect(0, 0, N, N); g.fillStyle = c; g.beginPath(); g.arc(cx, cy, R, 0, 7); g.fill(); }
+    if (spec.rain) { g.strokeStyle = 'rgba(255,255,255,.28)'; g.lineWidth = 1; for (let i = 0; i < 70; i++) { const x = rg() * N, y = rg() * hz * 1.1; g.beginPath(); g.moveTo(x, y); g.lineTo(x - 4, y + 12); g.stroke(); } }
+    if (spec.island) { g.fillStyle = '#16322e'; g.beginPath(); g.moveTo(0, hz + 2); g.quadraticCurveTo(N * 0.12, hz - N * 0.12, N * 0.3, hz - N * 0.03); g.quadraticCurveTo(N * 0.36, hz - 2, N * 0.42, hz + 2); g.fill(); g.strokeStyle = '#0f2421'; g.lineWidth = 3; g.beginPath(); g.moveTo(N * 0.2, hz - N * 0.06); g.quadraticCurveTo(N * 0.22, hz - N * 0.2, N * 0.17, hz - N * 0.3); g.stroke(); g.lineWidth = 2.5; for (const a of [-2.6, -2.0, -1.2, -0.5, -3.0]) { g.beginPath(); g.moveTo(N * 0.17, hz - N * 0.3); g.quadraticCurveTo(N * 0.17 + Math.cos(a) * N * 0.1, hz - N * 0.3 + Math.sin(a) * N * 0.06 - N * 0.03, N * 0.17 + Math.cos(a) * N * 0.17, hz - N * 0.3 + Math.sin(a) * N * 0.06 + N * 0.08); g.stroke(); } }
+    const w = spec.waves;
+    for (let k = 0; k < w.length; k++) {
+      const y0 = hz + k * N * (0.38 / w.length), amp = N * (0.008 + k * 0.006), fr = 0.045 - k * 0.006, ph = rg() * 6;
+      g.fillStyle = w[k]; g.beginPath(); g.moveTo(0, N); g.lineTo(0, y0); for (let x = 0; x <= N; x += 3) g.lineTo(x, y0 + Math.sin(x * fr + ph) * amp + Math.sin(x * fr * 2.3 + ph * 1.7) * amp * 0.4); g.lineTo(N, N); g.closePath(); g.fill();
+      if (k === 0 && spec.sun) { g.fillStyle = spec.sun.c + '55'; for (let j = 0; j < 9; j++) { const ww = N * spec.sun.r * 1.7 * (1 - j / 11); g.fillRect(spec.sun.x * N - ww / 2 + Math.sin(j * 1.7) * 3, hz + 3 + j * N * 0.032, ww, 2); } }
+    }
+    if (spec.squid) { g.save(); g.globalAlpha = 0.85; g.fillStyle = '#ffd7ec'; g.strokeStyle = '#ffd7ec'; const cx = N * 0.32, cy = N * 0.8; g.beginPath(); g.ellipse(cx, cy, N * 0.045, N * 0.1, -0.5, 0, 7); g.fill(); g.lineWidth = 2; for (let i = -3; i <= 3; i++) { g.beginPath(); g.moveTo(cx + i * 2.5 + 5, cy + N * 0.08); g.quadraticCurveTo(cx + i * 5 + 12, cy + N * 0.15, cx + i * 3 + 8 + Math.sin(i) * 6, cy + N * 0.21); g.stroke(); } g.fillStyle = '#0a1c3a'; g.beginPath(); g.arc(cx + 5, cy + 1, 2, 0, 7); g.fill(); g.restore(); }
+    if (spec.boat) {
+      const bx = N * (spec.sun && spec.sun.x > 0.5 ? 0.3 : 0.62), by = hz + N * 0.015, s = N / 176; g.fillStyle = '#101c27';
+      g.beginPath(); g.moveTo(bx - 30 * s, by - 10 * s); g.lineTo(bx + 34 * s, by - 10 * s); g.lineTo(bx + 24 * s, by + 4 * s); g.lineTo(bx - 22 * s, by + 4 * s); g.closePath(); g.fill();
+      g.fillRect(bx - 8 * s, by - 24 * s, 16 * s, 14 * s); g.fillRect(bx + 12 * s, by - 40 * s, 2 * s, 30 * s); g.fillRect(bx - 30 * s, by - 12 * s, 64 * s, 2 * s);
+      if (spec.lantern) { const gl = g.createRadialGradient(bx + 13 * s, by - 38 * s, 1, bx + 13 * s, by - 38 * s, 26 * s); gl.addColorStop(0, 'rgba(255,214,120,.95)'); gl.addColorStop(1, 'rgba(255,214,120,0)'); g.fillStyle = gl; g.fillRect(bx - 20 * s, by - 70 * s, 70 * s, 70 * s); g.fillStyle = '#ffe9b0'; g.beginPath(); g.arc(bx + 13 * s, by - 38 * s, 3 * s, 0, 7); g.fill(); }
+    }
+    const vg = g.createRadialGradient(N / 2, N / 2, N * 0.35, N / 2, N / 2, N * 0.8); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.35)'); g.fillStyle = vg; g.fillRect(0, 0, N, N);
+  }
+
+  return { TRACKS, trackDur, buildTrack, createSession, pump, dispose, pos, drawCover };
+})();
+// @@MUSIC-ENGINE-END
 // radio: a little luk thung-style loop (pluck melody, bass, ching cymbal)
 const SCALE = [0, 2, 4, 7, 9, 12, 14, 16, 19];
 let melIdx = 4;
@@ -1847,12 +2305,127 @@ function radioTick() {
   }
 }
 setInterval(radioTick, 90);
-function toggleRadio() { audioInit(); A.radio = !A.radio; if (A.radioG) A.radioG.gain.value = A.radio ? 0.5 : 0; toast(A.radio ? 'เปิดวิทยุ FM ลูกทุ่ง' : 'ปิดวิทยุ'); sfx('click'); }
+function toggleRadio() { audioInit(); if (!A.radio && MUS.playing) musPause(); A.radio = !A.radio; if (A.radioG) A.radioG.gain.value = A.radio ? 0.5 : 0; toast(A.radio ? 'เปิดวิทยุ FM ลูกทุ่ง' : 'ปิดวิทยุ'); sfx('click'); }
 function applyVol() { if (!A.ctx) return; A.master.gain.value = A.muted ? 0 : S.vol.master; for (const k of ['sfx', 'amb', 'music']) A[k].gain.value = S.vol[k]; }
-function setMuted(m) { A.muted = m; S.vol.muted = m; save(); applyVol(); toast(m ? 'ปิดเสียงแล้ว (กด M อีกครั้งเพื่อเปิด)' : 'เปิดเสียงแล้ว'); if (menuOpen && menuTab === 'settings') renderMenu(); }
+function setMuted(m) { A.muted = m; S.vol.muted = m; save(); applyVol(); toast(m ? 'ปิดเสียงแล้ว (กด M อีกครั้งเพื่อเปิด)' : 'เปิดเสียงแล้ว'); if (menuOpen && menuTab === 'settings') renderMenu(); if (musicOpen) musRefresh(); }
 A.muted = !!S.vol.muted;
 $('volStart').value = Math.round(S.vol.master * 100);
 $('volStart').addEventListener('input', (e) => { S.vol.master = e.target.value / 100; applyVol(); save(); });
+// @@MUSIC-UI-START
+// =============== music player (control + panel UI) ===============
+let musicOpen = false;
+S.mus = Object.assign({ i: 0, shuffle: false, loop: 'all', on: false }, S.mus);
+S.mus.i = clamp(Math.floor(+S.mus.i) || 0, 0, MUSIC.TRACKS.length - 1); S.mus.shuffle = !!S.mus.shuffle; S.mus.on = !!S.mus.on; if (!['all', 'one', 'off'].includes(S.mus.loop)) S.mus.loop = 'all';
+const MUS = { T: MUSIC.TRACKS, built: {}, sess: null, playing: false, p0: 0, seeking: false, covers: {}, hist: [], ui: false };
+const MUS_ICON = {
+  play: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"></path></svg>',
+  pause: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.6v14H7zM13.4 5H17v14h-3.6z" fill="currentColor"></path></svg>',
+};
+const musBuilt = (i) => MUS.built[i] || (MUS.built[i] = MUSIC.buildTrack(MUS.T[i]));
+const musPos = () => (MUS.sess ? clamp(MUSIC.pos(MUS.sess), 0, MUS.T[S.mus.i].dur) : MUS.p0);
+const musFmt = (s) => { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+function musStop() { if (MUS.sess) { MUSIC.dispose(MUS.sess); MUS.sess = null; } }
+function musStart(i, pos = 0) {
+  audioInit(); if (!A.ctx || !A.music) return false;
+  if (A.ctx.state === 'suspended') A.ctx.resume();
+  musStop();
+  if (A.radio) { A.radio = false; if (A.radioG) A.radioG.gain.value = 0; }
+  S.mus.i = i; MUS.p0 = pos;
+  try { MUS.sess = MUSIC.createSession(A.ctx, A.music, MUS.T[i], musBuilt(i), pos, { lite: qName === 'low' }); MUSIC.pump(MUS.sess, A.ctx.currentTime + 1.2); }
+  catch (e) { console.warn('music', e); musStop(); MUS.playing = false; musRefresh(); return false; }
+  MUS.playing = true; S.mus.on = true; save(); musRefresh(); return true;
+}
+function musPause() { if (!MUS.playing) return; MUS.p0 = musPos(); musStop(); MUS.playing = false; S.mus.on = false; save(); musRefresh(); }
+function musToggle() { if (MUS.playing) musPause(); else musStart(S.mus.i, MUS.p0 >= MUS.T[S.mus.i].dur - 1 ? 0 : MUS.p0); }
+function musPick(dir, auto) {
+  const n = MUS.T.length, cur = S.mus.i;
+  if (auto && S.mus.loop === 'one') return cur;
+  if (S.mus.shuffle) { if (n < 2) return cur; if (dir < 0 && MUS.hist.length) return MUS.hist.pop(); let j; do { j = Math.floor(Math.random() * n); } while (j === cur); return j; }
+  const j = cur + dir; if (j >= n) return auto && S.mus.loop === 'off' ? -1 : 0; return j < 0 ? n - 1 : j;
+}
+function musNext(auto) {
+  const j = musPick(1, auto);
+  if (j < 0) { musPause(); MUS.p0 = 0; musRefresh(); return; }
+  if (S.mus.shuffle && j !== S.mus.i) { MUS.hist.push(S.mus.i); if (MUS.hist.length > 20) MUS.hist.shift(); }
+  musStart(j, 0); if (auto && !musicOpen) toast('♪ ' + MUS.T[j].title);
+}
+function musPrev() { if (musPos() > 3) { musStart(S.mus.i, 0); return; } musStart(musPick(-1, false), 0); }
+function musSeek(p) { const T = MUS.T[S.mus.i], pos = clamp(p, 0, T.dur - 1); if (MUS.playing) musStart(S.mus.i, pos); else { MUS.p0 = pos; musRefreshTime(); } }
+// lookahead scheduler; a worker drives it so background tabs keep playing
+(function musClock() {
+  const tick = () => {
+    if (!MUS.playing || !MUS.sess || !A.ctx || A.ctx.state !== 'running') return;
+    try { MUSIC.pump(MUS.sess, A.ctx.currentTime + 1.2); if (musPos() >= MUS.T[S.mus.i].dur - 0.05) musNext(true); } catch (e) { console.warn('music tick', e); }
+  };
+  let fallback = false; const useTimer = () => { if (!fallback) { fallback = true; setInterval(tick, 120); } };
+  try { const w = new Worker(URL.createObjectURL(new Blob(['setInterval(function(){postMessage(0)},120)'], { type: 'text/javascript' }))); w.onmessage = tick; w.onerror = () => { try { w.terminate(); } catch (e) {} useTimer(); }; } catch (e) { useTimer(); }
+})();
+function musCover(i) {
+  if (MUS.covers[i] != null) return MUS.covers[i];
+  try { const cv = document.createElement('canvas'); MUSIC.drawCover(cv, 176, MUS.T[i].cover, MUS.T[i].seed); return (MUS.covers[i] = cv.toDataURL('image/png')); } catch (e) { return (MUS.covers[i] = ''); }
+}
+function musBuild() {
+  if (MUS.ui) return; MUS.ui = true;
+  const list = $('musList');
+  MUS.T.forEach((T, i) => {
+    const b = el('button', 'mrow'); b.type = 'button'; b.dataset.i = i;
+    const im = el('img'); im.alt = ''; im.width = im.height = 40; im.decoding = 'async'; b.appendChild(im);
+    setTimeout(() => { im.src = musCover(i); }, 30 + i * 28);
+    const tx = el('span', 'mrt'); tx.appendChild(el('b', '', T.title)); tx.appendChild(el('i', '', T.artist)); b.appendChild(tx);
+    const eq = el('span', 'eq'); eq.setAttribute('aria-hidden', 'true'); eq.innerHTML = '<i></i><i></i><i></i>'; b.appendChild(eq);
+    b.appendChild(el('span', 'mrd', musFmt(T.dur)));
+    b.addEventListener('click', () => { if (S.mus.i === i) musToggle(); else musStart(i, 0); });
+    list.appendChild(b);
+  });
+}
+function musRefreshTime() { if (!MUS.ui || MUS.seeking) return; const T = MUS.T[S.mus.i], p = musPos(); $('musCur').textContent = musFmt(p); $('musSeek').value = Math.round(p / T.dur * 1000); }
+function musRefresh() {
+  const T = MUS.T[S.mus.i];
+  $('hMusic').hidden = !MUS.playing; $('hMusT').textContent = T.title;
+  if (!MUS.ui) return;
+  $('musCover').src = musCover(S.mus.i); $('musTitle').textContent = T.title; $('musArtist').textContent = T.artist + ' · ' + T.mood; $('musDur').textContent = musFmt(T.dur);
+  const pl = $('musPlay'); pl.innerHTML = MUS.playing ? MUS_ICON.pause : MUS_ICON.play; pl.setAttribute('aria-label', MUS.playing ? 'หยุดเพลง' : 'เล่นเพลง');
+  $('musShuf').setAttribute('aria-pressed', String(S.mus.shuffle));
+  const lp = $('musLoop'); lp.dataset.mode = S.mus.loop; lp.setAttribute('aria-pressed', String(S.mus.loop !== 'off')); lp.setAttribute('aria-label', S.mus.loop === 'one' ? 'เล่นซ้ำเพลงเดิม' : S.mus.loop === 'all' ? 'เล่นวนทุกเพลง' : 'เล่นจนจบรายการ');
+  for (const r of $('musList').children) { const on = +r.dataset.i === S.mus.i; r.classList.toggle('on', on); r.classList.toggle('playing', on && MUS.playing); if (on) r.setAttribute('aria-current', 'true'); else r.removeAttribute('aria-current'); }
+  const v = $('musVol'); if (document.activeElement !== v) v.value = Math.round(S.vol.music * 100); $('musVolV').textContent = Math.round(S.vol.music * 100) + '%';
+  $('musMuted').hidden = !A.muted;
+  musRefreshTime();
+}
+function openMusic() {
+  if (musicOpen || !inputOn()) return;
+  audioInit(); musBuild(); musicOpen = true; primaryHeld = false; useHeld = false; if (st === 'charge') st = 'idle';
+  if (document.pointerLockElement) document.exitPointerLock();
+  $('mus').hidden = false; musRefresh();
+  setTimeout(() => { const on = $('musList').querySelector('.mrow.on'); if (on && on.scrollIntoView) on.scrollIntoView({ block: 'nearest' }); const p = $('musPlay'); if (p) p.focus({ preventScroll: true }); }, 30);
+}
+function closeMusic(relock = true) {
+  if (!musicOpen) return; musicOpen = false; $('mus').hidden = true; MUS.seeking = false;
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  if (relock) requestLock();
+}
+function musAutostart() { if (S.mus.on && !MUS.playing) setTimeout(() => { if (started && !MUS.playing) musStart(S.mus.i, 0); }, 900); }
+$('musClose').addEventListener('click', () => closeMusic());
+$('musPlay').addEventListener('click', musToggle);
+$('musPrev').addEventListener('click', musPrev);
+$('musNext').addEventListener('click', () => musNext(false));
+$('musShuf').addEventListener('click', () => { S.mus.shuffle = !S.mus.shuffle; MUS.hist.length = 0; save(); musRefresh(); });
+$('musLoop').addEventListener('click', () => { S.mus.loop = S.mus.loop === 'all' ? 'one' : S.mus.loop === 'one' ? 'off' : 'all'; save(); musRefresh(); });
+{
+  const sk = $('musSeek');
+  sk.addEventListener('input', () => { MUS.seeking = true; $('musCur').textContent = musFmt(sk.value / 1000 * MUS.T[S.mus.i].dur); });
+  sk.addEventListener('change', () => { MUS.seeking = false; musSeek(sk.value / 1000 * MUS.T[S.mus.i].dur); });
+  const vl = $('musVol');
+  vl.addEventListener('input', () => { S.vol.music = vl.value / 100; $('musVolV').textContent = vl.value + '%'; audioInit(); applyVol(); });
+  vl.addEventListener('change', save);
+}
+$('mus').addEventListener('keydown', (e) => {
+  if (e.code === 'Escape' || e.code === 'KeyP') { e.preventDefault(); e.stopPropagation(); closeMusic(); return; }
+  if (e.target && e.target.type === 'range') return;
+  if (e.code === 'ArrowRight') { e.preventDefault(); musNext(false); } else if (e.code === 'ArrowLeft') { e.preventDefault(); musPrev(); }
+});
+setInterval(() => { if (musicOpen) musRefreshTime(); }, 250);
+// @@MUSIC-UI-END
 
 // =============== HUD helpers ===============
 function toast(msg, cls = '', who) {
@@ -2064,7 +2637,7 @@ function canGo(x, z) {
 const isIndoors = () => P.zone === 'hold' || (P.zone === 'deck' && P.z > 4.02 && Math.abs(P.x) < 2.2) || (P.zone === 'upper' && P.z > 5.42);
 const floorY = () => P.zone === 'hold' ? HOLD.floor : P.zone === 'land' ? landFloor(P.x, P.z) : P.zone === 'upper' ? UP_Y : P.zone === 'stairs' ? lerp(2.0, UP_Y, clamp((P.z - 2.25) / 1.75, 0, 1)) : 2.0;
 let blockMsgT = 0;
-const inputOn = () => started && !paused && !menuOpen && !nightOver && !traveling && !pageOpen && !chatOpen && !kitchenOpen;
+const inputOn = () => started && !paused && !menuOpen && !nightOver && !traveling && !pageOpen && !chatOpen && !kitchenOpen && !musicOpen;
 function updatePlayer(dt) {
   let mx = 0, my = 0;
   if (keys.KeyW || keys.ArrowUp) my += 1; if (keys.KeyS || keys.ArrowDown) my -= 1; if (keys.KeyD || keys.ArrowRight) mx += 1; if (keys.KeyA || keys.ArrowLeft) mx -= 1;
@@ -2113,6 +2686,7 @@ function reelInNow() {
 }
 canvas.addEventListener('pointerdown', (e) => {
   if (!started || TOUCH || e.pointerType === 'touch' || paused || menuOpen) return;
+  if (musicOpen) { closeMusic(); return; }
   if (!pointerLocked && !lockFallback) { requestLock(); return; }
   if (e.button === 0 || e.button === 2) primaryDown();
 });
@@ -2131,7 +2705,7 @@ function requestLock() {
   if (!canvas.requestPointerLock) { lockFallback = true; return; }
   try { const p = canvas.requestPointerLock(); if (p && typeof p.catch === 'function') p.catch(lockFail); } catch (e) { lockFail(); }
 }
-document.addEventListener('pointerlockchange', () => { pointerLocked = document.pointerLockElement === canvas; if (pointerLocked) everLocked = true; if (!pointerLocked && started && !TOUCH && !lockFallback && !menuOpen && !nightOver && !pageOpen && !chatOpen && !kitchenOpen && !BOIL.active) setPaused(true); });
+document.addEventListener('pointerlockchange', () => { pointerLocked = document.pointerLockElement === canvas; if (pointerLocked) everLocked = true; if (!pointerLocked && started && !TOUCH && !lockFallback && !menuOpen && !nightOver && !pageOpen && !chatOpen && !kitchenOpen && !musicOpen && !BOIL.active) setPaused(true); });
 document.addEventListener('pointerlockerror', lockFail);
 function setPaused(p) { paused = p; $('pause').hidden = !p; if (p) { primaryHeld = false; useHeld = false; if (st === 'charge') st = 'idle'; } }
 $('pause').addEventListener('click', () => { setPaused(false); requestLock(); });
@@ -2141,6 +2715,7 @@ window.addEventListener('keydown', (e) => {
   if (chatOpen) { if (e.code === 'Escape') closeChat(); return; }
   if (pageOpen) { if (e.code === 'Escape' || e.code === 'Enter' || e.code === 'KeyE') closePage(); return; }
   if (menuOpen) { if (e.code === 'Escape' || e.code === 'KeyB') closeMenu(); return; }
+  if (musicOpen) { if (e.code === 'Escape' || e.code === 'KeyP') closeMusic(); return; }
   if (e.code === 'Tab') { e.preventDefault(); if (!e.repeat && inputOn()) openMenu(); return; }
   if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) e.preventDefault();
   keys[e.code] = true; if (e.repeat) return;
@@ -2155,6 +2730,7 @@ window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyR') toggleRadio();
   if (e.code === 'KeyQ') reelInNow();
   if (e.code === 'KeyM') setMuted(!A.muted);
+  if (e.code === 'KeyP') openMusic();
   if (e.code === 'KeyZ') { const c = $('ctrl'); c.classList.toggle('min'); try { localStorage.setItem('squid-ctrl', c.classList.contains('min') ? '1' : '0'); } catch (er) {} }
 });
 window.addEventListener('keyup', (e) => { keys[e.code] = false; if (e.code === 'Space' || e.code === 'KeyF') primaryUp(); if (e.code === 'KeyE') useHeld = false; });
@@ -2179,6 +2755,7 @@ try { if (localStorage.getItem('squid-ctrl') === '1') $('ctrl').classList.add('m
   const uEnd = () => { useHeld = false; }; bu.addEventListener('pointerup', uEnd); bu.addEventListener('pointercancel', uEnd);
   $('bLamp').addEventListener('click', () => toggleLamps());
   $('bMenu').addEventListener('click', () => openMenu());
+  $('bMusic').addEventListener('click', () => { if (musicOpen) closeMusic(); else openMusic(); });
   $('bReel').addEventListener('click', () => reelInNow());
 })();
 
@@ -2502,6 +3079,7 @@ function endNight() {
   nightOver = true; primaryHeld = false; if (document.pointerLockElement) document.exitPointerLock();
   if (kitchenOpen) { kitchenOpen = false; $('kitchen').hidden = true; K.view = 'list'; K.item = null; K.done = false; }
   if (menuOpen) { menuOpen = false; $('menu').hidden = true; }
+  closeMusic(false);
   const potN = S.pots.length ? autoCollectPots() : -1;
   const sold = Math.round(S.tub.concat(S.freezer, S.crewBox).reduce((a, b) => a + sellValue(b, true), 0) + S.dishes.reduce((a, d) => a + dishValue(d), 0));
   $('sumEyebrow').textContent = `เช้าแล้ว · ${nightDate(true)} ตี 5:30 · เอาของไปขายที่เกาะ`; $('sumTitle').textContent = `จบคืนที่ ${S.night}`;
@@ -2528,7 +3106,7 @@ function travel(idx, who) {
 // =============== menu ===============
 let menuTab = 'market';
 function openMenu(tab) {
-  if (!started) return; menuOpen = true; primaryHeld = false; if (st === 'charge') st = 'idle';
+  if (!started) return; closeMusic(false); menuOpen = true; primaryHeld = false; if (st === 'charge') st = 'idle';
   if (document.pointerLockElement) document.exitPointerLock();
   if (tab) menuTab = tab; $('menu').hidden = false; renderMenu(); setTimeout(() => $('t-' + menuTab).focus(), 30);
 }
@@ -2538,6 +3116,7 @@ async function exitToStart() {
   if (NET.code) { try { await leaveBoat(true); } catch (e) {} }
   if (kitchenOpen) { kitchenOpen = false; $('kitchen').hidden = true; K.view = 'list'; K.item = null; K.done = false; }
   if (chatOpen) closeChat();
+  closeMusic(false);
   menuOpen = false; $('menu').hidden = true;
   if (document.pointerLockElement) document.exitPointerLock();
   started = false; paused = false; $('pause').hidden = true;
@@ -2670,7 +3249,7 @@ function renderMenu() {
   else if (menuTab === 'settings') {
     body.appendChild(el('h3', '', 'เสียง'));
     body.appendChild(el('div', 'hint', 'เลื่อนเพื่อปรับความดัง กด M ระหว่างเล่นเพื่อปิดหรือเปิดเสียงทั้งหมด'));
-    for (const [k, lb] of [['master', 'เสียงรวม'], ['sfx', 'เอฟเฟกต์'], ['amb', 'คลื่น ลม ฝน'], ['music', 'วิทยุ']]) {
+    for (const [k, lb] of [['master', 'เสียงรวม'], ['sfx', 'เอฟเฟกต์'], ['amb', 'คลื่น ลม ฝน'], ['music', 'เพลง/วิทยุ']]) {
       const row = el('div', 'vrow'), id = 'vol-' + k, lab = el('label', '', lb); lab.htmlFor = id; row.appendChild(lab);
       const inp = el('input'); inp.type = 'range'; inp.min = 0; inp.max = 100; inp.id = id; inp.value = Math.round(S.vol[k] * 100); row.appendChild(inp);
       const val = el('span', '', inp.value + '%'); row.appendChild(val);
@@ -2679,7 +3258,9 @@ function renderMenu() {
       body.appendChild(row);
     }
     const mr = el('div', 'joinrow'); const mb = btn(A.muted ? 'เปิดเสียง' : 'ปิดเสียงทั้งหมด', () => setMuted(!A.muted)); mb.setAttribute('aria-pressed', String(A.muted)); mr.appendChild(mb);
-    mr.appendChild(btn(A.radio ? 'ปิดวิทยุ' : 'เปิดวิทยุ', () => { toggleRadio(); renderMenu(); })); body.appendChild(mr);
+    mr.appendChild(btn(A.radio ? 'ปิดวิทยุ' : 'เปิดวิทยุ', () => { toggleRadio(); renderMenu(); }));
+    mr.appendChild(btn(MUS.playing ? 'หยุดเพลง' : 'เล่นเพลงชิวๆ', () => { musToggle(); renderMenu(); })); body.appendChild(mr);
+    body.appendChild(el('div', 'hint', TOUCH ? 'กดปุ่มโน้ตเพลงมุมขวาบนเพื่อเลือกเพลง' : 'กด P ระหว่างเล่นเพื่อเปิดเครื่องเล่น เลือกเพลง สุ่ม หรือเล่นวนได้'));
     body.appendChild(el('h3', '', 'ภาพ'));
     const qr = el('div', 'seg'); if (!qUserSet) qr.appendChild(el('div', 'hint', 'ตอนนี้ปรับอัตโนมัติตามเครื่องอยู่ · เลือกเองได้ด้านล่าง')); for (const [q, lb] of [['high', 'สูง'], ['medium', 'กลาง'], ['low', 'ต่ำ (ลื่นกว่า)']]) { const b = btn(lb, () => { setQuality(q, true); renderMenu(); }); b.setAttribute('aria-pressed', String(qName === q)); qr.appendChild(b); } body.appendChild(qr);
     body.appendChild(el('h3', '', 'ความยากและความหลอน'));
@@ -3304,6 +3885,7 @@ function finishStory() {
   if (kitchenOpen) { kitchenOpen = false; $('kitchen').hidden = true; K.view = 'list'; K.item = null; K.done = false; }
   if (menuOpen) { menuOpen = false; $('menu').hidden = true; }
   if (chatOpen) { chatOpen = false; $('chat').hidden = true; }
+  closeMusic(false);
   $('ending').hidden = false;
 }
 $('endClose').addEventListener('click', () => { $('ending').hidden = true; nightOver = false; requestLock(); });
@@ -4739,7 +5321,7 @@ function setQuality(name, manual) {
 }
 for (const b of document.querySelectorAll('.seg .btn')) { b.addEventListener('click', () => { setQuality(b.dataset.q, true); renderMenu(); }); b.setAttribute('aria-pressed', String(b.dataset.q === qName)); }
 $('go').addEventListener('click', () => {
-  audioInit(); started = true; $('start').hidden = true; $('hud').hidden = false; $('touch').hidden = !TOUCH; requestLock(); renderTut();
+  audioInit(); started = true; $('start').hidden = true; $('hud').hidden = false; $('touch').hidden = !TOUCH; requestLock(); renderTut(); musAutostart(); musRefresh();
   setTimeout(() => toast(`คืนที่ ${S.night}: ${WX_NAME[NIGHT.weather]} · ${NIGHT.moon} · ${SPOTS[S.spot].name}`, 'good'), 400);
   setTimeout(() => toast(TOUCH ? 'เดินไปที่ขอบเรือ หันออกทะเล แล้วกดปุ่มส้มค้างไว้' : 'เดินไปที่ขอบเรือ หันออกทะเล · Tab เปิดเมนูตลาดและอัปเกรด', ''), 1600);
 });
