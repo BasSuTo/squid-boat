@@ -818,7 +818,7 @@ S.story = Object.assign({ pages: 0, done: false, seen: false }, S.story); if (!S
 function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) {} }
 if (S.total > 0) $('saveStat').innerHTML = `เงิน <b>${baht(S.money)}</b> · จับได้ทั้งหมด <b>${S.total}</b> ตัว · คืนที่ <b>${S.night}</b>` + (S.title ? ` · ฉายา <b>${S.title}</b>` : '');
 
-const QUAL = { high: { pr: 2, bloom: true, shadow: 2048, N: 240, lights: 4, rain: 1400 }, medium: { pr: 1.5, bloom: true, shadow: 1024, N: 190, lights: 4, rain: 1000 }, low: { pr: 1, bloom: false, shadow: 1024, N: 140, lights: 2, rain: 600 } };
+const QUAL = { high: { pr: 2, bloom: true, shadow: 2048, N: 240, lights: 4, rain: 1400 }, medium: { pr: 1.5, bloom: true, shadow: 1024, N: 190, lights: 4, rain: 1000 }, low: { pr: 1, bloom: false, shadow: 512, N: 140, lights: 2, rain: 450, far: 3000 } };
 const QORDER = ['high', 'medium', 'low'];
 const hwGuess = () => { const cores = navigator.hardwareConcurrency || 4, mem = navigator.deviceMemory || 4; if (TOUCH) return cores <= 4 || mem <= 3 ? 'low' : mem <= 6 ? 'medium' : 'high'; return cores <= 2 ? 'medium' : 'high'; };
 let qUserSet = false, qName = hwGuess();
@@ -839,7 +839,7 @@ const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'hi
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, Q.pr));
 renderer.setSize(innerWidth, innerHeight);
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.5;
-renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = qName === 'low' ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap; renderer.shadowMap.autoUpdate = false; // updated by hand: not at night (sun off), half rate on low
 $('view').appendChild(renderer.domElement);
 const canvas = renderer.domElement;
 const scene = new THREE.Scene();
@@ -886,7 +886,19 @@ function updateEnv() {
   const a = sky.material.uniforms, b = envSky.material.uniforms;
   for (const k of ['sunPosition']) b[k].value.copy(a[k].value);
   for (const k of ['turbidity', 'rayleigh', 'mieCoefficient']) b[k].value = a[k].value;
+  if (envRT && pmremInto(envRT)) return;
   const rt = pmrem.fromScene(envScene, 0, 0.1, 5000); if (envRT) envRT.dispose(); envRT = rt; scene.environment = rt.texture;
+}
+// same steps as PMREMGenerator.fromScene (three r160) but rendering into the existing target: no new 768x1024
+// half-float buffer every time the sun moves. Falls back to fromScene if the internals ever differ.
+function pmremInto(rt) {
+  const g = pmrem, r = renderer;
+  if (typeof g._sceneToCubeUV !== 'function' || typeof g._applyPMREM !== 'function' || !g._pingPongRenderTarget) return false;
+  const ot = r.getRenderTarget(), of = r.getActiveCubeFace(), om = r.getActiveMipmapLevel();
+  try { g._setSize(256); rt.depthBuffer = true; g._sceneToCubeUV(envScene, 0.1, 5000, rt); g._applyPMREM(rt); }
+  catch (e) { r.setRenderTarget(ot, of, om); return false; }
+  r.setRenderTarget(ot, of, om); rt.scissorTest = false; rt.viewport.set(0, 0, rt.width, rt.height); rt.scissor.set(0, 0, rt.width, rt.height);
+  return true;
 }
 const SUN_AZ = 2.15;
 const MOON_DIR = new V3().setFromSphericalCoords(1, THREE.MathUtils.degToRad(64), SUN_AZ + Math.PI - 0.55);
@@ -1059,7 +1071,7 @@ function mergeMeshes(parent, test, bySig) {
     const a = list[0], mm = new THREE.Mesh(geo, bySig ? shared.get(matSig(a.material)) : a.material);
     mm.castShadow = a.castShadow; mm.receiveShadow = a.receiveShadow; mm.renderOrder = a.renderOrder; mm.visible = a.visible; mm.frustumCulled = a.frustumCulled; mm.layers.mask = a.layers.mask;
     for (const m of list) parent.remove(m);
-    parent.add(mm); saved += list.length - 1;
+    mm.userData.st = 1; parent.add(mm); saved += list.length - 1;
   }
   return saved;
 }
@@ -1749,7 +1761,7 @@ function squidSkinTex(sp) {
 const geoCache = {};
 function armSegGeo(r0, r1, len, suck) {
   const key = [r0, r1, len, suck].map((v) => (+v).toFixed(4)).join('|'); if (geoCache[key]) return geoCache[key];
-  const cyl = new THREE.CylinderGeometry(r1, r0, len, 8); cyl.translate(0, -len / 2, 0);
+  const cyl = new THREE.CylinderGeometry(r1, r0, len, 8); cyl.translate(0, -len / 2, 0); cyl.userData.cached = true;
   if (!suck) { geoCache[key] = cyl; return cyl; }
   const parts = [];
   for (let k = 0; k < 3; k++) for (const sx of [-1, 1]) { const sg = new THREE.SphereGeometry(lerp(r0, r1, (k + 0.5) / 3) * 0.38, 6, 4); sg.scale(1, 0.8, 0.55); sg.translate(-lerp(r0, r1, (k + 0.5) / 3) * 0.78, -len * (k + 0.5) / 3, sx * lerp(r0, r1, (k + 0.5) / 3) * 0.35); parts.push(sg); }
@@ -1770,7 +1782,34 @@ function makeArm(len, rBase, nSeg, skin, sucker, hi, club) {
 }
 const eyeRingMat = new THREE.MeshStandardMaterial({ color: 0xb9c7cf, metalness: 1, roughness: 0.25 });
 const suckerMat = new THREE.MeshStandardMaterial({ color: 0xf2dcd2, roughness: 0.45 });
+// ---- catch models. Before, every catch, every tub/crate refresh and every crab cage built brand-new geometries
+// and materials and nothing ever freed them, so GPU memory grew all night. Now the small static ones (tub, crate,
+// Chai's hand) are clones of one cached model per species (shared geometry + material), and the detailed animated
+// ones are built at one of a few sizes (so the arm-geometry cache stays small) and freed when they leave the scene.
+const KEEP_RES = new WeakSet(), CATCH_PROTO = {};
+function keepRes(o) { o.traverse((m) => { if (m.geometry) KEEP_RES.add(m.geometry); if (m.material) for (const x of [].concat(m.material)) KEEP_RES.add(x); }); }
+function freeObj(o) {
+  if (!o) return; if (o.parent) o.parent.remove(o);
+  o.traverse((m) => {
+    if (m.geometry && !KEEP_RES.has(m.geometry) && !m.geometry.userData.cached) m.geometry.dispose();
+    if (m.material) for (const x of [].concat(m.material)) if (!KEEP_RES.has(x)) x.dispose();
+  });
+}
 function makeCatch(sp, kg, hi = true) {
+  const avg = (sp.kg[0] + sp.kg[1]) / 2;
+  if (!hi) {
+    let p = CATCH_PROTO[sp.id];
+    if (!p) { p = makeCatchRaw(sp, avg, false); keepRes(p); CATCH_PROTO[sp.id] = p; }
+    const saved = []; p.traverse((o) => { saved.push(o.userData); o.userData = {}; }); // userData holds object refs: don't let clone() JSON-copy them
+    const c = p.clone(); let i = 0; p.traverse((o) => { o.userData = saved[i++]; });
+    c.scale.setScalar(Math.cbrt(kg / avg)); c.userData = { arms: [], inner: c.children[0], lite: true };
+    return c;
+  }
+  const q = Math.max(0.5, Math.round(Math.cbrt(kg / avg) * 20) / 20); // a few fixed sizes
+  return makeCatchRaw(sp, avg * q * q * q, true);
+}
+for (const m of [eyeMat, redEyeMat, eyeRingMat, suckerMat]) KEEP_RES.add(m);
+function makeCatchRaw(sp, kg, hi = true) {
   const s = Math.cbrt(kg / ((sp.kg[0] + sp.kg[1]) / 2)), L = sp.len * s, R = sp.rad * s;
   const inner = new THREE.Group(), arms = [];
   if (sp.shape === 'squid' || sp.shape === 'octo') {
@@ -2839,7 +2878,7 @@ function updateTime(dt) {
   night = smooth(4, -8, elev);
   sunV.setFromSphericalCoords(1, THREE.MathUtils.degToRad(90 - elev), SUN_AZ);
   const su = sky.material.uniforms; su.sunPosition.value.copy(sunV); su.turbidity.value = 6 + WX.cloud * 12; su.rayleigh.value = 2 + WX.cloud * 1.5; su.mieCoefficient.value = 0.006 + WX.cloud * 0.01;
-  if ((Math.abs(elev - lastEnvElev) > 0.8 && (elev > -14 || lastEnvElev > -14)) || Math.abs(WX.cloud - lastEnvCloud) > 0.08) { updateEnv(); lastEnvElev = elev; lastEnvCloud = WX.cloud; }
+  if ((Math.abs(elev - lastEnvElev) > 1.6 && (elev > -14 || lastEnvElev > -14)) || Math.abs(WX.cloud - lastEnvCloud) > 0.1) { updateEnv(); lastEnvElev = elev; lastEnvCloud = WX.cloud; }
   sunL.position.copy(boat.position).addScaledVector(sunV, 90); sunL.target.position.copy(boat.position);
   sunL.intensity = 2.8 * smooth(-1.5, 8, elev) * (1 - 0.75 * WX.cloud); sunL.color.copy(SUN_LOW).lerp(SUN_HI, smooth(2, 30, elev));
   const mk = NIGHT.moonK, moonVis = (1 - 0.85 * WX.cloud) * (0.25 + 0.75 * mk);
@@ -3087,7 +3126,7 @@ function updateGull(dt) {
 function remoteGull() { if (gull.state !== 'none') return; const tubW = boat.localToWorld(tmp3.set(TUB.x, 2.5, TUB.z)); gull.state = 'approach'; gull.t = 0; const a = rand(0, 6.28); gull.from.set(tubW.x + Math.cos(a) * 60, tubW.y + 18, tubW.z + Math.sin(a) * 60); gull.g.visible = true; sfx('gull'); }
 function shooGull(byCrew) { if (gull.state === 'none' || gull.state === 'leave') return; gull.state = 'leave'; gull.t = 0; sfx('gull'); if (byCrew !== true) { toast('ไล่นกไปได้แล้ว', 'good'); questEvent('gull'); } }
 function stealSquid() {
-  if (S.tub.length) { const it = S.tub.pop(); save(); if (tubGroup.children.length) tubGroup.remove(tubGroup.children[tubGroup.children.length - 1]); toast(`นกนางนวลคาบ${SP[it.id].name}ไปหนึ่งตัว`, 'bad'); }
+  if (S.tub.length) { const it = S.tub.pop(); save(); if (tubGroup.children.length) freeObj(tubGroup.children[tubGroup.children.length - 1]); toast(`นกนางนวลคาบ${SP[it.id].name}ไปหนึ่งตัว`, 'bad'); }
   gull.state = 'leave'; gull.t = 0; sfx('gull');
 }
 
@@ -3126,7 +3165,6 @@ function updateCrew(dt) {
 // holders
 function updateHolders(dt) {
   for (const h of holders) {
-    scene.updateMatrixWorld();
     h.tip.getWorldPosition(tmp); const wp = boat.localToWorld(tmp2.copy(h.def.out)); wp.y = waveH(wp.x, wp.z, T);
     if (h.state === 'idle') {
       h.g.rotation.x = 0.75; if (!started || traveling || ISL.on) continue;
@@ -3293,7 +3331,7 @@ function updateFishing(dt) {
   for (let i = flyers.length - 1; i >= 0; i--) {
     const f = flyers[i]; f.t += dt / 0.75; const end = boat.localToWorld(tmp.copy(f.local)); const u = Math.min(1, f.t), e = u * u * (3 - 2 * u);
     f.obj.position.lerpVectors(f.from, end, e); f.obj.position.y += Math.sin(u * Math.PI) * 1.0; f.obj.rotation.z = e * Math.PI / 2; animCatch(f.obj, T, 1 - u * 0.7);
-    if (u >= 1) { tubGroup.attach(f.obj); f.obj.position.copy(f.local).sub(tubGroup.position); f.obj.rotation.set(0, f.rot, Math.PI / 2); animCatch(f.obj, 0, 0); flyers.splice(i, 1); while (tubGroup.children.length > 14) tubGroup.remove(tubGroup.children[0]); }
+    if (u >= 1) { tubGroup.attach(f.obj); f.obj.position.copy(f.local).sub(tubGroup.position); f.obj.rotation.set(0, f.rot, Math.PI / 2); animCatch(f.obj, 0, 0); flyers.splice(i, 1); while (tubGroup.children.length > 14) freeObj(tubGroup.children[0]); }
   }
 }
 function startLanding() {
@@ -3313,14 +3351,14 @@ function updateLanding(dt) {
 function awardCatch(sp, kg, obj, fromHolder) {
   if (!fromHolder) tutAdvance('land');
   const j = S.journal[sp.id] || { n: 0, max: 0 }; const firstTime = j.n === 0; j.n++; j.max = Math.max(j.max, kg); S.journal[sp.id] = j;
-  if (sp.id === 'sandal') { toast('ได้รองเท้าแตะมาข้างหนึ่ง… โยนทิ้งไป', ''); scene.remove(obj); save(); return; }
+  if (sp.id === 'sandal') { toast('ได้รองเท้าแตะมาข้างหนึ่ง… โยนทิ้งไป', ''); freeObj(obj); save(); return; }
   if (CONTEST.on && !sp.strange) CONTEST.kg += kg;
   if (sp.strange) {
     if (Math.random() < (sp.curse || 0)) setTimeout(() => addCurse(`${sp.name}ติดขึ้นมากับเบ็ด`), 1800);
     if ((sp.id === 'alien' || sp.id === 'doll') && !DT.pageFound && S.story.pages < 5) { DT.pageFound = true; setTimeout(() => findPage(`พบกระดาษห่อถุงพลาสติก ติดมากับ${sp.name}`), 2600); }
   }
   const cap = TUB_CAP[S.up.tub];
-  if (S.tub.length >= cap) { toast('ถังเต็มแล้ว ต้องขายในเมนูตลาดก่อน ปล่อยตัวนี้ลงทะเลไป', 'bad'); scene.remove(obj); save(); return; }
+  if (S.tub.length >= cap) { toast('ถังเต็มแล้ว ต้องขายในเมนูตลาดก่อน ปล่อยตัวนี้ลงทะเลไป', 'bad'); freeObj(obj); save(); return; }
   S.tub.push({ id: sp.id, kg, f: 1 }); S.total++;
   if (!sp.junk) { NIGHT.stats.count++; NIGHT.stats.kg += kg; }
   const best = !sp.junk && !sp.strange && kg > S.best; if (best) S.best = kg;
@@ -4050,7 +4088,7 @@ function drawChart(cv) {
 }
 const FREEZE_CAP = [20, 40, 80];
 function rebuildTub() {
-  while (tubGroup.children.length) tubGroup.remove(tubGroup.children[0]);
+  while (tubGroup.children.length) freeObj(tubGroup.children[0]);
   for (const it of S.tub.slice(-12)) { const o = makeCatch(SP[it.id], it.kg, false); tubGroup.add(o); o.position.set(rand(-0.28, 0.28), 0.04, rand(-0.18, 0.18)); o.rotation.set(0, rand(-0.6, 0.6), SP[it.id].shape === 'crab' ? 0 : Math.PI / 2); }
 }
 function freezeAll() {
@@ -4846,7 +4884,7 @@ let lidT = 0;
   const lb = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTex('กล่องหมึกพี่ชัย', '#9fd4ff'), transparent: true, depthWrite: false })); lb.scale.set(1.0, 0.22, 1); lb.position.y = 1.0; crateG.add(lb);
 }
 function rebuildCrate() {
-  while (crateContents.children.length) crateContents.remove(crateContents.children[0]);
+  while (crateContents.children.length) freeObj(crateContents.children[0]);
   for (const it of S.crewBox.slice(-6)) { const o = makeCatch(SP[it.id], it.kg, false); crateContents.add(o); o.position.set(rand(-0.28, 0.28), 0.0, rand(-0.18, 0.18)); o.rotation.set(0, rand(-0.6, 0.6), SP[it.id].shape === 'crab' ? 0 : Math.PI / 2); o.scale.setScalar(0.9); }
   crateContents.visible = lidT > 0;
 }
@@ -4898,7 +4936,7 @@ function crabTex(sp) {
   for (let i = 0; i < 700; i++) { const r = 1 + R() * (sp.id === 'bluecrab' ? 5 : 3); x.fillStyle = sp.spot; x.globalAlpha = 0.15 + R() * 0.55; x.beginPath(); x.arc(R() * 256, R() * 256, r, 0, 7); x.fill(); }
   x.globalAlpha = 1; const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; texCache[key] = t; return t;
 }
-const crabBelly = std(0xf0e6d6, 0.6, 0), crabTip = std(0x2a1e18, 0.4, 0);
+const crabBelly = std(0xf0e6d6, 0.6, 0), crabTip = std(0x2a1e18, 0.4, 0); KEEP_RES.add(crabBelly); KEEP_RES.add(crabTip);
 function buildCrab(inner, sp, kg, hi) {
   inner.userData.legs = []; inner.userData.claws = [];
   const avg = (sp.kg[0] + sp.kg[1]) / 2, W = sp.cw / 100 * Math.cbrt(kg / avg);
@@ -5032,7 +5070,6 @@ function startHaul(i) {
   const crabs = crabsFor(q); S.pots.splice(i, 1); save(); rebuildBuoys();
   const cage = makeCage(1); scene.add(cage);
   // a small warm light inside the cage so the catch is still lit at night when the deck lamps don't reach this spot
-  const lamp = new THREE.PointLight(0xffe3b8, 1.4, 2.4, 2); lamp.position.set(0, 0.42, 0); cage.add(lamp);
   // `turn` must start as a number: liveCrab() adds c.turn * dt to rotation.y every frame, and with it left
   // undefined that produced NaN on the very first frame - the crab's whole transform became NaN and three.js
   // silently drew nothing, which is why landed cages always looked empty even though the crabs were in them.
@@ -5110,7 +5147,7 @@ function confirmPot() {
     questEvent('crab'); if (sp.strange && Math.random() < (sp.curse || 0)) setTimeout(() => addCurse('ปูกระดองหน้าคนจ้องมองคุณอยู่ในถัง'), 1500);
   }
   S.crabKarma = Math.min(20, S.crabKarma + karma); rebuildTub(); rebuildCrate(); save();
-  if (K.landed) { const i = LANDED.indexOf(K.landed); if (i >= 0) { boat.remove(K.landed.cage); LANDED.splice(i, 1); } K.landed = null; }
+  if (K.landed) { const i = LANDED.indexOf(K.landed); if (i >= 0) { freeObj(K.landed.cage); LANDED.splice(i, 1); } K.landed = null; }
   K.view = 'list'; K.crabs = null; kitchenOpen = false; $('kitchen').hidden = true; rebuildPotStack(); requestLock(); sfx('splash');
   const parts = []; if (kept) parts.push(`เก็บปู ${kept} ตัว${toBox ? ` (ถังเต็ม ใส่กล่องพี่ชัย ${toBox} ตัว)` : ''}`); if (rel) parts.push(`ปล่อยคืนทะเล ${rel} ตัว`); if (gold) parts.push(`ได้ปูทองคำ! คนรับซื้อขอซื้อเป็นของมงคล ${baht(800 * gold)}`);
   toast(parts.join(' · ') || 'เก็บลอบแล้ว', 'good');
@@ -5118,7 +5155,7 @@ function confirmPot() {
 }
 function autoCollectPots() {
   let n = 0;
-  const all = []; for (const q of S.pots) all.push(...crabsFor(q)); for (const L of LANDED) { all.push(...L.crabs); boat.remove(L.cage); } LANDED.length = 0;
+  const all = []; for (const q of S.pots) all.push(...crabsFor(q)); for (const L of LANDED) { all.push(...L.crabs); freeObj(L.cage); } LANDED.length = 0;
   for (const c of all) { const sp = SP[c.id]; if (c.egg || c.small || sp.junk || sp.strange || sp.gold) continue; if (S.crewBox.length < CRATE_CAP) { addToCrewBox({ id: c.id, kg: c.kg, f: 1 }); n++; } }
   S.pots = []; rebuildBuoys(); rebuildPotStack(); rebuildCrate(); save(); return n;
 }
@@ -5134,6 +5171,19 @@ const frontT = new THREE.Object3D(); frontT.position.set(0, 2, -4); boat.add(fro
 const sternFlood = new THREE.SpotLight(0xffe2b8, 0, 22, 1.0, 0.75, 1.4); sternFlood.position.set(0, 6.75, -10.95);
 const sternT = new THREE.Object3D(); sternT.position.set(0, 2, -6); boat.add(sternFlood, sternT); sternFlood.target = sternT;
 const midLight = new THREE.PointLight(0xffd29a, 0, 11, 1.6); midLight.position.set(0, 3.6, -5.6); boat.add(midLight);
+// three.js compiles every material's shader for an exact number of visible lights, so a light that appears or
+// disappears recompiles them all (a freeze of up to a second on phones). That used to happen going down/up the
+// ladder (3 hold lights), on every crab-pot haul (a new light per cage) and when the ghost showed up. Now those
+// lights borrow a slot from a deck light that can't be seen at that moment, so the count never changes.
+const cageLamp = new THREE.PointLight(0xffe3b8, 1.4, 2.4, 2); cageLamp.visible = false; scene.add(cageLamp);
+function lightSlots() {
+  const inHold = !!HOLD.lit, ghostOn = ghost.visible && !inHold;
+  const cg = haul ? haul.cage : LANDED.length ? LANDED[LANDED.length - 1].cage : null, cageOn = !!cg && !inHold && night > 0.2;
+  for (const L of HOLD.lights) L.visible = inHold;
+  cabinL.visible = !inHold; whL.visible = !inHold && !cageOn; midLight.visible = !inHold && !ghostOn;
+  ghostL.visible = ghostOn; cageLamp.visible = cageOn;
+  if (cageOn) { cg.getWorldPosition(cageLamp.position); cageLamp.position.y += 0.42; }
+}
 {
   const housing = std(0x2a2f34, 0.5, 0.6);
   for (const x of [-1.25, 1.25]) { box(0.36, 0.22, 0.2, housing, x, 4.42, 3.88); const b = new THREE.Mesh(new THREE.PlaneGeometry(0.3, 0.16), deckBulbMat); b.rotation.y = Math.PI; b.position.set(x, 4.42, 3.775); boat.add(b); const gs = new THREE.Sprite(deckGlowMat); gs.position.set(x, 4.42, 3.7); gs.scale.setScalar(1.4); boat.add(gs); }
@@ -5311,7 +5361,7 @@ function pickCrab(it, src) {
   const m = makeCatch(SP[it.id], it.kg, true); m.position.set(1.0, 3.42, 9.25); m.rotation.set(0.25, rand(-0.5, 0.5), 0); boat.add(m);
   const mats = new Set(); m.traverse((o) => { if (o.isMesh && o.material.map && o.material !== crabBelly) mats.add(o.material); });
   K.boil.mesh = m; K.boil.mats = [...mats]; K.boil.raw = mats.size ? [...mats][0].map : null; K.boil.ck = crabTex(Object.assign({}, SP[it.id], { cooked: true, base: '#d0522a', spot: '#f7b37c' }));
-  const W = SP[it.id].cw / 100, sc = Math.min(1, 0.26 / (W * 1.9)); m.scale.setScalar(sc);
+  const W = SP[it.id].cw / 100, sc = Math.min(1, 0.26 / (W * 1.9)); m.scale.multiplyScalar(sc);
   BOIL.active = true; P.x = 1.0; P.z = 8.5; P.yaw = Math.PI; P.pitch = -0.5; if (P.seated) standUp();
   $('boilHud').hidden = false; renderBoilHud(); requestLock();
   toast('จับปูไว้เหนือหม้อแล้ว น้ำเดือดพุ่ง กด E หรือคลิกเพื่อใส่ปูลงหม้อ', 'good');
@@ -5319,7 +5369,7 @@ function pickCrab(it, src) {
 const BOIL = { active: false, bubbles: [] };
 function boilStop() {
   K.boilLoop = false; BOIL.active = false; $('boilHud').hidden = true;
-  if (K.boil && K.boil.mesh) { boat.remove(K.boil.mesh); K.boil.mesh = null; }
+  if (K.boil && K.boil.mesh) { freeObj(K.boil.mesh); K.boil.mesh = null; }
   for (const b of BOIL.bubbles) b.visible = false;
 }
 function boilLabel() { const b = K.boil; if (!b) return ''; return b.done ? (myActivePlate() ? 'ใส่กล่องไว้ขาย' : 'จัดจานไปกินที่โต๊ะ · กด F ใส่กล่องไว้ขาย') : b.on ? 'ตักปูขึ้น (ดูสีปูกับเข็มให้อยู่ในโซนเขียว)' : 'ใส่ปูลงหม้อ'; }
@@ -5645,10 +5695,17 @@ function drawRadar(dt) {
 }
 
 // =============== start / quality ===============
+function applyViewDist() {
+  camera.far = Q.far || 6000; camera.updateProjectionMatrix();
+  for (const f of fleet) f.g.visible = !Q.far || Math.hypot(f.g.position.x - boat.position.x, f.g.position.z - boat.position.z) < 650;
+}
 function setQuality(name, manual) {
   qName = name; Q = QUAL[name]; if (manual) { qUserSet = true; try { localStorage.setItem('squid-q', name); } catch (e) {} }
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, Q.pr)); renderer.setSize(innerWidth, innerHeight);
   sunL.shadow.mapSize.set(Q.shadow, Q.shadow); if (sunL.shadow.map) { sunL.shadow.map.dispose(); sunL.shadow.map = null; }
+  const stype = name === 'low' ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
+  if (renderer.shadowMap.type !== stype) { renderer.shadowMap.type = stype; scene.traverse((o) => { if (o.material) for (const m of [].concat(o.material)) m.needsUpdate = true; }); }
+  applyViewDist();
   setupComposer(); for (const b of document.querySelectorAll('.seg .btn')) b.setAttribute('aria-pressed', String(b.dataset.q === name));
 }
 for (const b of document.querySelectorAll('.seg .btn')) { b.addEventListener('click', () => { setQuality(b.dataset.q, true); renderMenu(); }); b.setAttribute('aria-pressed', String(b.dataset.q === qName)); }
@@ -5986,6 +6043,7 @@ function safe(name, fn) {
     const box = $('errBox'); if (box) { box.hidden = false; const li = document.createElement('div'); li.textContent = msg; box.appendChild(li); }
   }
 }
+const HUDC = { acc: 0, n: 0 };
 function frame() {
   requestAnimationFrame(frame);
   const dt = Math.min(clock.getDelta(), 0.05); T += dt; WU.uTime.value = T;
@@ -6003,11 +6061,23 @@ function frame() {
   safe('updateFx', () => updateFx(dt)); safe('updateRod', () => updateRod(dt)); safe('updateNet', () => updateNet(dt)); safe('updateBoss', () => updateBoss(dt));
   safe('updateCrew', () => updateCrew(dt)); safe('updateVisuals', () => updateVisuals(dt)); safe('updateRepair', () => updateRepair(dt)); safe('updateSparks', () => updateSparks(dt));
   safe('updateNeeds', () => updateNeeds(dt)); safe('updateWater', () => updateWater(dt)); safe('updateEat', () => { updateEat(dt); updateBoil3D(dt); }); safe('updateCrate', () => { updateCrate(dt); updateStations(dt); updatePots(dt); updateFuel(dt); }); safe('updateBelowDeck', () => updateBelowDeck(dt));
-  if (started) { safe('updateHUD', () => updateHUD(dt, ts)); safe('drawRadar', () => drawRadar(dt)); safe('drawSonar', () => drawSonar(dt)); }
+  if (started) { safe('updateHUD', () => updateHUD(dt, ts)); HUDC.acc += dt; if (HUDC.acc >= 0.05) { const a = HUDC.acc; HUDC.acc = 0; safe('drawRadar', () => drawRadar(a)); safe('drawSonar', () => drawSonar(a)); } }
+  safe('lights', lightSlots);
+  HUDC.n++; renderer.shadowMap.needsUpdate = sunL.intensity > 0.02 && (qName !== 'low' || HUDC.n % 2 === 0);
   safe('render', () => { if (composer && !ERRS.has('composer')) { try { composer.render(); } catch (e) { ERRS.add('composer'); console.error(e); renderer.render(scene, camera); } } else renderer.render(scene, camera); });
 }
 frame();
 try { const n = mergeStaticUnder(islandG, true) + mergeStaticUnder(scene, false); console.info('batched', n, 'meshes'); } catch (e) { console.warn('mergeStatic', e); }
+try {
+  let frozen = 0, noShadow = 0; const sph = new THREE.Sphere(), ws = new V3();
+  scene.updateMatrixWorld(true);
+  scene.traverse((o) => {
+    if (o.isMesh && o.userData.st) { o.updateMatrix(); o.matrixAutoUpdate = false; frozen++; }
+    if (o.isMesh && o.castShadow && o.geometry) { if (!o.geometry.boundingSphere) o.geometry.computeBoundingSphere(); sph.copy(o.geometry.boundingSphere); o.getWorldScale(ws); if (sph.radius * Math.max(ws.x, ws.y, ws.z) < 0.045) { o.castShadow = false; noShadow++; } }
+  });
+  console.info('static', frozen, 'tiny no-shadow', noShadow);
+} catch (e) { console.warn('static pass', e); }
+applyViewDist();
 window.__gameReady = true; $('go').disabled = false; $('loadMsg').textContent = 'ออกเรือ';
 netInit();
 </script>
