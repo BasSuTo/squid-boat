@@ -153,7 +153,7 @@ body.touch #waterBox{display:none}
 .mph h2{margin:0;flex:1;min-width:0;font:600 15px var(--display);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mph .x{min-height:34px;min-width:34px;padding:0;font-size:20px;line-height:1}
 .mnp{display:flex;gap:12px;align-items:center;padding:6px 14px 2px}
-#musCover{width:84px;height:84px;flex:none;border-radius:10px;object-fit:cover;background:#13222d;box-shadow:0 6px 18px rgba(0,0,0,.45)}
+#musCover,#ytCover{width:84px;height:84px;flex:none;border-radius:10px;object-fit:cover;background:#13222d;box-shadow:0 6px 18px rgba(0,0,0,.45)}
 .mti{min-width:0;display:flex;flex-direction:column;gap:3px}
 .mti b{font:600 16.5px/1.25 var(--display);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mti span{font-size:12.5px;color:var(--mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -200,33 +200,22 @@ body.touch #waterBox{display:none}
 .mtab:hover{background:rgba(255,255,255,.07)}
 .mtab[aria-selected="true"]{background:rgba(240,138,43,.16);border-color:rgba(240,138,43,.55);color:var(--ink)}
 .mtab:focus-visible{outline:3px solid var(--sea);outline-offset:1px}
+.mshare{order:-1;display:flex;align-items:flex-start;gap:8px;padding:0 14px 8px;font-size:12.5px;line-height:1.4;color:var(--mute);cursor:pointer}
+.mshare input{flex:none;width:18px;height:18px;margin:1px 0 0;accent-color:var(--hull)}
 .mpane{flex:1 1 auto;min-width:0;min-height:0;display:flex;flex-direction:column}
-#musPaneS,#musPaneY{overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;border-top:1px solid var(--line)}
-.spform{display:flex;gap:8px;padding:10px 12px 6px}
-.spform input{flex:1;min-width:0;font:500 14px var(--body);min-height:40px;padding:6px 10px;border-radius:10px;border:1px solid var(--line);background:rgba(0,0,0,.35);color:var(--ink);-webkit-user-select:text;user-select:text}
-.spform input:focus-visible{outline:3px solid var(--sea)}
-#spMsg,#ytMsg{padding:0 14px 6px}
-#spMsg.ok,#ytMsg.ok{color:var(--mute)}
-#spBox,#ytBox{flex:none;padding:2px 12px 8px}
-#spBox:empty,#ytBox:empty{display:none}
-#spBox iframe,#ytBox iframe{display:block;width:100%;max-width:100%;border:0;border-radius:12px}
-#ytBox iframe{height:208px;background:#000}
-#ytVol{min-height:28px}
-.spq{display:flex;flex-wrap:wrap;gap:6px;padding:0 12px 8px}
-.spq .btn{min-height:32px;padding:4px 12px;font-size:12.5px;border-radius:999px}
-.spnote{padding:0 14px 12px;font-size:11.5px;line-height:1.5;color:var(--mute)}
-/* a source that is playing keeps its embed on screen: slim bar inside the panel (.sl) or a small window when the panel is closed (.mini) */
-.mpane.sl{order:-1;flex:none;border-top:0;border-bottom:1px solid var(--line);overflow:visible}
-.mpane.sl .spform,.mpane.sl #spMsg,.mpane.sl #ytMsg,.mpane.sl .spq,.mpane.sl .spnote,.mpane.sl .mvol{display:none}
-#musPaneS.sl #spBox iframe{height:80px!important}
-#musPaneY.sl #ytBox iframe{height:208px!important}
-#mus.mini{left:50%;right:auto;bottom:auto;top:calc(60px + env(safe-area-inset-top,0px));transform:translateX(-50%);width:min(320px,calc(100% - 32px));max-height:none}
-#mus.mini.my{width:min(240px,calc(100% - 32px))}
-#mus.mini .mpl{background:none;border:0;box-shadow:none;border-radius:12px}
-#mus.mini .mph,#mus.mini .mtabs,#mus.mini #musPaneG{display:none}
-#mus.mini .mpane.sl{border:0}
-#mus.mini #spBox,#mus.mini #ytBox{padding:0}
-@media (max-height:480px){#mus.mini{top:calc(8px + env(safe-area-inset-top,0px))}}
+#musPaneY{overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;border-top:1px solid var(--line)}
+.ytform{display:flex;gap:8px;padding:10px 12px 6px}
+.ytform input{flex:1;min-width:0;font:500 14px var(--body);min-height:40px;padding:6px 10px;border-radius:10px;border:1px solid var(--line);background:rgba(0,0,0,.35);color:var(--ink);-webkit-user-select:text;user-select:text}
+.ytform input:focus-visible{outline:3px solid var(--sea)}
+#ytMsg{padding:0 14px 6px}
+#ytMsg.ok{color:var(--mute)}
+.ytctl{justify-content:center;gap:26px;padding-top:4px}
+.ytq{display:flex;flex-wrap:wrap;gap:6px;padding:0 12px 8px}
+.ytq .btn{min-height:32px;padding:4px 12px;font-size:12.5px;border-radius:999px}
+.ytnote{padding:0 14px 12px;font-size:11.5px;line-height:1.5;color:var(--mute)}
+/* YouTube's player runs out of sight (sound only): invisible, never takes clicks */
+#ytHost{position:fixed;left:0;bottom:0;width:200px;height:200px;opacity:0;pointer-events:none;overflow:hidden;z-index:-1}
+#ytHost iframe{width:200px;height:200px;border:0}
 #hMusT{display:block;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #toasts{position:absolute;left:50%;top:calc(16px + env(safe-area-inset-top,0px));transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;width:min(560px,calc(100% - 32px))}
 .toast{padding:7px 15px;border-radius:10px;background:var(--panel);border:1px solid var(--line);font-size:14.5px;font-weight:600;text-align:center;animation:tin .25s ease-out}
@@ -619,7 +608,8 @@ body.touch #alerts{top:calc(56px + env(safe-area-inset-top,0px))}
       <h2 id="musH">เพลงชิวๆ ตกหมึก</h2>
       <button class="btn x" type="button" id="musClose" aria-label="ปิดเครื่องเล่นเพลง">×</button>
     </div>
-    <div class="mtabs" role="tablist" aria-label="แหล่งเพลง"><button class="mtab" type="button" role="tab" id="musTabG" aria-controls="musPaneG" aria-selected="true">เพลงในเกม</button><button class="mtab" type="button" role="tab" id="musTabS" aria-controls="musPaneS" aria-selected="false" tabindex="-1">Spotify</button><button class="mtab" type="button" role="tab" id="musTabY" aria-controls="musPaneY" aria-selected="false" tabindex="-1">YouTube</button></div>
+    <div class="mtabs" role="tablist" aria-label="แหล่งเพลง"><button class="mtab" type="button" role="tab" id="musTabG" aria-controls="musPaneG" aria-selected="true">เพลงในเกม</button><button class="mtab" type="button" role="tab" id="musTabY" aria-controls="musPaneY" aria-selected="false" tabindex="-1">YouTube</button></div>
+    <label class="mshare" id="musShareRow" hidden><input type="checkbox" id="musShare" checked><span>เปิดเพลงให้เพื่อนบนเรือได้ยินพร้อมกัน (ใครกดล่าสุดมีผลกับทุกคนที่ติ๊กไว้)</span></label>
     <div class="mpane" id="musPaneG" role="tabpanel" aria-labelledby="musTabG">
     <div class="mnp"><img id="musCover" alt="" width="84" height="84"><div class="mti"><b id="musTitle">—</b><span id="musArtist"></span></div></div>
     <div class="mseek"><span id="musCur">0:00</span><input type="range" id="musSeek" min="0" max="1000" value="0" aria-label="ตำแหน่งในเพลง"><span id="musDur">0:00</span></div>
@@ -634,23 +624,25 @@ body.touch #alerts{top:calc(56px + env(safe-area-inset-top,0px))}
     <div class="mnote" id="musMuted" hidden>ตอนนี้ปิดเสียงทั้งเกมอยู่ · กด M เพื่อเปิดเสียง</div>
     <div class="mlist" id="musList" role="group" aria-label="รายการเพลง"></div>
     </div>
-    <div class="mpane" id="musPaneS" role="tabpanel" aria-labelledby="musTabS" hidden>
-      <form class="spform" id="spForm" autocomplete="off"><label class="sr" for="spIn">ลิงก์ Spotify</label><input id="spIn" type="text" inputmode="url" maxlength="300" spellcheck="false" autocapitalize="off" placeholder="วางลิงก์เพลง / เพลย์ลิสต์ Spotify"><button class="btn pri" type="submit">เล่น</button></form>
-      <div class="mnote" id="spMsg" role="status" hidden></div>
-      <div id="spBox"></div>
-      <div class="spq" id="spQuick" role="group" aria-label="เพลย์ลิสต์แนะนำจาก Spotify"></div>
-      <div class="spnote">เล่นผ่านเพลเยอร์ของ Spotify เอง ล็อกอิน Spotify ในเบราว์เซอร์นี้ไว้จะฟังได้เต็มเพลง ถ้าไม่ล็อกอินจะได้แค่ตัวอย่างสั้นๆ<br>ปรับเสียงที่เพลเยอร์ Spotify (แถบเสียงของเกมไม่คุม) ปิดกล่องนี้ระหว่างเล่น เพลเยอร์จะหดเป็นแถบเล็กด้านบนจอ<br>ถ้าคลิกในเพลเยอร์แล้วปุ่ม P/Esc ไม่ติด ให้กด × หรือคลิกที่ฉากเกม</div>
-    </div>
     <div class="mpane" id="musPaneY" role="tabpanel" aria-labelledby="musTabY" hidden>
-      <form class="spform" id="ytForm" autocomplete="off"><label class="sr" for="ytIn">ลิงก์ YouTube</label><input id="ytIn" type="text" inputmode="url" maxlength="400" spellcheck="false" autocapitalize="off" placeholder="วางลิงก์วิดีโอ / เพลย์ลิสต์ YouTube"><button class="btn pri" type="submit">เล่น</button></form>
+      <form class="ytform" id="ytForm" autocomplete="off"><label class="sr" for="ytIn">ลิงก์ YouTube</label><input id="ytIn" type="text" inputmode="url" maxlength="400" spellcheck="false" autocapitalize="off" placeholder="วางลิงก์วิดีโอ / เพลย์ลิสต์ YouTube"><button class="btn pri" type="submit">เล่น</button></form>
       <div class="mnote" id="ytMsg" role="status" hidden></div>
-      <div id="ytBox"></div>
+      <div class="mnp"><img id="ytCover" alt="" width="84" height="84"><div class="mti"><b id="ytTitle">ยังไม่ได้เลือกเพลง</b><span id="ytSub"></span></div></div>
+      <div class="mseek" id="ytSeekRow" hidden><span id="ytCur">0:00</span><input type="range" id="ytSeek" min="0" max="1000" value="0" aria-label="ตำแหน่งในวิดีโอ"><span id="ytDur">0:00</span></div>
+      <div class="mctl ytctl">
+        <button class="mb" type="button" id="ytPrev" aria-label="วิดีโอก่อนหน้า" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5h2.4v14H6zM20 5.5v13L9.5 12z" fill="currentColor"></path></svg></button>
+        <button class="mb big" type="button" id="ytPlay" aria-label="เล่นเพลง"></button>
+        <button class="mb" type="button" id="ytNext" aria-label="วิดีโอถัดไป" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15.6 5H18v14h-2.4zM4 5.5v13L14.5 12z" fill="currentColor"></path></svg></button>
+      </div>
       <div class="mvol"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5L6 9H3v6h3l5 4zM15.5 8.5a5 5 0 010 7"></path></svg><input type="range" id="ytVol" min="0" max="100" value="70" aria-label="ความดังของเพลง YouTube"><span id="ytVolV">70%</span></div>
-      <div class="spq" id="ytQuick" role="group" aria-label="ไลฟ์เพลงชิวๆ แนะนำ"></div>
-      <div class="spnote">YouTube กำหนดให้ต้องเห็นหน้าต่างวิดีโอตลอดตอนเล่น จึงซ่อนให้เหลือแต่เสียงไม่ได้ ปิดกล่องนี้ระหว่างเล่น วิดีโอจะหดเป็นหน้าต่างเล็กด้านบนจอ ถ้าเป็นวิดีโอเดี่ยวจะเล่นซ้ำให้เอง<br>ปรับเสียงด้วยแถบเสียงด้านบน (ตัวเดียวกับเสียงเพลงของเกม) วิดีโอที่เจ้าของไม่อนุญาตให้ฝังจะเล่นไม่ได้ และบนมือถือเพลงอาจหยุดเมื่อล็อกหน้าจอ<br>ถ้าคลิกในเพลเยอร์แล้วปุ่ม P/Esc ไม่ติด ให้กด × หรือคลิกที่ฉากเกม</div>
+      <div class="ytq" id="ytQuick" role="group" aria-label="ไลฟ์เพลงชิวๆ แนะนำ"></div>
+      <div class="ytnote">เล่นแต่เสียง ไม่แสดงภาพวิดีโอ · ปรับเสียงด้วยแถบด้านบน (ตัวเดียวกับเสียงเพลงของเกม) · วิดีโอที่เจ้าของไม่อนุญาตให้ฝังจะเล่นไม่ได้ · ถ้ามีโฆษณาคั่นจะได้ยินเสียงโฆษณาและกดข้ามไม่ได้ · บนมือถือเพลงอาจหยุดเมื่อล็อกหน้าจอ</div>
+    </div>
     </div>
   </div>
 </div>
+
+<div id="ytHost" aria-hidden="true"></div>
 
 <div id="menu" hidden>
   <div class="mpanel" role="dialog" aria-modal="true" aria-labelledby="mTitle">
@@ -2358,22 +2350,22 @@ function radioTick() {
 setInterval(radioTick, 90);
 function toggleRadio() { audioInit(); if (!A.radio && MUS.playing) musPause(); A.radio = !A.radio; if (A.radioG) A.radioG.gain.value = A.radio ? 0.5 : 0; toast(A.radio ? 'เปิดวิทยุ FM ลูกทุ่ง' : 'ปิดวิทยุ'); sfx('click'); }
 function applyVol() { try { ytApplyVol(); } catch (e) {} if (!A.ctx) return; A.master.gain.value = A.muted ? 0 : S.vol.master; for (const k of ['sfx', 'amb', 'music']) A[k].gain.value = S.vol[k]; }
-function setMuted(m) { A.muted = m; S.vol.muted = m; save(); applyVol(); if (m) { spPause(); ytPause(); } toast(m ? 'ปิดเสียงแล้ว (กด M อีกครั้งเพื่อเปิด)' : 'เปิดเสียงแล้ว'); if (menuOpen && menuTab === 'settings') renderMenu(); if (musicOpen) musRefresh(); }
+function setMuted(m) { A.muted = m; S.vol.muted = m; save(); applyVol(); if (m) ytPause(); toast(m ? 'ปิดเสียงแล้ว (กด M อีกครั้งเพื่อเปิด)' : 'เปิดเสียงแล้ว'); if (menuOpen && menuTab === 'settings') renderMenu(); if (musicOpen) musRefresh(); }
 A.muted = !!S.vol.muted;
 $('volStart').value = Math.round(S.vol.master * 100);
 $('volStart').addEventListener('input', (e) => { S.vol.master = e.target.value / 100; applyVol(); save(); });
 // @@MUSIC-UI-START
 // =============== music player (control + panel UI) ===============
 let musicOpen = false;
-S.mus = Object.assign({ i: 0, shuffle: false, loop: 'all', on: false, tab: 'g', sp: '', yv: '', yl: '' }, S.mus);
+S.mus = Object.assign({ i: 0, shuffle: false, loop: 'all', on: false, tab: 'g', yv: '', yl: '', share: true }, S.mus);
 S.mus.i = clamp(Math.floor(+S.mus.i) || 0, 0, MUSIC.TRACKS.length - 1); S.mus.shuffle = !!S.mus.shuffle; S.mus.on = !!S.mus.on; if (!['all', 'one', 'off'].includes(S.mus.loop)) S.mus.loop = 'all';
-S.mus.tab = S.mus.tab === 's' || S.mus.tab === 'y' ? S.mus.tab : 'g';
-if (typeof S.mus.yv !== 'string' || !/^[A-Za-z0-9_-]{11}$/.test(S.mus.yv)) S.mus.yv = ''; if (typeof S.mus.yl !== 'string' || !/^[A-Za-z0-9_-]{12,64}$/.test(S.mus.yl)) S.mus.yl = ''; if (typeof S.mus.sp !== 'string' || !/^spotify:(track|album|playlist|artist|episode|show):[A-Za-z0-9]{22}$/.test(S.mus.sp)) S.mus.sp = '';
+S.mus.tab = S.mus.tab === 'y' ? 'y' : 'g'; S.mus.share = S.mus.share !== false; delete S.mus.sp;
+if (typeof S.mus.yv !== 'string' || !/^[A-Za-z0-9_-]{11}$/.test(S.mus.yv)) S.mus.yv = ''; if (typeof S.mus.yl !== 'string' || !/^[A-Za-z0-9_-]{12,64}$/.test(S.mus.yl)) S.mus.yl = '';
 const MUS = { T: MUSIC.TRACKS, built: {}, sess: null, playing: false, p0: 0, seeking: false, covers: {}, hist: [], ui: false };
-// Spotify tab state (the embed itself is Spotify's own player, loaded lazily the first time the tab is opened)
-// YouTube tab state (YouTube iFrame API, loaded lazily; the player must stay visible and >= 200x200, so no audio-only)
-const YTB = { pl: null, apiP: null, h: 208, want: null, made: null, auto: false, creating: false, ready: false, single: true, playing: false, quiet: 0, offT: 0, qui: false };
-const SPF = { api: null, apiP: null, ctl: null, h: 0, want: '', auto: false, creating: false, playing: false, quiet: 0, offT: 0, qui: false };
+// YouTube tab: YouTube's own player (iFrame API, loaded lazily) kept out of sight; the tab shows title + our own controls
+const YTB = { pl: null, apiP: null, want: null, auto: false, creating: false, ready: false, single: true, playing: false, live: false, quiet: 0, qui: false, seeking: false, cover: '' };
+// listening together on a boat: whoever started/paused/skipped last sets the music for everyone who has the option on
+const MS = { skew: 0, last: 0, src: '', timer: 0, all: null, me: '' };
 const MUS_ICON = {
   play: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor"></path></svg>',
   pause: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.6v14H7zM13.4 5H17v14h-3.6z" fill="currentColor"></path></svg>',
@@ -2382,17 +2374,19 @@ const musBuilt = (i) => MUS.built[i] || (MUS.built[i] = MUSIC.buildTrack(MUS.T[i
 const musPos = () => (MUS.sess ? clamp(MUSIC.pos(MUS.sess), 0, MUS.T[S.mus.i].dur) : MUS.p0);
 const musFmt = (s) => { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
 function musStop() { if (MUS.sess) { MUSIC.dispose(MUS.sess); MUS.sess = null; } }
-function musStart(i, pos = 0) {
+function musStart(i, pos = 0, remote = false) {
   audioInit(); if (!A.ctx || !A.music) return false;
   if (A.ctx.state === 'suspended') A.ctx.resume();
-  musStop(); spPause(); ytPause();
+  musStop(); ytPause();
   if (A.radio) { A.radio = false; if (A.radioG) A.radioG.gain.value = 0; }
   S.mus.i = i; MUS.p0 = pos;
   try { MUS.sess = MUSIC.createSession(A.ctx, A.music, MUS.T[i], musBuilt(i), pos, { lite: qName === 'low' }); MUSIC.pump(MUS.sess, A.ctx.currentTime + 1.2); }
   catch (e) { console.warn('music', e); musStop(); MUS.playing = false; musRefresh(); return false; }
-  MUS.playing = true; S.mus.on = true; save(); musRefresh(); return true;
+  MUS.playing = true; S.mus.on = true; save(); musRefresh();
+  if (!remote) { MS.src = ''; msSend({ s: 'g', on: true, p: pos }); }
+  return true;
 }
-function musPause() { if (!MUS.playing) return; MUS.p0 = musPos(); musStop(); MUS.playing = false; S.mus.on = false; save(); musRefresh(); }
+function musPause(remote = false) { if (!MUS.playing) return; MUS.p0 = musPos(); musStop(); MUS.playing = false; S.mus.on = false; save(); musRefresh(); if (!remote) { MS.src = ''; msSend({ on: false }); } }
 function musToggle() { if (MUS.playing) musPause(); else musStart(S.mus.i, MUS.p0 >= MUS.T[S.mus.i].dur - 1 ? 0 : MUS.p0); }
 function musPick(dir, auto) {
   const n = MUS.T.length, cur = S.mus.i;
@@ -2412,7 +2406,7 @@ function musSeek(p) { const T = MUS.T[S.mus.i], pos = clamp(p, 0, T.dur - 1); if
 (function musClock() {
   const tick = () => {
     if (!MUS.playing || !MUS.sess || !A.ctx || A.ctx.state !== 'running') return;
-    try { MUSIC.pump(MUS.sess, A.ctx.currentTime + 1.2); if (musPos() >= MUS.T[S.mus.i].dur - 0.05) musNext(true); } catch (e) { console.warn('music tick', e); }
+    try { MUSIC.pump(MUS.sess, A.ctx.currentTime + 1.2); if (musPos() >= MUS.T[S.mus.i].dur - 0.05 && !msWaiting()) musNext(true); } catch (e) { console.warn('music tick', e); }
   };
   let fallback = false; const useTimer = () => { if (!fallback) { fallback = true; setInterval(tick, 120); } };
   try { const w = new Worker(URL.createObjectURL(new Blob(['setInterval(function(){postMessage(0)},120)'], { type: 'text/javascript' }))); w.onmessage = tick; w.onerror = () => { try { w.terminate(); } catch (e) {} useTimer(); }; } catch (e) { useTimer(); }
@@ -2438,8 +2432,9 @@ function musBuild() {
 function musRefreshTime() { if (!MUS.ui || MUS.seeking) return; const T = MUS.T[S.mus.i], p = musPos(); $('musCur').textContent = musFmt(p); $('musSeek').value = Math.round(p / T.dur * 1000); }
 function musRefresh() {
   const T = MUS.T[S.mus.i];
-  $('hMusic').hidden = !MUS.playing && !SPF.playing && !YTB.playing; $('hMusT').textContent = MUS.playing ? T.title : SPF.playing ? 'Spotify' : YTB.playing ? 'YouTube' : T.title;
+  $('hMusic').hidden = !MUS.playing && !YTB.playing; if (MUS.playing || !YTB.playing) $('hMusT').textContent = T.title;
   if (!MUS.ui) return;
+  let onBoat = false; try { onBoat = !!NET.code; } catch (e) {} $('musShareRow').hidden = !onBoat; $('musShare').checked = S.mus.share;
   $('musCover').src = musCover(S.mus.i); $('musTitle').textContent = T.title; $('musArtist').textContent = T.artist + ' · ' + T.mood; $('musDur').textContent = musFmt(T.dur);
   const pl = $('musPlay'); pl.innerHTML = MUS.playing ? MUS_ICON.pause : MUS_ICON.play; pl.setAttribute('aria-label', MUS.playing ? 'หยุดเพลง' : 'เล่นเพลง');
   $('musShuf').setAttribute('aria-pressed', String(S.mus.shuffle));
@@ -2454,12 +2449,12 @@ function openMusic() {
   if (musicOpen || !inputOn()) return;
   audioInit(); musBuild(); musicOpen = true; primaryHeld = false; useHeld = false; if (st === 'charge') st = 'idle';
   if (document.pointerLockElement) document.exitPointerLock();
-  $('mus').hidden = false; musPanes(); musRefresh(); if (S.mus.tab === 's') spEnter(); else if (S.mus.tab === 'y') ytEnter();
-  setTimeout(() => { const on = $('musList').querySelector('.mrow.on'); if (on && on.scrollIntoView) on.scrollIntoView({ block: 'nearest' }); const p = S.mus.tab === 's' ? $('musTabS') : S.mus.tab === 'y' ? $('musTabY') : $('musPlay'); if (p) p.focus({ preventScroll: true }); }, 30);
+  $('mus').hidden = false; musPanes(); musRefresh(); if (S.mus.tab === 'y') ytEnter();
+  setTimeout(() => { const on = $('musList').querySelector('.mrow.on'); if (on && on.scrollIntoView) on.scrollIntoView({ block: 'nearest' }); const p = S.mus.tab === 'y' ? $('musTabY') : $('musPlay'); if (p) p.focus({ preventScroll: true }); }, 30);
 }
 function closeMusic(relock = true) {
   if (!musicOpen) return; musicOpen = false; MUS.seeking = false;
-  musPanes(); // Spotify still playing -> the embed stays on screen as a slim bar (Spotify's terms: don't hide the player)
+  $('mus').hidden = true;
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   if (relock) requestLock();
 }
@@ -2482,102 +2477,24 @@ $('mus').addEventListener('keydown', (e) => {
   const tg = e.target, typing = !!tg && tg.tagName === 'INPUT' && tg.type === 'text';
   if (e.code === 'Escape' || (e.code === 'KeyP' && !typing)) { e.preventDefault(); e.stopPropagation(); closeMusic(); return; }
   if (typing || (tg && tg.type === 'range')) return;
-  if (tg && tg.classList && tg.classList.contains('mtab') && (e.code === 'ArrowRight' || e.code === 'ArrowLeft')) { e.preventDefault(); const o = ['g', 's', 'y'], t = o[(o.indexOf(S.mus.tab) + (e.code === 'ArrowRight' ? 1 : 2)) % 3]; musTab(t); $({ g: 'musTabG', s: 'musTabS', y: 'musTabY' }[t]).focus(); return; }
+  if (tg && tg.classList && tg.classList.contains('mtab') && (e.code === 'ArrowRight' || e.code === 'ArrowLeft')) { e.preventDefault(); const t = S.mus.tab === 'g' ? 'y' : 'g'; musTab(t); $(t === 'y' ? 'musTabY' : 'musTabG').focus(); return; }
   if (S.mus.tab !== 'g') return;
   if (e.code === 'ArrowRight') { e.preventDefault(); musNext(false); } else if (e.code === 'ArrowLeft') { e.preventDefault(); musPrev(); }
 });
 setInterval(() => { if (musicOpen) musRefreshTime(); }, 250);
-// ---- Spotify tab: Spotify's own embedded player (iFrame API), left unaltered and kept on screen while it plays ----
-const SP_QUICK = [['Lofi Beats', 'spotify:playlist:37i9dQZF1DWWQRwui0ExPn'], ['Peaceful Piano', 'spotify:playlist:37i9dQZF1DX4sWSpwq3LiO'], ['Chill Hits', 'spotify:playlist:37i9dQZF1DX4WYpdgoIcn6']];
-const SP_RE_URI = /^spotify:(track|album|playlist|artist|episode|show):([A-Za-z0-9]{22})$/i;
-const SP_RE_URL = /^(?:https?:\/\/)?(?:open|play)\.spotify\.com\/(?:embed\/)?(?:intl-[a-z]{2}(?:-[a-z]{2})?\/)?(?:user\/[^\/?#]+\/)?(track|album|playlist|artist|episode|show)\/([A-Za-z0-9]{22})(?:[\/?#].*)?$/i;
-function spParse(raw) {
-  const s = String(raw || '').trim(); if (!s || s.length > 300) return null;
-  const m = s.match(SP_RE_URI) || s.match(SP_RE_URL);
-  return m ? 'spotify:' + m[1].toLowerCase() + ':' + m[2] : null;
-}
-// Spotify's standard sizes: 152 compact (track/episode/show), 352 full (album/playlist/artist); short screens always get the compact one
-const spHeight = (uri) => (/^spotify:(track|episode|show):/.test(uri) || window.innerHeight < 700 ? 152 : 352);
-function spMsg(t, bad) { const m = $('spMsg'); m.hidden = !t; m.textContent = t || ''; m.classList.toggle('ok', !bad); }
-function spApi() {
-  if (SPF.api) return Promise.resolve(SPF.api);
-  if (SPF.apiP) return SPF.apiP;
-  SPF.apiP = new Promise((res, rej) => {
-    let s = null, to = 0;
-    const fail = (why) => { clearTimeout(to); window.onSpotifyIframeApiReady = undefined; if (s && s.parentNode) s.parentNode.removeChild(s); SPF.apiP = null; rej(new Error(why)); };
-    window.onSpotifyIframeApiReady = (api) => { clearTimeout(to); SPF.api = api; res(api); };
-    s = document.createElement('script'); s.src = 'https://open.spotify.com/embed/iframe-api/v1'; s.async = true;
-    s.onerror = () => fail('script'); to = setTimeout(() => fail('timeout'), 15000);
-    document.head.appendChild(s);
-  });
-  return SPF.apiP;
-}
-function spDestroy() { if (SPF.ctl) { try { SPF.ctl.destroy(); } catch (e) {} SPF.ctl = null; } $('spBox').textContent = ''; }
-function spPlayNow() { const c = SPF.ctl; if (!c) return; try { c.play(); } catch (e) {} }
-function spOnReady() { spMsg(''); if (SPF.auto) { SPF.auto = false; spPlayNow(); } }
-function spLoadInto(uri) {
-  try { if (SPF.ctl.loadEntity) SPF.ctl.loadEntity(uri); else SPF.ctl.loadUri(uri); } catch (e) { spMsg('สั่งให้ Spotify เปลี่ยนเพลงไม่สำเร็จ ลองกด “เล่น” อีกครั้ง', true); return; }
-  setTimeout(() => { if (SPF.auto && SPF.want === uri) { SPF.auto = false; spPlayNow(); spMsg(''); } }, 1300); // 'ready' may not fire again after a reload; this is the fallback
-}
-function spShow(uri, autoplay) {
-  SPF.want = uri; SPF.auto = !!autoplay; S.mus.sp = uri; save(); spMsg('กำลังโหลดเพลเยอร์ Spotify…');
-  if (SPF.creating) return;
-  spApi().then((api) => {
-    if (SPF.ctl && SPF.h === spHeight(SPF.want)) { spLoadInto(SPF.want); return; }
-    if (SPF.creating) return;
-    spDestroy(); SPF.creating = true; SPF.h = spHeight(SPF.want); const first = SPF.want;
-    const host = document.createElement('div'); $('spBox').appendChild(host);
-    const to = setTimeout(() => { if (SPF.creating) { SPF.creating = false; spMsg('เพลเยอร์ Spotify ไม่ตอบสนอง กด “เล่น” อีกครั้งเพื่อลองใหม่', true); } }, 15000);
-    api.createController(host, { uri: first, width: '100%', height: SPF.h }, (ctl) => {
-      clearTimeout(to); SPF.creating = false; SPF.ctl = ctl;
-      ctl.addListener('ready', spOnReady); ctl.addListener('playback_update', spOnUpdate);
-      if (SPF.want !== first) spLoadInto(SPF.want);
-    });
-  }).catch(() => { SPF.creating = false; spMsg('โหลดเพลเยอร์ Spotify ไม่สำเร็จ ลองเช็กอินเทอร์เน็ต (หรือปิดตัวบล็อกโฆษณา) แล้วกด “เล่น” อีกครั้ง', true); });
-}
-function spPause() { SPF.auto = false; if (!SPF.ctl || !SPF.playing) return; try { SPF.ctl.pause(); } catch (e) {} SPF.playing = false; SPF.quiet = performance.now() + 900; musPanes(); }
-function spOnUpdate(e) {
-  const d = e && e.data; if (!d) return;
-  const pl = !d.isPaused;
-  if (pl && performance.now() < SPF.quiet) return; // late 'playing' message right after we paused it
-  if (pl === SPF.playing) return;
-  SPF.playing = pl; clearTimeout(SPF.offT);
-  if (pl) { if (MUS.playing) musPause(); ytPause(); if (A.radio) { A.radio = false; if (A.radioG) A.radioG.gain.value = 0; } musPanes(); musRefresh(); }
-  else SPF.offT = setTimeout(() => { musPanes(); musRefresh(); }, 700); // a short pause between tracks shouldn't flash the bar away
-}
-function spPick(uri) { audioInit(); if (MUS.playing) musPause(); ytPause(); spShow(uri, true); }
-function spEnter() {
-  if (!SPF.qui) {
-    SPF.qui = true;
-    for (const [name, uri] of SP_QUICK) { const b = el('button', 'btn', name); b.type = 'button'; b.addEventListener('click', () => spPick(uri)); $('spQuick').appendChild(b); }
-  }
-  if (S.mus.sp && !SPF.ctl && !SPF.creating) spShow(S.mus.sp, false);
-  else if (!S.mus.sp) spMsg('วางลิงก์เพลง อัลบั้ม หรือเพลย์ลิสต์จาก Spotify ในช่องด้านบน (ใน Spotify กด ⋯ › แชร์ › คัดลอกลิงก์) หรือเลือกเพลย์ลิสต์ด้านล่าง');
-}
-// which panes show: open panel -> the chosen tab; a source that is playing always keeps its embed on screen (slim bar / small window, never hidden)
+setInterval(() => { if (musicOpen && S.mus.tab === 'y') ytRefreshTime(); }, 500);
+setInterval(() => { if (musicOpen && S.mus.tab === 'y') ytRefresh(); }, 2000);
+// ---- tabs ----
 function musPanes() {
-  const m = $('mus'), tab = S.mus.tab, on = SPF.playing && SPF.ctl ? 's' : YTB.playing && YTB.pl ? 'y' : '', mini = !musicOpen && !!on;
-  if (!musicOpen && !mini) { m.hidden = true; m.classList.remove('mini', 'my'); $('musPaneS').classList.remove('sl'); $('musPaneY').classList.remove('sl'); return; }
-  m.hidden = false; m.classList.toggle('mini', mini); m.classList.toggle('my', mini && on === 'y');
-  $('musPaneG').hidden = mini || tab !== 'g';
-  for (const id of ['s', 'y']) {
-    const pane = $(id === 's' ? 'musPaneS' : 'musPaneY'), show = mini ? on === id : tab === id || on === id;
-    pane.hidden = !show; pane.classList.toggle('sl', show && (mini || tab !== id));
-  }
-  for (const [id, tb] of [['g', 'musTabG'], ['s', 'musTabS'], ['y', 'musTabY']]) { $(tb).setAttribute('aria-selected', String(tab === id)); $(tb).tabIndex = tab === id ? 0 : -1; }
+  const y = S.mus.tab === 'y';
+  $('musPaneG').hidden = y; $('musPaneY').hidden = !y;
+  $('musTabG').setAttribute('aria-selected', String(!y)); $('musTabY').setAttribute('aria-selected', String(y));
+  $('musTabG').tabIndex = y ? -1 : 0; $('musTabY').tabIndex = y ? 0 : -1;
 }
-function musTab(t) { S.mus.tab = t === 's' || t === 'y' ? t : 'g'; save(); musPanes(); if (S.mus.tab === 's') spEnter(); else if (S.mus.tab === 'y') ytEnter(); }
+function musTab(t) { S.mus.tab = t === 'y' ? 'y' : 'g'; save(); musPanes(); if (S.mus.tab === 'y') ytEnter(); }
 $('musTabG').addEventListener('click', () => musTab('g'));
-$('musTabS').addEventListener('click', () => musTab('s'));
 $('musTabY').addEventListener('click', () => musTab('y'));
-$('spForm').addEventListener('submit', (e) => {
-  e.preventDefault(); const raw = $('spIn').value.trim();
-  if (!raw) { if (S.mus.sp) spPick(S.mus.sp); else spMsg('วางลิงก์ Spotify ก่อนนะ (ใน Spotify กด ⋯ › แชร์ › คัดลอกลิงก์)', true); return; }
-  const uri = spParse(raw);
-  if (!uri) { spMsg(/spotify\.link|link\.tospotify/i.test(raw) ? 'ลิงก์สั้นแบบ spotify.link ใช้ไม่ได้ ให้เปิดเพลงในเว็บ open.spotify.com แล้วคัดลอกลิงก์จากแถบที่อยู่' : 'ลิงก์นี้ไม่ใช่ลิงก์ Spotify ที่รองรับ (เพลง อัลบั้ม เพลย์ลิสต์ ศิลปิน พอดแคสต์)', true); return; }
-  $('spIn').value = ''; spPick(uri);
-});
-// ---- YouTube tab: YouTube's own embedded player (iFrame API). Its rules: player visible, at least 200x200, nothing on top of it, no audio-only ----
+// ---- YouTube tab: sound only (the player sits out of sight); the tab shows the title and our own controls ----
 const YT_QUICK = [['Lofi Girl (ไลฟ์ 24 ชม.)', 'https://www.youtube.com/watch?v=jfKfPfyJRdk'], ['Chillhop Radio', 'https://www.youtube.com/watch?v=5yx6BWlEVcY']];
 function ytParse(raw) {
   let s = String(raw || '').trim(); if (!s || s.length > 400) return null;
@@ -2608,68 +2525,156 @@ function ytApi() {
   });
   return YTB.apiP;
 }
-function ytDestroy() { if (YTB.pl) { try { YTB.pl.destroy(); } catch (e) {} YTB.pl = null; } YTB.ready = false; YTB.creating = false; $('ytBox').textContent = ''; }
+function ytDestroy() { if (YTB.pl) { try { YTB.pl.destroy(); } catch (e) {} YTB.pl = null; } YTB.ready = false; YTB.creating = false; $('ytHost').textContent = ''; }
 function ytApplyVol() { const p = YTB.pl; if (!p || !YTB.ready || !p.setVolume) return; try { p.setVolume(Math.round(clamp(S.vol.music, 0, 1) * 100)); } catch (e) {} }
 function ytLoadInto(t) {
-  const p = YTB.pl; YTB.single = !t.list; ytMsg('');
+  const p = YTB.pl, at = Math.max(0, Math.floor(t.at || 0)); YTB.single = !t.list; ytMsg('');
   try {
-    if (t.list) { const o = { listType: 'playlist', list: t.list, index: 0 }; if (YTB.auto) p.loadPlaylist(o); else p.cuePlaylist(o); }
-    else if (YTB.auto) p.loadVideoById(t.v); else p.cueVideoById(t.v);
+    if (t.list) { const o = { listType: 'playlist', list: t.list, index: Math.max(0, t.ix | 0) }; if (at > 0) o.startSeconds = at; if (YTB.auto) p.loadPlaylist(o); else p.cuePlaylist(o); }
+    else { const o = { videoId: t.v }; if (at > 0) o.startSeconds = at; if (YTB.auto) p.loadVideoById(o); else p.cueVideoById(o); }
   } catch (e) { ytMsg('สั่งให้ YouTube เปลี่ยนวิดีโอไม่สำเร็จ ลองกด “เล่น” อีกครั้ง', true); }
-  YTB.auto = false; ytApplyVol();
+  YTB.auto = false; ytApplyVol(); ytRefresh();
 }
 function ytShow(t, autoplay) {
-  YTB.want = t; YTB.auto = !!autoplay; S.mus.yv = t.v; S.mus.yl = t.list; save(); ytMsg('กำลังโหลดเพลเยอร์ YouTube…');
+  YTB.want = t; YTB.auto = !!autoplay; YTB.single = !t.list; S.mus.yv = t.v; S.mus.yl = t.list; save(); ytMsg('กำลังโหลดเพลเยอร์ YouTube…'); ytRefresh();
   if (YTB.creating) return;
   if (YTB.pl && YTB.ready) { ytLoadInto(t); return; }
   ytApi().then((YT) => {
     if (YTB.pl && YTB.ready) { ytLoadInto(YTB.want); return; }
     if (YTB.creating) return;
-    ytDestroy(); YTB.creating = true; const first = YTB.want; YTB.single = !first.list;
-    const host = document.createElement('div'); $('ytBox').appendChild(host);
+    ytDestroy(); YTB.creating = true;
+    const host = document.createElement('div'); $('ytHost').appendChild(host);
     const to = setTimeout(() => { if (YTB.creating) { YTB.creating = false; ytMsg('เพลเยอร์ YouTube ไม่ตอบสนอง กด “เล่น” อีกครั้งเพื่อลองใหม่', true); } }, 15000);
-    const vars = { playsinline: 1, rel: 0 }; if (first.list) { vars.listType = 'playlist'; vars.list = first.list; }
-    const cfg = { width: '100%', height: String(YTB.h), playerVars: vars, events: {
-      onReady: () => { clearTimeout(to); YTB.creating = false; YTB.ready = true; ytApplyVol(); ytMsg(''); if (YTB.want !== first) ytLoadInto(YTB.want); else if (YTB.auto) { YTB.auto = false; try { YTB.pl.playVideo(); } catch (e) {} } },
-      onStateChange: ytOnState, onError: ytOnError } };
-    if (!first.list) cfg.videoId = first.v;
-    YTB.pl = new YT.Player(host, cfg);
+    YTB.pl = new YT.Player(host, { width: '200', height: '200', playerVars: { playsinline: 1, rel: 0, disablekb: 1 }, events: {
+      onReady: () => { clearTimeout(to); YTB.creating = false; YTB.ready = true; ytApplyVol(); ytLoadInto(YTB.want); },
+      onStateChange: ytOnState, onError: ytOnError } });
   }).catch(() => { YTB.creating = false; ytMsg('โหลดเพลเยอร์ YouTube ไม่สำเร็จ ลองเช็กอินเทอร์เน็ต (หรือปิดตัวบล็อกโฆษณา) แล้วกด “เล่น” อีกครั้ง', true); });
 }
-function ytPause() { YTB.auto = false; if (!YTB.pl || !YTB.playing) return; try { YTB.pl.pauseVideo(); } catch (e) {} YTB.playing = false; YTB.quiet = performance.now() + 900; musPanes(); }
+function ytPause() { YTB.auto = false; if (!YTB.pl || !YTB.ready || !YTB.playing) return; try { YTB.pl.pauseVideo(); } catch (e) {} YTB.playing = false; YTB.quiet = performance.now() + 900; musRefresh(); ytRefresh(); }
 function ytOnState(e) {
   const d = e && e.data;
   if (d === 0 && YTB.single && YTB.pl) { try { YTB.pl.seekTo(0, true); YTB.pl.playVideo(); } catch (x) {} return; } // one video ended -> play it again, so the music keeps going
-  if (d === 3) return; // buffering: keep whatever state we had
+  if (d === 3) { ytRefresh(); return; } // buffering: keep whatever state we had
   const pl = d === 1;
   if (pl && performance.now() < YTB.quiet) return; // late 'playing' message right after we paused it
-  if (pl === YTB.playing) return;
-  YTB.playing = pl; clearTimeout(YTB.offT);
-  if (pl) { if (MUS.playing) musPause(); spPause(); if (A.radio) { A.radio = false; if (A.radioG) A.radioG.gain.value = 0; } musPanes(); musRefresh(); }
-  else YTB.offT = setTimeout(() => { musPanes(); musRefresh(); }, 700); // a short gap between playlist videos shouldn't flash the window away
+  if (pl === YTB.playing) { ytRefresh(); return; }
+  YTB.playing = pl;
+  if (pl) { if (MUS.playing) musPause(true); if (A.radio) { A.radio = false; if (A.radioG) A.radioG.gain.value = 0; } }
+  musRefresh(); ytRefresh();
 }
 function ytOnError(e) {
   const c = e && e.data;
   ytMsg(c === 100 ? 'ไม่พบวิดีโอนี้ (อาจถูกลบหรือตั้งเป็นส่วนตัว) ลองลิงก์อื่น' : c === 101 || c === 150 ? 'เจ้าของวิดีโอไม่อนุญาตให้ฝังเล่นนอก YouTube ลองลิงก์อื่น' : c === 2 ? 'ลิงก์ YouTube นี้ใช้ไม่ได้ ลองลิงก์อื่น' : 'เพลเยอร์ YouTube ขัดข้อง ลองกด “เล่น” อีกครั้ง', true);
 }
-function ytPick(t) { audioInit(); if (MUS.playing) musPause(); spPause(); ytShow(t, true); }
+// start a link because *I* chose it (paste / chip / play button): everyone on the boat who has sharing on follows
+function ytPick(t) { audioInit(); if (MUS.playing) musPause(true); MS.src = ''; ytShow(t, true); msSend({ s: 'y', on: true, p: 0, ix: 0 }); }
+// start what a friend is playing (no echo back)
+function ytRemote(t) { audioInit(); if (MUS.playing) musPause(true); ytShow(t, true); }
+function ytToggle() {
+  if (!YTB.pl || !YTB.ready) { if (S.mus.yv || S.mus.yl) ytPick({ v: S.mus.yv, list: S.mus.yl }); return; }
+  if (YTB.playing) { ytPause(); MS.src = ''; msSend({ on: false }); return; }
+  audioInit(); if (MUS.playing) musPause(true); MS.src = ''; YTB.quiet = 0; try { YTB.pl.playVideo(); } catch (e) {}
+  msSend({ s: 'y', on: true });
+}
+function ytSkip(dir) {
+  const p = YTB.pl; if (!p || !YTB.ready) return;
+  try { if (YTB.single) p.seekTo(0, true); else if (dir > 0) p.nextVideo(); else if ((p.getCurrentTime ? p.getCurrentTime() : 0) > 3) p.seekTo(0, true); else p.previousVideo(); } catch (e) {}
+  MS.src = ''; msSend({ s: 'y', on: true, p: 0 });
+}
+function ytRefreshTime() {
+  if (!YTB.qui || YTB.seeking) return;
+  const p = YTB.pl && YTB.ready ? YTB.pl : null; if (!p) return;
+  try { const d = p.getDuration ? p.getDuration() : 0, c = p.getCurrentTime ? p.getCurrentTime() : 0; $('ytCur').textContent = musFmt(c); $('ytDur').textContent = musFmt(d); $('ytSeek').value = d > 0 ? Math.round(c / d * 1000) : 0; } catch (e) {}
+}
+function ytRefresh() {
+  const p = YTB.pl && YTB.ready ? YTB.pl : null; let vd = null, dur = 0;
+  try { if (p) { vd = p.getVideoData ? p.getVideoData() : null; dur = p.getDuration ? p.getDuration() : 0; } } catch (e) {}
+  const title = (vd && vd.title) || '', vid = (vd && vd.video_id) || '';
+  YTB.live = !!((vd && vd.isLive) || (YTB.playing && !(dur > 0)));
+  if (YTB.playing && !MUS.playing) $('hMusT').textContent = title || 'YouTube';
+  if (!YTB.qui) return;
+  $('ytTitle').textContent = title || (YTB.want ? 'กำลังโหลด…' : 'ยังไม่ได้เลือกเพลง');
+  $('ytSub').textContent = (YTB.live ? 'ไลฟ์สด' + (vd && vd.author ? ' · ' : '') : '') + ((vd && vd.author) || '');
+  const cv = vid ? 'https://i.ytimg.com/vi/' + vid + '/mqdefault.jpg' : ''; if (cv !== YTB.cover) { YTB.cover = cv; if (cv) $('ytCover').src = cv; else $('ytCover').removeAttribute('src'); }
+  const pb = $('ytPlay'); pb.innerHTML = YTB.playing ? MUS_ICON.pause : MUS_ICON.play; pb.setAttribute('aria-label', YTB.playing ? 'หยุดเพลง' : 'เล่นเพลง');
+  $('ytPrev').hidden = YTB.single; $('ytNext').hidden = YTB.single; $('ytSeekRow').hidden = YTB.live || !(dur > 0);
+  ytRefreshTime();
+}
 function ytEnter() {
   if (!YTB.qui) {
     YTB.qui = true;
     for (const [name, url] of YT_QUICK) { const b = el('button', 'btn', name); b.type = 'button'; b.addEventListener('click', () => ytPick(ytParse(url))); $('ytQuick').appendChild(b); }
     const vl = $('ytVol'); vl.addEventListener('input', () => { S.vol.music = vl.value / 100; $('ytVolV').textContent = vl.value + '%'; audioInit(); applyVol(); musRefresh(); });
     vl.addEventListener('change', save);
+    $('ytPlay').addEventListener('click', ytToggle); $('ytPrev').addEventListener('click', () => ytSkip(-1)); $('ytNext').addEventListener('click', () => ytSkip(1));
+    const sk = $('ytSeek');
+    sk.addEventListener('input', () => { YTB.seeking = true; try { $('ytCur').textContent = musFmt(sk.value / 1000 * YTB.pl.getDuration()); } catch (e) {} });
+    sk.addEventListener('change', () => { YTB.seeking = false; try { const t = sk.value / 1000 * YTB.pl.getDuration(); YTB.pl.seekTo(t, true); MS.src = ''; msSend({ s: 'y', on: true, p: t }); } catch (e) {} });
+    $('ytCover').addEventListener('error', () => { $('ytCover').removeAttribute('src'); }); // keep YTB.cover as is so the same failing thumbnail is not retried every refresh
   }
   const v = Math.round(S.vol.music * 100); $('ytVol').value = v; $('ytVolV').textContent = v + '%';
   if ((S.mus.yv || S.mus.yl) && !YTB.pl && !YTB.creating) ytShow({ v: S.mus.yv, list: S.mus.yl }, false);
   else if (!S.mus.yv && !S.mus.yl) ytMsg('วางลิงก์วิดีโอหรือเพลย์ลิสต์ YouTube ในช่องด้านบน หรือเลือกไลฟ์ lo-fi ด้านล่าง');
+  ytRefresh();
 }
 $('ytForm').addEventListener('submit', (e) => {
   e.preventDefault(); const raw = $('ytIn').value.trim();
   if (!raw) { if (S.mus.yv || S.mus.yl) ytPick({ v: S.mus.yv, list: S.mus.yl }); else ytMsg('วางลิงก์ YouTube ก่อนนะ', true); return; }
   const t = ytParse(raw);
-  if (!t) { ytMsg(/^https?:\/\/(?:www\.)?(?:youtube\.com|youtu\.be)/i.test(raw) || /youtu/i.test(raw) ? 'ลิงก์ YouTube นี้ไม่มีวิดีโอหรือเพลย์ลิสต์ที่เล่นได้ (ช่อง/หน้าแรกใช้ไม่ได้ และเพลย์ลิสต์ Mix อัตโนมัติฝังไม่ได้)' : 'ลิงก์นี้ไม่ใช่ลิงก์ YouTube ที่รองรับ', true); return; }
+  if (!t) { ytMsg(/youtu/i.test(raw) ? 'ลิงก์ YouTube นี้ไม่มีวิดีโอหรือเพลย์ลิสต์ที่เล่นได้ (ช่อง/หน้าแรกใช้ไม่ได้ และเพลย์ลิสต์ Mix อัตโนมัติฝังไม่ได้)' : 'ลิงก์นี้ไม่ใช่ลิงก์ YouTube ที่รองรับ', true); return; }
   $('ytIn').value = ''; ytPick(t);
+});
+// ---- listening together (stored on each player's own node in the room: players/<uid>/mu) ----
+function msWaiting() { try { return S.mus.share && !!NET.code && !!MS.src && NET.remotes.has(MS.src); } catch (e) { return false; } } // a friend's track ended: wait for their next one instead of picking our own
+function msSend(o = {}) {
+  if (!S.mus.share) return;
+  try {
+    if (!NET.myRef || !NET.code || !NET.fbUser) return;
+    const at = Date.now() + MS.skew, s = o.s || (MUS.playing ? 'g' : YTB.playing ? 'y' : ''); let mu;
+    if (o.on === false || !s) mu = { on: 0, q: at };
+    else if (s === 'g') mu = { on: 1, s: 'g', i: S.mus.i, p: +(o.p != null ? o.p : musPos()).toFixed(1), q: at };
+    else {
+      const w = YTB.want, pl = YTB.pl && YTB.ready ? YTB.pl : null; if (!w) return;
+      let p = o.p, ix = o.ix;
+      if (p == null) { try { p = pl && !YTB.live ? pl.getCurrentTime() : 0; } catch (e) { p = 0; } }
+      if (ix == null) { try { ix = w.list && pl ? pl.getPlaylistIndex() : 0; } catch (e) { ix = 0; } }
+      mu = { on: 1, s: 'y', v: w.v || '', l: w.list || '', ix: ix | 0, p: +(+p || 0).toFixed(1), lv: YTB.live ? 1 : 0, q: at };
+    }
+    MS.last = Math.max(MS.last, at);
+    clearTimeout(MS.timer); MS.timer = setTimeout(() => { try { if (NET.myRef) update(NET.myRef, { mu }).catch(() => {}); } catch (e) {} }, 250);
+  } catch (e) {}
+}
+function msApply(m, uid) {
+  const r = NET.remotes.get(uid), who = (r && r.name) || 'เพื่อน';
+  MS.src = uid;
+  if (!m.on) { if (MUS.playing) musPause(true); ytPause(); return; }
+  const el = Math.max(0, (Date.now() + MS.skew - m.q) / 1000); if (el > 21600) return;
+  if (m.s === 'g') {
+    const i = Math.floor(num(m.i, 0, MUS.T.length - 1, -1)); if (i < 0) return;
+    const pos = num(m.p, 0, 1e5, 0) + el; if (pos >= MUS.T[i].dur - 1) return;
+    if (!musStart(i, pos, true)) return;
+    toast('♪ ' + MUS.T[i].title + ' · ' + who + ' เปิดให้ฟัง');
+  } else if (m.s === 'y') {
+    const v = typeof m.v === 'string' && /^[A-Za-z0-9_-]{11}$/.test(m.v) ? m.v : '', l = typeof m.l === 'string' && /^[A-Za-z0-9_-]{12,64}$/.test(m.l) ? m.l : '';
+    if ((!v && !l) || A.muted) return;
+    ytRemote({ v, list: l, ix: num(m.ix, 0, 999, 0), at: m.lv ? 0 : num(m.p, 0, 86400, 0) + el });
+    toast('♪ ' + who + ' เปิดเพลง YouTube ให้ฟัง');
+  }
+}
+function msPeers(all, myUid) {
+  if (!NET.code) return; // already left the boat: a late snapshot must not start anything
+  MS.all = all; MS.me = myUid;
+  if (!S.mus.share) return;
+  let best = null, bu = '';
+  for (const [uid, pr] of Object.entries(all || {})) { if (uid === myUid) continue; const m = pr && pr.mu; if (!m || typeof m.q !== 'number' || !isFinite(m.q)) continue; if (!best || m.q > best.q) { best = m; bu = uid; } }
+  if (!best || best.q <= MS.last) return;
+  MS.last = best.q; msApply(best, bu);
+}
+function msReset() { MS.last = 0; MS.src = ''; MS.all = null; clearTimeout(MS.timer); }
+$('musShare').addEventListener('change', () => {
+  S.mus.share = $('musShare').checked; save();
+  toast(S.mus.share ? 'เปิดเพลงฟังพร้อมเพื่อนบนเรือแล้ว' : 'ปิดแล้ว ฟังเพลงของตัวเองคนเดียว');
+  if (S.mus.share && MS.all) { MS.last = 0; msPeers(MS.all, MS.me); }
 });
 // @@MUSIC-UI-END
 
@@ -3632,6 +3637,7 @@ async function joinBoat(raw) {
     NET.subs.push(onValue(NET.playersRef, (snap) => onBoatPeers(snap.val() || {}, uid)));
     NET.subs.push(onChildAdded(NET.eventsRef, (snap) => { const m = snap.val(); if (!m || m.by === uid || m.t < NET.joinedAt) return; onNetEvent(m); }));
     bindCrewBox(code);
+    msReset(); try { NET.subs.push(onValue(ref(fbDb, '.info/serverTimeOffset'), (s) => { const v = +s.val(); if (isFinite(v)) MS.skew = v; })); } catch (e) {}
     netState(`อยู่บนเรือ ${code.toUpperCase()} · บอกรหัสนี้ให้เพื่อน`, true);
     toast(`ขึ้นเรือ ${code.toUpperCase()} แล้ว บอกรหัสนี้ให้เพื่อนเพื่อมาเล่นด้วยกัน`, 'good');
     $('players').hidden = false; $('pCode').textContent = code.toUpperCase(); renderBoats(); renderPlayers(); if (menuOpen) renderMenu();
@@ -3639,6 +3645,7 @@ async function joinBoat(raw) {
 }
 async function leaveBoat(silent) {
   if (!NET.code) return;
+  msReset();
   unbindCrewBox(); // keeps whatever was last in the shared box as our own local one, rather than losing it
   for (const unsub of NET.subs) { try { unsub(); } catch (e) {} } NET.subs = [];
   try { if (NET.myRef) await remove(NET.myRef); } catch (e) {}
@@ -3718,6 +3725,7 @@ function syncRemoteSeats() {
 }
 const num = (v, a, b, d) => (typeof v === 'number' && isFinite(v) ? clamp(v, a, b) : d);
 function onBoatPeers(all, myUid) {
+  try { msPeers(all, myUid); } catch (e) {}
   let maxGm = null, minFl = null, peerGenBroken = false, peerEngBroken = false, maxFd = 0;
   for (const [uid, pr] of Object.entries(all)) {
     if (uid === myUid || typeof pr.x !== 'number') continue;
