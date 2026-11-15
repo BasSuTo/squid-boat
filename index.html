@@ -433,6 +433,13 @@ body.touch #alerts{top:calc(56px + env(safe-area-inset-top,0px))}
 .jcard i{font-size:12.5px;color:var(--mute)}
 .jcard span{font-size:13px;color:var(--mute)}
 .jcard.lock{opacity:.5}
+.pstats{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin:6px 0 4px}
+.pstats div{padding:8px 10px;border-radius:9px;background:rgba(255,255,255,.05);border:1px solid var(--line);display:flex;flex-direction:column;gap:2px}
+.pstats span{font-size:12px;color:var(--mute)}.pstats b{font:600 15px var(--display)}
+.achs{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
+.ach{padding:9px 11px;border-radius:9px;background:rgba(255,255,255,.035);border:1px solid var(--line);display:flex;flex-direction:column;gap:2px;opacity:.55}
+.ach.on{opacity:1;border-color:rgba(255,207,90,.45);background:rgba(255,207,90,.07)}
+.ach b{font-size:14px}.ach span{font-size:12.5px;color:var(--mute)}
 .jcard .rare{color:var(--lamp);font-size:12px;font-weight:600}
 .spots{display:flex;flex-direction:column;gap:8px}
 .spot{display:flex;gap:12px;align-items:center;padding:12px;border-radius:10px;background:rgba(255,255,255,.05);border:1px solid var(--line)}
@@ -829,7 +836,22 @@ const SPECIES = [
   { id: 'alien', name: 'เศษโลหะต่างดาว', sci: 'วัสดุไม่ทราบที่มา', kg: [0.8, 2.4], price: 0, black: 4200, w: 0, len: 0.3, rad: 0.12, shape: 'shard', base: '#1a2a33', spot: '#39e0ff', depth: [0, 45], s: 0.9, style: 'none', hab: 'อุ่นเหมือนมีชีวิต เรืองแสงเป็นจังหวะเหมือนหายใจ', strange: true, curse: 0.4 },
   { id: 'doll', name: 'ตุ๊กตาไม้ต้องคำสาป', sci: 'ติดมากับอวนเก่า', kg: [0.3, 0.6], price: 0, blackFlat: 6500, w: 0, len: 0.3, rad: 0.06, shape: 'doll', base: '#8a5a36', spot: '#3a2416', depth: [0, 45], s: 0.5, style: 'none', hab: 'หันหน้ามาทางคุณทุกครั้งที่หันกลับไปมอง', strange: true, curse: 0.8 },
   { id: 'kraken', name: 'สิ่งที่อยู่ใต้เรือ', sci: 'ไม่มีใครเคยตั้งชื่อ', kg: [400, 400], price: 0, w: 0, len: 1, rad: 1, shape: 'none', base: '#3b1526', spot: '#000000', depth: [30, 45], s: 1.9, style: 'heavy', hab: 'กลัวแสงไฟ ตามที่ไต้ก๋งเปลี่ยนเขียนไว้', strange: true, boss: true },
+  // ----- expansion: rarer squid, real fish (bite near the bottom / over wrecks, fight harder) and wreck treasure
+  { id: 'flying', name: 'หมึกกระโดด', sci: 'Sthenoteuthis oualaniensis', kg: [0.5, 2.5], price: 300, w: 0.03, len: 0.3, rad: 0.05, shape: 'squid', fin: 'tip', base: '#e8c2b5', spot: '#a3412e', depth: [15, 45], s: 1.25, style: 'quick', hab: 'ว่ายเร็วมาก ขึ้นมาตอนดึกในน้ำลึกและแนวน้ำเปลี่ยนสี', rar: 'uncommon', cond: (c) => (c.night > 0.6 ? 1 : 0.1) * (c.zone === 'deep' || c.zone === 'front' || c.zone === 'abyss' ? 2 : 0.3) },
+  { id: 'diamond', name: 'หมึกเพชร', sci: 'Thysanoteuthis rhombus', kg: [4, 14], price: 380, w: 0.02, len: 0.55, rad: 0.12, shape: 'squid', fin: 'full', base: '#c7564a', spot: '#5e1a14', depth: [25, 80], s: 1.75, style: 'heavy', hab: 'ครีบรูปข้าวหลามตัด ตัวหนักมาก อยู่น้ำลึก ขึ้นบ่อยคืนเดือนเพ็ญ', rar: 'rare', cond: (c) => (c.zone === 'deep' || c.zone === 'abyss' ? 1 : 0.05) * (c.moonK > 0.85 ? 2.2 : 1) * (c.night > 0.5 ? 1 : 0.2) },
+  { id: 'glass', name: 'หมึกแก้ว', sci: 'Cranchia scabra', kg: [0.1, 0.4], price: 2400, w: 0.008, len: 0.15, rad: 0.045, shape: 'squid', fin: 'tip', base: '#e8f4ff', spot: '#9fb8d6', depth: [20, 70], s: 0.5, style: 'quick', hab: 'ตัวใสเหมือนแก้ว เห็นได้แค่คืนหมอกหรือฝนในน้ำลึก', rar: 'rare', glow: true, cond: (c) => (c.fog ? 3 : c.weather === 'rain' ? 1.6 : 0.4) * (c.moonK < 0.5 ? 1 : 0.4) * (c.depth > 20 ? 1 : 0.1) },
+  { id: 'goldbigfin', name: 'หมึกหอมทอง', sci: 'Sepioteuthis lessoniana (ผิวทอง)', kg: [1.5, 3], price: 15000, w: 0.006, len: 0.3, rad: 0.055, shape: 'squid', fin: 'full', base: '#ffd866', spot: '#b07a10', depth: [6, 26], s: 1.3, style: 'normal', hab: 'ตำนานของชาวเรือ ขึ้นมาใต้แสงจันทร์เต็มดวงเท่านั้น', rar: 'legend', glow: true, cond: (c) => (c.moonK > 0.85 && c.night > 0.7 ? 1 : 0) * (c.zone === 'front' || c.zone === 'koh' || c.zone === 'secret' ? 1 : 0.2) },
+  { id: 'redgiant', name: 'หมึกยักษ์แดง', sci: 'Dosidicus gigas', kg: [8, 22], price: 900, w: 0.01, len: 0.72, rad: 0.13, shape: 'squid', fin: 'tip', base: '#d9543f', spot: '#7a1d12', depth: [35, 80], s: 2.0, style: 'heavy', hab: 'นักล่าตัวโตจากเขตน้ำลึก ดุและแรงมาก ชอบคืนพายุ', rar: 'legend', cond: (c) => (c.zone === 'abyss' || c.zone === 'secret' ? 1 : 0) * (c.weather === 'storm' ? 2.5 : c.weather === 'rain' ? 1.5 : 1) * (c.depth > 35 ? 1 : 0.1) },
+  { id: 'kingfish', name: 'ปลาอินทรี', sci: 'Scomberomorus commerson', kg: [1.5, 7], price: 260, w: 0.03, len: 0.46, rad: 0.06, shape: 'fish', top: '#2f4e6e', belly: '#e2eaef', bars: true, base: '#9fb6c6', spot: '#33465a', depth: [3, 30], s: 1.5, style: 'quick', hab: 'ปลาล่าเหยื่อว่ายเร็ว ดึงสายแรง ตามฝูงหมึกขึ้นมากินกลางน้ำ', rar: 'uncommon', fishy: true, cond: (c) => (c.depth < 30 ? 1 : 0.2) * (c.zone === 'front' || c.zone === 'koh' ? 1.5 : 0.8) },
+  { id: 'barracuda', name: 'ปลาสาก', sci: 'Sphyraena jello', kg: [1, 5], price: 180, w: 0.025, len: 0.5, rad: 0.045, shape: 'fish', top: '#53616c', belly: '#dfe4e6', bars: true, base: '#9aa5ad', spot: '#2c3a44', depth: [2, 22], s: 1.4, style: 'quick', hab: 'ตัวยาวฟันคม ชอบแนวน้ำเปลี่ยนสี', rar: 'uncommon', fishy: true, cond: (c) => (c.depth < 22 ? 1 : 0.15) * (c.zone === 'front' ? 2 : 0.6) },
+  { id: 'snapper', name: 'ปลากะพงแดง', sci: 'Lutjanus argentimaculatus', kg: [0.8, 4], price: 330, w: 0.035, len: 0.36, rad: 0.07, shape: 'fish', top: '#8a3a2a', belly: '#f2c4ac', base: '#c97a5e', spot: '#6e2a1e', depth: [15, 70], s: 1.35, style: 'heavy', hab: 'อยู่ใกล้พื้น กองหิน และซากเรือ เหยื่อต้องลงไปถึงพื้น', rar: 'uncommon', fishy: true, cond: (c) => (c.depth > c.bottom - 6 ? 1 : 0.1) * (c.zone === 'reef' ? 2 : c.zone === 'wreck' ? 4 : 0.6) },
+  { id: 'grouper', name: 'ปลาเก๋า', sci: 'Epinephelus coioides', kg: [2, 9], price: 420, w: 0.012, len: 0.42, rad: 0.11, shape: 'fish', top: '#5d4a32', belly: '#cdb88e', spots: true, base: '#8a7350', spot: '#3b2c1a', depth: [18, 70], s: 1.6, style: 'heavy', hab: 'หลบอยู่ในซากเรือและโพรงหิน ตัวใหญ่ราคาดี', rar: 'rare', fishy: true, cond: (c) => (c.depth > c.bottom - 5 ? 1 : 0.05) * (c.zone === 'wreck' ? 6 : c.zone === 'reef' ? 2 : 0.3) },
+  { id: 'coinbox', name: 'กล่องเหรียญโบราณ', sci: 'ติดเบ็ดขึ้นมาจากซากเรือ', kg: [3, 6], price: 600, w: 0, len: 0.3, rad: 0.1, shape: 'chest', base: '#6b4a2b', spot: '#c9a24a', depth: [0, 80], s: 0.7, style: 'none', hab: 'ของมีค่าจากซากเรือจม ขายที่ตลาดได้ราคา', rar: 'rare', treasure: true },
 ];
+// rarity of the original creatures (new ones carry their own)
+{ const R0 = { loligo: 'common', bigfin: 'common', sepia: 'common', octo: 'uncommon', giant: 'rare', firefly: 'legend', mackerel: 'common', bluecrab: 'common', crucifix: 'common', stonecrab: 'common', mudcrab: 'uncommon', spanner: 'uncommon', goldcrab: 'legend', hermit: 'common', facecrab: 'mystery', mutant: 'mystery', alien: 'mystery', doll: 'mystery', sandal: 'common', kraken: 'boss' };
+  for (const s of SPECIES) s.rar = s.rar || R0[s.id] || 'common'; }
+const RARITY = { common: { name: 'ธรรมดา', star: '', col: '#b9c6cf' }, uncommon: { name: 'ไม่ค่อยเจอ', star: '★', col: '#7fd3a0' }, rare: { name: 'หายาก', star: '★★', col: '#7fb6ff' }, legend: { name: 'ตำนาน', star: '★★★', col: '#ffcf5a' }, mystery: { name: 'ลึกลับ', star: '✦', col: '#d08cff' }, boss: { name: 'ตำนานใต้ทะเล', star: '✦✦', col: '#ff7a6a' } };
 const SP = Object.fromEntries(SPECIES.map((s) => [s.id, s]));
 let lastSwellName = '';
 const SPOTS = [
@@ -1871,7 +1893,7 @@ function spotTex(sp) {
   if (texCache[sp.id]) return texCache[sp.id];
   const c = document.createElement('canvas'); c.width = c.height = 256; const x = c.getContext('2d');
   x.fillStyle = sp.base; x.fillRect(0, 0, 256, 256);
-  if (sp.shape === 'fish') { const g = x.createLinearGradient(0, 0, 0, 256); g.addColorStop(0, '#2c4a66'); g.addColorStop(0.45, '#9fb6c6'); g.addColorStop(1, '#e8eef2'); x.fillStyle = g; x.fillRect(0, 0, 256, 256); for (let i = 0; i < 40; i++) { x.fillStyle = 'rgba(20,40,60,.5)'; x.fillRect(Math.random() * 256, Math.random() * 60, 6, 3); } }
+  if (sp.shape === 'fish') { const g = x.createLinearGradient(0, 0, 0, 256); g.addColorStop(0, sp.top || '#2c4a66'); g.addColorStop(0.45, sp.base || '#9fb6c6'); g.addColorStop(1, sp.belly || '#e8eef2'); x.fillStyle = g; x.fillRect(0, 0, 256, 256); for (let i = 0; i < 40; i++) { x.fillStyle = 'rgba(20,40,60,.5)'; x.fillRect(Math.random() * 256, Math.random() * 60, 6, 3); } if (sp.bars) for (let u = 8; u < 256; u += 22) { x.fillStyle = 'rgba(30,40,55,.35)'; x.fillRect(u, 0, 7, 120); } if (sp.spots) for (let i = 0; i < 160; i++) { x.fillStyle = 'rgba(50,32,16,.45)'; x.beginPath(); x.arc(Math.random() * 256, Math.random() * 200, rand(2, 6), 0, 7); x.fill(); } }
   else if (sp.shape !== 'sandal') for (let i = 0; i < 320; i++) { x.globalAlpha = rand(0.25, 0.8); x.fillStyle = sp.spot; x.beginPath(); x.arc(Math.random() * 256, Math.random() * 256, rand(0.8, 4.5), 0, 7); x.fill(); }
   if (sp.id === 'sepia') { x.globalAlpha = 0.35; x.strokeStyle = '#3e2e1e'; x.lineWidth = 3; for (let y = 10; y < 256; y += 18) { x.beginPath(); for (let xx = 0; xx <= 256; xx += 16) x.lineTo(xx, y + Math.sin(xx * 0.08 + y) * 5); x.stroke(); } }
   x.globalAlpha = 1; const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; texCache[sp.id] = t; return t;
@@ -1993,6 +2015,12 @@ function makeCatchRaw(sp, kg, hi = true) {
     const sh = new THREE.Shape(); sh.moveTo(0, 0); sh.lineTo(R * 1.1, -L * 0.22); sh.lineTo(-R * 1.1, -L * 0.22); sh.lineTo(0, 0);
     const tail = new THREE.Mesh(new THREE.ShapeGeometry(sh), mat); tail.position.y = -L * 0.95; inner.add(tail);
     for (const sx of [-1, 1]) { const e = new THREE.Mesh(new THREE.SphereGeometry(R * 0.2, 8, 6), eyeMat); e.position.set(sx * R * 0.45, -L * 0.12, 0); inner.add(e); }
+  } else if (sp.shape === 'chest') {
+    const wood = std(0x6b4a2b, 0.85, 0, { map: grimeTex() }), brass = std(0xc9a24a, 0.35, 0.8), weed = std(0x3d5a2a, 0.9, 0);
+    const bx = new THREE.Mesh(new THREE.BoxGeometry(R * 2.4, R * 1.4, R * 1.6), wood); bx.position.y = -R * 1.1; inner.add(bx);
+    const lid = new THREE.Mesh(new THREE.CylinderGeometry(R * 0.8, R * 0.8, R * 2.4, 12, 1, false, 0, Math.PI), wood); lid.rotation.z = Math.PI / 2; lid.position.y = -R * 0.4; inner.add(lid);
+    for (const x2 of [-R * 0.9, R * 0.9]) { const bd = new THREE.Mesh(new THREE.BoxGeometry(R * 0.18, R * 2.2, R * 1.7), brass); bd.position.set(x2, -R * 0.75, 0); inner.add(bd); }
+    const wd = new THREE.Mesh(new THREE.SphereGeometry(R * 0.5, 8, 6), weed); wd.scale.set(1.6, 0.4, 1); wd.position.set(R * 0.6, -R * 0.15, R * 0.3); inner.add(wd);
   } else if (sp.shape === 'shard') {
     const sg = new THREE.IcosahedronGeometry(R, 0), sp2 = sg.attributes.position;
     for (let i = 0; i < sp2.count; i++) sp2.setXYZ(i, sp2.getX(i) * rand(0.6, 1.4), sp2.getY(i) * rand(1.3, 2.2), sp2.getZ(i) * rand(0.5, 1.1));
@@ -2892,16 +2920,127 @@ function inkSplat() {
 const TH_MON = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
 function nightDate(next) { const d = new Date(2026, 10, 6 + S.night + (next ? 1 : 0)); return d.getDate() + ' ' + TH_MON[d.getMonth()]; }
 const WX_NAME = { clear: 'ฟ้าใส', cloudy: 'เมฆครึ้ม', rain: 'ฝนตก', storm: 'พายุ คลื่นแรง' };
-const WX = { cloud: 0, rain: 0, amp: 0.85, flash: 0, nextFlash: 8 };
+const wxName = () => WX_NAME[NIGHT.weather] + (NIGHT.fog ? ' หมอกลง' : '');
+const WX = { cloud: 0, rain: 0, amp: 0.85, flash: 0, nextFlash: 8, fog: 0 };
+// ====================================================================================================
+// ===== EXPANSION: progress, collection, seasons, ocean events, exploration, quests, crew, boat, ranks =====
+// Everything here is event-driven or ticks at ~1 Hz; nothing allocates per frame.
+// ====================================================================================================
+// ---- save data for the new systems lives in S.prog (versioned, validated on load)
+const PROG_V = 1;
+function progDefaults() {
+  return { v: PROG_V, ach: {}, title: '', rel: 0, relNight: 0, story: { ch: 0, task: null }, week: null, stats: { n: 0, kg: 0, rare: 0, legend: 0, fish: 0, chests: 0, helped: 0, wrecks: 0, nights: 0, storm: 0, big: 0 }, found: {}, evDone: [], coop: 0, boat: { hull: 0, decor: {} }, hand: null, medals: 0 };
+}
+{
+  const d = progDefaults(), p = S.prog && typeof S.prog === 'object' ? S.prog : {};
+  const num = (v, a, b) => (typeof v === 'number' && isFinite(v) ? clamp(v, a, b) : a);
+  S.prog = Object.assign(d, p); S.prog.v = PROG_V;
+  S.prog.stats = Object.assign(progDefaults().stats, p.stats || {}); for (const k in S.prog.stats) S.prog.stats[k] = num(+S.prog.stats[k], 0, 1e9);
+  if (!S.prog.ach || typeof S.prog.ach !== 'object') S.prog.ach = {};
+  S.prog.rel = num(+S.prog.rel, 0, 100); S.prog.medals = num(+S.prog.medals, 0, 9999);
+  if (!Array.isArray(S.prog.evDone)) S.prog.evDone = []; S.prog.evDone = S.prog.evDone.filter((x) => typeof x === 'string').slice(-80);
+  if (!S.prog.found || typeof S.prog.found !== 'object') S.prog.found = {};
+  S.prog.story = Object.assign({ ch: 0, task: null }, p.story || {}); S.prog.story.ch = num(+S.prog.story.ch, 0, 5);
+  S.prog.boat = Object.assign({ hull: 0, decor: {} }, p.boat || {}); S.prog.boat.hull = num(+S.prog.boat.hull, 0, 9) | 0; if (!S.prog.boat.decor || typeof S.prog.boat.decor !== 'object') S.prog.boat.decor = {};
+  if (S.prog.hand && !['fisher', 'mechanic', 'cook'].includes(S.prog.hand)) S.prog.hand = null;
+  if (typeof S.prog.title !== 'string') S.prog.title = '';
+  if (S.title && !S.prog.ach.boss) S.prog.ach.boss = 1; // the old single title (beating the deep) becomes an achievement
+}
+// ---- seasons (every 10 nights) and the shared weekly event (by real calendar week, so friends share it)
+const SEASONS = [
+  { id: 'calm', name: 'ฤดูลมสงบ', desc: 'ฟ้าใสบ่อย ทะเลเรียบ กล่องลอยน้ำเจอง่าย', wx: [0.55, 0.8, 0.95], dens: 1, ev: { chest: 1.6 } },
+  { id: 'squid', name: 'ฤดูหมึกชุม', desc: 'หมึกเข้าไฟเยอะ ตัวหายากโผล่บ่อยขึ้นนิดหน่อย', wx: [0.42, 0.68, 0.9], dens: 1.2, ev: {}, rare: 1.25 },
+  { id: 'monsoon', name: 'ฤดูมรสุม', desc: 'ฝนและพายุบ่อย เรือขอความช่วยเหลือเยอะ ปลาใหญ่เข้าฝั่ง', wx: [0.25, 0.45, 0.78], dens: 0.95, ev: { distress: 1.8 }, fish: 1.4 },
+];
+const seasonOf = (n) => SEASONS[Math.floor((n - 1) / 10) % SEASONS.length];
+const WEEK_MS = 7 * 24 * 3600 * 1000, WEEK0 = Date.UTC(2024, 0, 1); // a Monday
+const weekId = () => Math.floor((Date.now() - WEEK0) / WEEK_MS);
+const WEEKLY = [
+  { id: 'bigfin', name: 'สัปดาห์หมึกหอม', desc: 'หมึกหอมเข้าไฟบ่อยและราคาดีขึ้น 25%', sp: { bigfin: 1.6 }, price: { bigfin: 1.25 } },
+  { id: 'fish', name: 'สัปดาห์ปลาใหญ่', desc: 'ปลาทุกชนิดกินเบ็ดบ่อยขึ้น 2 เท่า', fish: 2 },
+  { id: 'legend', name: 'สัปดาห์ล่าตำนาน', desc: 'สัตว์ระดับตำนานโผล่บ่อยขึ้น 80%', legend: 1.8 },
+  { id: 'rescue', name: 'สัปดาห์น้ำใจชาวเล', desc: 'เรือขอความช่วยเหลือบ่อยขึ้น รางวัลช่วยเหลือ x1.5', ev: { distress: 1.8 }, help: 1.5 },
+];
+const weeklyEvent = () => WEEKLY[((weekId() % WEEKLY.length) + WEEKLY.length) % WEEKLY.length];
+// rarity multiplier on top of each creature's own conditions
+function rarityK(s, c) {
+  let k = 1; const se = seasonOf(S.night), we = weeklyEvent();
+  if (s.rar === 'rare' || s.rar === 'legend') k *= se.rare || 1;
+  if (s.fishy) k *= (se.fish || 1) * (we.fish || 1);
+  if (s.rar === 'legend') k *= we.legend || 1;
+  if (we.sp && we.sp[s.id]) k *= we.sp[s.id];
+  if (c.zone === 'secret') k *= s.rar === 'legend' ? 4 : s.rar === 'rare' ? 2 : 1;
+  if (c.giantT && (s.id === 'redgiant' || s.id === 'diamond')) k *= 6;
+  return k;
+}
+// where the lure is: fishing spot id, or a wreck / the secret spot / the abyss
+function fishCtx(depth, bottom) {
+  return { depth, bottom, zone: zoneAt(BW.x, BW.z), night, moonK: NIGHT.moonK, weather: NIGHT.weather, fog: !!NIGHT.fog, giantT: EXP.giant && Math.hypot(BW.x - EXP.giant.x, BW.z - EXP.giant.z) < 90 && gameMin < EXP.giant.until };
+}
+function zoneAt(x, z) {
+  for (const w of WRECKS) if (Math.hypot(x - w.x, z - w.z) < 60) return 'wreck';
+  if (EXP.secret && EXP.secret.night === S.night && Math.hypot(x - EXP.secret.x, z - EXP.secret.z) < 80) return 'secret';
+  return SPOTS[S.spot].id;
+}
+// ---- achievements -> titles and boat decorations
+const ACH = [
+  { id: 'first', name: 'ตัวแรกของชีวิต', d: 'จับหมึกได้ตัวแรก', t: () => S.prog.stats.n >= 1 },
+  { id: 'n100', name: 'มือขึ้น', d: 'จับได้ 100 ตัว', t: () => S.prog.stats.n >= 100, title: 'ชาวเรือมือขึ้น' },
+  { id: 'n500', name: 'เซียนไฟล่อ', d: 'จับได้ 500 ตัว', t: () => S.prog.stats.n >= 500, title: 'เซียนไฟล่อ', decor: 'flags' },
+  { id: 'kg100', name: 'ร้อยกิโล', d: 'น้ำหนักรวม 100 กก.', t: () => S.prog.stats.kg >= 100, decor: 'lanterns' },
+  { id: 'big5', name: 'ตัวเบ้อเริ่ม', d: 'ได้ตัวเดียวหนักเกิน 5 กก.', t: () => S.prog.stats.big >= 5, title: 'นักสู้สายตึง' },
+  { id: 'rare1', name: 'ของหายาก', d: 'จับสัตว์ระดับหายากได้', t: () => S.prog.stats.rare >= 1 },
+  { id: 'rare10', name: 'นักสะสม', d: 'จับระดับหายากขึ้นไป 10 ตัว', t: () => S.prog.stats.rare + S.prog.stats.legend >= 10, title: 'นักสะสมหมึก' },
+  { id: 'legend1', name: 'ตำนานมีจริง', d: 'จับสัตว์ระดับตำนานได้', t: () => S.prog.stats.legend >= 1, title: 'ผู้พบตำนาน', decor: 'garland' },
+  { id: 'fish5', name: 'สายตกปลา', d: 'จับปลาได้ 5 ชนิด', t: () => SPECIES.filter((s) => s.fishy && S.journal[s.id]).length >= 5, title: 'นักตกปลา' },
+  { id: 'dex', name: 'สมุดเกือบเต็ม', d: 'พบสัตว์ทะเล 20 ชนิด', t: () => SPECIES.filter((s) => S.journal[s.id]).length >= 20, title: 'นักชีววิทยาทะเล' },
+  { id: 'chest5', name: 'นักล่าสมบัติ', d: 'เก็บกล่องสมบัติ 5 ใบ', t: () => S.prog.stats.chests >= 5, title: 'นักล่าสมบัติ' },
+  { id: 'help3', name: 'น้ำใจชาวเล', d: 'ช่วยเรือที่ขอความช่วยเหลือ 3 ครั้ง', t: () => S.prog.stats.helped >= 3, title: 'ผู้มีน้ำใจ', decor: 'flags' },
+  { id: 'wreck', name: 'นักดำน้ำเงา', d: 'ไปถึงซากเรือจมทั้งสองแห่ง', t: () => !!(S.prog.found.wreck0 && S.prog.found.wreck1) },
+  { id: 'abyss', name: 'ขอบทะเลลึก', d: 'ค้นพบเขตน้ำลึก', t: () => !!S.prog.found.abyss, title: 'นักสำรวจทะเลลึก' },
+  { id: 'storm', name: 'สู้พายุ', d: 'จับได้ 10 ตัวในคืนพายุ', t: () => S.prog.stats.storm >= 10, title: 'ไต้ก๋งใจเด็ด' },
+  { id: 'nights7', name: 'หนึ่งสัปดาห์กลางทะเล', d: 'ออกเรือครบ 7 คืน', t: () => S.prog.stats.nights >= 7 },
+  { id: 'friend', name: 'เพื่อนพี่ชัย', d: 'ความสนิทกับพี่ชัยถึง 60', t: () => S.prog.rel >= 60, title: 'น้องรักพี่ชัย' },
+  { id: 'story', name: 'เรื่องเล่าของพี่ชัย', d: 'ฟังเรื่องของพี่ชัยครบทุกตอน', t: () => S.prog.story.ch >= 5, title: 'คนในครอบครัวพี่ชัย' },
+  { id: 'boss', name: 'ผู้พิชิตทะเลลึก', d: 'ไล่สิ่งที่อยู่ใต้เรือกลับไป', t: () => !!S.story.done, title: 'ผู้พิชิตทะเลลึก' },
+];
+function checkAch(quiet) {
+  for (const a of ACH) if (!S.prog.ach[a.id] && a.t()) {
+    S.prog.ach[a.id] = S.night;
+    if (!quiet) { sfx('coin'); toast(`🏅 ความสำเร็จ: ${a.name}${a.title ? ` · ได้ฉายา "${a.title}"` : ''}${a.decor ? ' · ปลดล็อกของแต่งเรือ' : ''}`, 'good'); }
+  }
+}
+const titlesAll = new Set(ACH.filter((a) => a.title).map((a) => a.title));
+const netTitle = () => {}; // title rides the normal diff send (ti), nothing extra to write
+const titlesOwned = () => ACH.filter((a) => a.title && S.prog.ach[a.id]).map((a) => a.title);
+const myTitle = () => (S.prog.title && titlesOwned().includes(S.prog.title) ? S.prog.title : '');
+const decorOwned = (id) => ACH.some((a) => a.decor === id && S.prog.ach[a.id]);
+// ---- every catch feeds stats, weekly/story quests, achievements and the leaderboard
+function progCatch(sp, kg, firstTime) {
+  const st2 = S.prog.stats;
+  if (!sp.junk && !sp.strange && !sp.treasure) { st2.n++; st2.kg = +(st2.kg + kg).toFixed(2); st2.big = Math.max(st2.big, kg); if (sp.fishy) st2.fish++; if (NIGHT.weather === 'storm') st2.storm++; }
+  if (sp.treasure) st2.chests++; if (sp.rar === 'rare') st2.rare++; if (sp.rar === 'legend') st2.legend++;
+  progEvent('catch', { sp, kg });
+  lbDirty = true; checkAch(); save();
+}
+// ---- world places used by exploration (fixed positions so every player sees the same sea)
+const WRECKS = [{ id: 'wreck0', name: 'ซากเรือประมงเก่า', x: -600, z: 260 }, { id: 'wreck1', name: 'ซากเรือสินค้าจม', x: 250, z: -700 }];
+const EXP = { giant: null, secret: null, ev: null, offer: null };
+let lbDirty = false;
+// hook for weekly / story / co-op quests (filled in by later systems; must never throw into a catch)
+const PROG_HOOKS = [];
+function progEvent(kind, d) { for (const f of PROG_HOOKS) { try { f(kind, d || {}); } catch (e) { console.warn('progEvent', e); } } }
 let NIGHT = null;
 function moonName(k, waxing) { if (k < 0.12) return 'เดือนมืด'; if (k > 0.9) return 'เดือนเพ็ญ'; return waxing ? 'ข้างขึ้น' : 'ข้างแรม'; }
 function setupNight() {
   resetBelowDeck();
   const r = rng(S.night * 7919 + 13), wr = r();
-  const weather = wr < 0.42 ? 'clear' : wr < 0.68 ? 'cloudy' : wr < 0.9 ? 'rain' : 'storm';
+  const se = seasonOf(S.night), we = weeklyEvent(), wx = se.wx;
+  const weather = wr < wx[0] ? 'clear' : wr < wx[1] ? 'cloudy' : wr < wx[2] ? 'rain' : 'storm';
+  const r2 = rng(S.night * 104729 + 7), fog = weather !== 'storm' && r2() < 0.12; // separate stream: old nights keep their quests
   const phase = ((S.night + 2) % 30) / 30, moonK = 0.5 - 0.5 * Math.cos(phase * 2 * Math.PI);
-  const market = {}; for (const sp of SPECIES) market[sp.id] = marketAt(S.night, sp.id);
-  NIGHT = { weather, moonK, moon: moonName(moonK, phase < 0.5), market, ice: false, blackMul: 0.8 + r() * 0.6, quests: makeQuests(r), stats: { count: 0, kg: 0 } };
+  const market = {}; for (const sp of SPECIES) market[sp.id] = marketAt(S.night, sp.id) * ((we.price && we.price[sp.id]) || 1);
+  NIGHT = { season: se, week: we, fog, weather, moonK, moon: moonName(moonK, phase < 0.5), market, ice: false, blackMul: 0.8 + r() * 0.6, quests: makeQuests(r), stats: { count: 0, kg: 0 } };
 }
 function makeQuests(r) {
   const pick = (a) => a[Math.floor(r() * a.length)];
@@ -3026,7 +3165,8 @@ function updateTime(dt) {
   WX.flash = Math.max(0, WX.flash - dt * 4);
   hemi.intensity = lerp(0.55, 0.17, night) * (1 - 0.3 * WX.cloud) + WX.flash * 2.5; hemi.color.copy(HEMI_DAY).lerp(HEMI_NIGHT, night);
   fogC.copy(FOG_GOLD).lerp(FOG_DAY, smooth(3, 25, elev)).multiplyScalar(1 - 0.4 * WX.cloud).lerp(FOG_NIGHT, night).lerp(FOG_DARK, DT.k * 0.9); scene.fog.color.copy(fogC);
-  scene.fog.density = 0.0026 + WX.cloud * 0.002 + WX.rain * 0.0035 + DT.k * 0.0045;
+  WX.fog += ((NIGHT.fog ? 1 : 0) - WX.fog) * Math.min(1, dt * 0.05);
+  scene.fog.density = 0.0026 + WX.cloud * 0.002 + WX.rain * 0.0035 + DT.k * 0.0045 + WX.fog * 0.0075;
   renderer.toneMappingExposure = lerp(0.5, 0.9, night);
   starMat.opacity = night * 0.9 * (1 - WX.cloud) * (1 - DT.k); moonMat.opacity = smooth(0.1, 0.7, night) * moonVis; moonGlow.material.opacity = night * 0.8 * moonVis;
   if (lampAuto && started && !lampsOn && night > 0.25 && powerOn()) { toggleLamps(false); S.deck = true; lampText(); crewSay('ฟ้ามืดแล้ว เปิดไฟล่อหมึกเลย'); }
@@ -3578,15 +3718,18 @@ function pickSpecies(depth) {
   if (S.night >= 3 && curWater().anomaly && Math.random() < 0.04) return SP.mutant;
   if (Math.random() < 0.05) return Math.random() < 0.75 ? SP.mackerel : SP.sandal;
   const spot = SPOTS[S.spot], bottom = spot.bottom;
+  const ctx = fishCtx(depth, bottom);
+  if (ctx.zone === 'wreck' && depth > bottom - 6 && Math.random() < 0.035) return SP.coinbox;
   const ws = SPECIES.map((s) => {
-    if (s.junk || s.strange) return 0;
-    if (s.id === 'firefly') return night > 0.9 && NIGHT.moonK < 0.25 && depth > 18 ? 0.04 * waterPref(s) : 0;
+    if (s.junk || s.strange || s.treasure) return 0;
+    if (s.cond) return s.w * s.cond(ctx) * (depth >= s.depth[0] && depth <= s.depth[1] ? 1 : 0.2) * rarityK(s, ctx);
+    if (s.id === 'firefly') return night > 0.9 && NIGHT.moonK < 0.25 && depth > 18 ? 0.025 * waterPref(s) * rarityK(s, ctx) : 0;
     let w = s.w * (spot.wt[s.id] ?? 0.5);
     w *= depth >= s.depth[0] && depth <= s.depth[1] ? 1 : 0.25;
     if (s.id === 'octo') w *= depth > bottom - 3 ? 3 : 0.1;
     if (s.id === 'sepia' && depth > bottom - 4) w *= 1.8;
     if (s.id === 'bigfin' && night > 0.5) w *= 1.2;
-    w *= waterPref(s);
+    w *= waterPref(s) * rarityK(s, ctx);
     return w;
   });
   let r = Math.random() * ws.reduce((a, b) => a + b, 0);
@@ -3730,6 +3873,8 @@ function awardCatch(sp, kg, obj, fromHolder) {
   if (!sp.junk) { NIGHT.stats.count++; NIGHT.stats.kg += kg; }
   const best = !sp.junk && !sp.strange && kg > S.best; if (best) S.best = kg;
   const val = sp.strange ? blackValue({ id: sp.id, kg }) : kg * sp.price * NIGHT.market[sp.id];
+  const rr = RARITY[sp.rar]; if (rr && rr.star && !sp.strange) toast(`${rr.star} ${sp.name} · ${rr.name}${firstTime ? ' · ชนิดใหม่!' : ''}`, 'good');
+  try { progCatch(sp, kg, firstTime); } catch (e) { console.warn('progCatch', e); }
   showCard(sp, kg, val, best && S.total > 1, sp.strange ? 'ของแปลก · ขายได้เฉพาะตลาดมืด' : firstTime ? 'ชนิดใหม่ในสมุดหมึก' : fromHolder ? 'จากคันปัก' : 'จับได้แล้ว');
   sfx('catch'); save(); if (!fromHolder) crewReact('catch', sp, kg);
   const local = new V3(TUB.x + rand(-0.28, 0.28), 2.12 + Math.min(S.tub.length, 8) * 0.012, TUB.z + rand(-0.18, 0.18));
@@ -3762,6 +3907,7 @@ function endNight() {
   if (menuOpen) { menuOpen = false; $('menu').hidden = true; }
   closeMusic(false);
   const potN = S.pots.length ? autoCollectPots() : -1;
+  S.prog.stats.nights++; progEvent('night', {}); checkAch(); lbDirty = true;
   const sold = Math.round(S.tub.concat(S.freezer, S.crewBox).reduce((a, b) => a + sellValue(b, true), 0) + S.dishes.reduce((a, d) => a + dishValue(d), 0));
   $('sumEyebrow').textContent = `เช้าแล้ว · ${nightDate(true)} ตี 5:30 · เอาของไปขายที่เกาะ`; $('sumTitle').textContent = `จบคืนที่ ${S.night}`;
   $('sumCount').textContent = NIGHT.stats.count; $('sumKg').textContent = NIGHT.stats.kg.toFixed(2) + ' กก.'; $('sumSold').textContent = baht(sold);
@@ -3772,7 +3918,7 @@ $('nextNight').addEventListener('click', () => dockIsland());
 function startNextNight() {
   S.night++; S.crabKarma = Math.max(0, S.crabKarma - 1); save(); setupNight(); gameMin = 18 * 60 + 20; nightOver = false; lampAuto = true; lampsOn = false; gen.broken = false; gen.repairing = false; gen.prog = 0; gen.check = null; $('skill').hidden = true; gen.t = rand(300, 520); lampText(); S.needs = { food: 100, water: 100, energy: 100 }; S.fuel = Math.max(S.fuel, 60); fuelWarned = false; save();
   $('summary').hidden = true; resetSchool(); renderQuests(); iceMesh.visible = false; st = 'idle'; resetDark(); renderWater(); renderCurses(); CREW.tubDone = false; CREW.probeDone = false;
-  toast(`คืนที่ ${S.night}: ${WX_NAME[NIGHT.weather]} · ${NIGHT.moon}`, 'good'); requestLock(); announced = false;
+  toast(`คืนที่ ${S.night}: ${wxName()} · ${NIGHT.moon} · ${NIGHT.season.name}`, 'good'); requestLock(); announced = false;
 }
 function travel(idx, who) {
   if (traveling || idx === S.spot) return;
@@ -3911,7 +4057,23 @@ function renderMenu() {
     body.appendChild(el('div', 'hint', 'โหมดท้าทายสำหรับคนตกเก่งแล้ว สายขาดเร็ว หมึกดึงแรง ม้วนช้า และต้องกดให้ทันตอนหมึกกิน'));
   } else if (menuTab === 'journal') {
     const dex = SPECIES.filter((s) => !s.boss || S.story.done), found = dex.filter((s) => S.journal[s.id]).length;
-    body.appendChild(el('div', 'hint', `พบแล้ว ${found} จาก ${dex.length} ชนิด` + (S.title ? ` · ฉายา ${S.title}` : '')));
+    const P = S.prog, st2 = P.stats, achN = ACH.filter((a) => P.ach[a.id]).length;
+    body.appendChild(el('div', 'hint', `พบแล้ว ${found} จาก ${dex.length} ชนิด · ความสำเร็จ ${achN} / ${ACH.length} · ${NIGHT.season.name} (${NIGHT.season.desc}) · อีเวนต์สัปดาห์นี้: ${NIGHT.week.name} — ${NIGHT.week.desc}`));
+    const sg = el('div', 'pstats');
+    for (const [k, v] of [['จับได้รวม', `${st2.n} ตัว`], ['น้ำหนักรวม', `${st2.kg.toFixed(1)} กก.`], ['ตัวใหญ่สุด', `${st2.big.toFixed(2)} กก.`], ['หายาก / ตำนาน', `${st2.rare} / ${st2.legend}`], ['ปลา', `${st2.fish} ตัว`], ['คืนที่ออกเรือ', `${st2.nights}`]]) { const c = el('div'); c.appendChild(el('span', '', k)); c.appendChild(el('b', '', v)); sg.appendChild(c); }
+    body.appendChild(sg);
+    const tl = titlesOwned();
+    body.appendChild(el('h3', '', 'ฉายา (โชว์ให้เพื่อนเห็นในห้องออนไลน์)'));
+    const tr = el('div', 'emotes');
+    tr.appendChild(btn(myTitle() ? 'ไม่ใช้ฉายา' : 'ไม่ใช้ฉายา ✓', () => { P.title = ''; save(); netTitle(); renderMenu(); }, 'btn', !myTitle()));
+    for (const t of tl) tr.appendChild(btn(t + (myTitle() === t ? ' ✓' : ''), () => { P.title = t; save(); netTitle(); renderMenu(); }, 'btn' + (myTitle() === t ? ' pri' : ''), myTitle() === t));
+    if (!tl.length) tr.appendChild(el('span', 'lv', 'ทำความสำเร็จที่มีฉายาเพื่อปลดล็อก'));
+    body.appendChild(tr);
+    body.appendChild(el('h3', '', 'ความสำเร็จ'));
+    const ag = el('div', 'achs');
+    for (const a of ACH) { const got = P.ach[a.id], c = el('div', 'ach' + (got ? ' on' : '')); c.appendChild(el('b', '', (got ? '🏅 ' : '') + a.name)); c.appendChild(el('span', '', a.d + (a.title ? ` · ฉายา "${a.title}"` : '') + (a.decor ? ' · ของแต่งเรือ' : ''))); ag.appendChild(c); }
+    body.appendChild(ag);
+    body.appendChild(el('h3', '', 'สมุดสัตว์ทะเล'));
     if (S.story.pages) {
       body.appendChild(el('h3', '', `บันทึกเรือ ส.ทองคำ 7 · ${S.story.pages} / 5 หน้า`));
       const pg = el('div', 'emotes'); for (let i = 0; i < S.story.pages; i++) pg.appendChild(btn(`อ่านหน้า ${i + 1}`, () => showPage(i, 'อ่านซ้ำจากสมุดเรือ'))); body.appendChild(pg);
@@ -3920,8 +4082,7 @@ function renderMenu() {
     for (const sp of dex) {
       const j = S.journal[sp.id], c = el('div', 'jcard' + (j ? '' : ' lock'));
       c.appendChild(el('b', '', j ? sp.name : '???')); c.appendChild(el('i', '', j ? sp.sci : 'ยังไม่เคยจับได้'));
-      if (sp.rare) c.appendChild(el('span', 'rare', 'หายาก'));
-      if (sp.strange) c.appendChild(el('span', 'rare curse', 'ของแปลก'));
+      { const rr = RARITY[sp.rar] || RARITY.common; if (sp.rar !== 'common') { const ch = el('span', 'rare', `${rr.star} ${rr.name}`); ch.style.color = rr.col; c.appendChild(ch); } }
       c.appendChild(el('span', '', j ? sp.hab : sp.crab ? 'ได้จากลอบปู' : sp.strange ? 'ติดเบ็ดได้เฉพาะคืนน้ำดำ…' : sp.rare ? 'มีคนเล่าว่าเคยเห็น…' : `ลึกราว ${sp.depth[0]}–${sp.depth[1]} ม.`));
       if (j) c.appendChild(el('span', '', `จับได้ ${j.n} ครั้ง · ใหญ่สุด ${j.max.toFixed(2)} กก.`));
       g.appendChild(c);
@@ -4233,7 +4394,7 @@ function onBoatPeers(all, myUid) {
   for (const [uid, pr] of Object.entries(all)) {
     if (uid === myUid || typeof pr.x !== 'number') continue;
     const r = NET.remotes.get(uid) || addRemote(uid, pr);
-    r.name = pr.name || r.name; if (pr.col) r.col = pr.col;
+    r.name = pr.name || r.name; if (pr.col) r.col = pr.col; r.ti = typeof pr.ti === 'string' && titlesAll.has(pr.ti) ? pr.ti : '';
     r.tx = num(pr.x, -4, 4, 0); r.tz = num(pr.z, -12, 12, -6); r.ty = num(pr.y, -1, 6, 2); r.tyaw = num(pr.yaw, -1e4, 1e4, 0);
     r.s = ['idle', 'charge', 'flying', 'water', 'bite', 'fight', 'landing'].includes(pr.s) ? pr.s : 'idle';
     r.lx = num(pr.lx, -200, 200, 0); r.lz = num(pr.lz, -200, 200, 0); r.ld = num(pr.ld, 0, 50, 0); r.c = num(pr.c, 0, 999, 0);
@@ -4332,7 +4493,7 @@ function renderOnlineTab(body) {
     row.appendChild(btn('ออกจากเรือ', () => leaveBoat(false))); body.appendChild(row);
     body.appendChild(el('h3', '', 'คนบนเรือ'));
     const pl = el('div', 'boats'); const me = el('div', 'boatItem'); me.appendChild(el('b', '', 'คุณ')); me.appendChild(el('span', 'hint', `คืนนี้ ${NIGHT.stats.count} ตัว`)); pl.appendChild(me);
-    for (const r of NET.remotes.values()) { const it = el('div', 'boatItem'); it.appendChild(el('b', '', r.name || 'เพื่อนร่วมเรือ')); it.appendChild(el('span', 'hint', `คืนนี้ ${r.c} ตัว`)); pl.appendChild(it); }
+    for (const r of NET.remotes.values()) { const it = el('div', 'boatItem'); it.appendChild(el('b', '', r.name || 'เพื่อนร่วมเรือ')); it.appendChild(el('span', 'hint', (r.ti ? `「${r.ti}」 · ` : '') + `คืนนี้ ${r.c} ตัว`)); pl.appendChild(it); }
     body.appendChild(pl);
     body.appendChild(el('h3', '', 'ส่งข้อความด่วน'));
     const em = el('div', 'emotes'); EMOTES.forEach((t, i) => em.appendChild(btn(t, () => { netEmit('chat', { i }); toast(t, 'say', 'คุณ'); }))); body.appendChild(em);
@@ -4362,7 +4523,7 @@ function updateNet(dt) {
     const dishOf = (t) => (t && t.owner === 'local') ? { k: t.k, id: t.id, kg: +t.kg.toFixed(2), q: +t.q.toFixed(2), f: +(t.f || 1).toFixed(2) } : null;
     const potsOut = S.pots.map((q) => ({ wx: +q.wx.toFixed(2), wz: +q.wz.toFixed(2), t: Math.round(q.t), bait: !!q.bait }));
     // only what changed since the last send goes out (an idle player used to resend ~25 fields 6-7 times a second)
-    const full = { x: +P.x.toFixed(2), z: +P.z.toFixed(2), y: +P.y.toFixed(2), yaw: +P.yaw.toFixed(3), s: st, lx: +lure.x.toFixed(2), lz: +lure.z.toFixed(2), ld: +lure.depth.toFixed(1), c: NIGHT.stats.count, gm: Math.round(gameMin), seat: sIdx, p0: dishOf(TABLE[0]), p1: dishOf(TABLE[1]), cr: P.carry || null, isl: ISL.on, pt: potsOut, fl: +S.fuel.toFixed(1), gb: gen.broken, eb: eng.broken, fd: +FLOOD.lvl.toFixed(2), ck: CONTEST.on ? +CONTEST.kg.toFixed(2) : null };
+    const full = { x: +P.x.toFixed(2), z: +P.z.toFixed(2), y: +P.y.toFixed(2), yaw: +P.yaw.toFixed(3), s: st, lx: +lure.x.toFixed(2), lz: +lure.z.toFixed(2), ld: +lure.depth.toFixed(1), c: NIGHT.stats.count, gm: Math.round(gameMin), ti: myTitle(), seat: sIdx, p0: dishOf(TABLE[0]), p1: dishOf(TABLE[1]), cr: P.carry || null, isl: ISL.on, pt: potsOut, fl: +S.fuel.toFixed(1), gb: gen.broken, eb: eng.broken, fd: +FLOOD.lvl.toFixed(2), ck: CONTEST.on ? +CONTEST.kg.toFixed(2) : null };
     const L = NET.last || (NET.last = {}), diff = {}; let n = 0;
     for (const k in full) { const v = full[k] === undefined ? null : full[k], js = JSON.stringify(v); if (L[k] !== js) { diff[k] = v; L[k] = js; n++; } }
     NET.beat = (NET.beat || 0) - 0.15; if (NET.beat <= 0) { NET.beat = 10; diff.t = Date.now(); n++; }
@@ -4462,7 +4623,7 @@ cylBetween(new V3(2.6, 2.45, -10.5), new V3(3.35, 3.25, -10.6), 0.015, M.dark); 
 BOXES.push([2.3, 2.85, -10.65, -10.15]);
 
 // =============== market history & freezer ===============
-const MK = { loligo: [0.9, 7], bigfin: [2.1, 9], sepia: [0.8, 5], octo: [3.3, 6], giant: [1.7, 11], firefly: [0, 8], mackerel: [0.5, 4] };
+const MK = { loligo: [0.9, 7], bigfin: [2.1, 9], sepia: [0.8, 5], octo: [3.3, 6], giant: [1.7, 11], firefly: [0, 8], mackerel: [0.5, 4], flying: [1.2, 6], diamond: [2.6, 10], glass: [0.4, 9], goldbigfin: [0, 12], redgiant: [4.1, 8], kingfish: [3.0, 5], barracuda: [1.8, 7], snapper: [0.3, 6], grouper: [2.2, 9], coinbox: [0, 13] };
 function marketAt(n, id) { const m = MK[id] || [0, 7], r = rng(n * 131 + id.charCodeAt(0) * 977 + id.length * 31)(); return Math.round((1 + 0.24 * Math.sin(n * 2 * Math.PI / m[1] + m[0]) + (r - 0.5) * 0.16) * 100) / 100; }
 const CHART_SP = [['loligo', '#ffb347'], ['bigfin', '#86d9ea'], ['sepia', '#c9a6ff'], ['octo', '#7fe0a6'], ['giant', '#ff8a8a'], ['mackerel', '#d0d6dc']];
 const chartShown = (id) => ['loligo', 'bigfin', 'sepia'].includes(id) || !!S.journal[id];
@@ -6036,7 +6197,7 @@ function updateHUD(dt, timeStr) {
   updateUse(dt);
   hudAcc += dt; if (hudAcc < 0.12) return; hudAcc = 0;
   $('hTime').textContent = timeStr;
-  $('hSea').textContent = `${WX_NAME[NIGHT.weather]} · ${swellName()} · ${NIGHT.moon} · ${SPOTS[S.spot].name}`;
+  $('hSea').textContent = `${wxName()} · ${swellName()} · ${NIGHT.moon} · ${SPOTS[S.spot].name}`;
   $('hMoney').textContent = baht(S.money); renderFuelHud();
   if (TOUCH) {
     const st2 = (id, v) => { const e = $(id); if (e.textContent !== v) e.textContent = v; };
@@ -6112,7 +6273,7 @@ function setQuality(name, manual) {
 for (const b of document.querySelectorAll('.seg .btn')) { b.addEventListener('click', () => { setQuality(b.dataset.q, true); renderMenu(); }); b.setAttribute('aria-pressed', String(b.dataset.q === qName)); }
 $('go').addEventListener('click', () => {
   audioInit(); started = true; $('start').hidden = true; $('hud').hidden = false; $('touch').hidden = !TOUCH; requestLock(); renderTut(); musAutostart(); musRefresh();
-  setTimeout(() => toast(`คืนที่ ${S.night}: ${WX_NAME[NIGHT.weather]} · ${NIGHT.moon} · ${SPOTS[S.spot].name}`, 'good'), 400);
+  setTimeout(() => toast(`คืนที่ ${S.night}: ${wxName()} · ${NIGHT.moon} · ${SPOTS[S.spot].name}`, 'good'), 400);
   setTimeout(() => toast(TOUCH ? 'เดินไปที่ขอบเรือ หันออกทะเล แล้วกดปุ่มส้มค้างไว้' : 'เดินไปที่ขอบเรือ หันออกทะเล · Tab เปิดเมนูตลาดและอัปเกรด', ''), 1600);
 });
 addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); if (composer) composer.setSize(innerWidth, innerHeight); });
@@ -6503,7 +6664,7 @@ function resetBelowDeck() {
 function updateBelowDeck(dt) { updateEngine(dt); updateFlood(dt); updateRats(dt); updateCat(dt); updateContest(dt); }
 
 // =============== boot & loop ===============
-setupNight(); resetSchool(); renderQuests(); buildHolders(); lampText();
+checkAch(true); setupNight(); resetSchool(); renderQuests(); buildHolders(); lampText();
 if (S.up.sonar) { $('sonarBox').hidden = false; document.body.classList.add('hasSonar'); }
 rebuildTub(); renderWater(); renderCurses(); rebuildCrate(); rebuildPotStack(); rebuildBuoys();
 const clock = new THREE.Clock(); let T = 0;
