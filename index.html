@@ -229,6 +229,16 @@ body.helm #ctrl,body.helm #cross{display:none}
 #helmHud .hhRow span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0}
 #helmHud .hhRow b{color:var(--mute);font-weight:500;flex:none}
 #helmHud .hhRow.here b{color:var(--good)}
+#evBox{pointer-events:auto;border-color:rgba(255,179,71,.55);background:rgba(28,20,8,.78)}
+#evBox h4{display:flex;align-items:center;gap:6px;margin:0 0 4px;font-size:14px}
+#evBox h4 i{font-style:normal;color:#ffb347;display:inline-block;width:14px;text-align:center;flex:none;transition:transform .2s}
+#evBox h4 span{flex:1;min-width:0}
+#evBox p{margin:0 0 6px;font-size:13px;color:var(--mute);line-height:1.35}
+#evBox .evBtns{display:flex;gap:6px}#evBox .evBtns .btn{flex:1;min-height:38px;padding:6px 10px;font-size:13.5px}
+#evBox .track{margin:0 0 6px}
+body.touch #evBox{position:fixed;left:calc(10px + env(safe-area-inset-left,0px));top:calc(54px + env(safe-area-inset-top,0px));width:min(300px,38vw);min-width:220px;font-size:12px;padding:7px 10px;z-index:5}
+body.touch.statOpen #evBox{display:none}
+body.touch #evBox p{font-size:12px;margin-bottom:5px}body.touch #evBox .evBtns .btn{min-height:36px}
 #hhWho{margin-top:6px;color:var(--mute);font-size:12px}
 body.touch #helmHud{right:auto;left:50%;transform:translateX(-50%);bottom:calc(8px + env(safe-area-inset-bottom,0px));width:min(300px,calc(100% - 490px));min-width:230px;font-size:11px;padding:7px 10px}
 body.touch #helmHud .hhSpd b{font-size:24px}
@@ -483,6 +493,7 @@ body.touch #alerts{top:calc(56px + env(safe-area-inset-top,0px))}
   </div>
 
   <div id="hudTR">
+    <div class="box" id="evBox" hidden><h4><i id="evArrow">▲</i><span id="evT"></span></h4><p id="evP"></p><div class="track" id="evTrack" hidden><div class="fill" id="evFill"></div></div><div class="evBtns"><button id="evYes" class="btn pri" type="button">ไปดู (Y)</button><button id="evNo" class="btn" type="button">ข้าม (N)</button></div></div>
     <div class="box" id="questBox"><h4>ภารกิจคืนนี้ <span id="qSpot">หน้าเกาะมันใน</span></h4><div id="qList"></div></div>
     <div class="box" id="waterBox"><h4>ค่าน้ำ <span id="wSpot">ยังไม่ได้วัด</span></h4><div id="wVals" class="wgrid"></div></div>
     <div class="box" id="sonarBox" hidden><h4>โซนาร์ <span id="sonarTxt">ฝูงหมึก ~ 12 ม.</span></h4><canvas id="sonar" width="460" height="236"></canvas></div>
@@ -841,7 +852,7 @@ const SPECIES = [
   { id: 'diamond', name: 'หมึกเพชร', sci: 'Thysanoteuthis rhombus', kg: [4, 14], price: 380, w: 0.02, len: 0.55, rad: 0.12, shape: 'squid', fin: 'full', base: '#c7564a', spot: '#5e1a14', depth: [25, 80], s: 1.75, style: 'heavy', hab: 'ครีบรูปข้าวหลามตัด ตัวหนักมาก อยู่น้ำลึก ขึ้นบ่อยคืนเดือนเพ็ญ', rar: 'rare', cond: (c) => (c.zone === 'deep' || c.zone === 'abyss' ? 1 : 0.05) * (c.moonK > 0.85 ? 2.2 : 1) * (c.night > 0.5 ? 1 : 0.2) },
   { id: 'glass', name: 'หมึกแก้ว', sci: 'Cranchia scabra', kg: [0.1, 0.4], price: 2400, w: 0.008, len: 0.15, rad: 0.045, shape: 'squid', fin: 'tip', base: '#e8f4ff', spot: '#9fb8d6', depth: [20, 70], s: 0.5, style: 'quick', hab: 'ตัวใสเหมือนแก้ว เห็นได้แค่คืนหมอกหรือฝนในน้ำลึก', rar: 'rare', glow: true, cond: (c) => (c.fog ? 3 : c.weather === 'rain' ? 1.6 : 0.4) * (c.moonK < 0.5 ? 1 : 0.4) * (c.depth > 20 ? 1 : 0.1) },
   { id: 'goldbigfin', name: 'หมึกหอมทอง', sci: 'Sepioteuthis lessoniana (ผิวทอง)', kg: [1.5, 3], price: 15000, w: 0.006, len: 0.3, rad: 0.055, shape: 'squid', fin: 'full', base: '#ffd866', spot: '#b07a10', depth: [6, 26], s: 1.3, style: 'normal', hab: 'ตำนานของชาวเรือ ขึ้นมาใต้แสงจันทร์เต็มดวงเท่านั้น', rar: 'legend', glow: true, cond: (c) => (c.moonK > 0.85 && c.night > 0.7 ? 1 : 0) * (c.zone === 'front' || c.zone === 'koh' || c.zone === 'secret' ? 1 : 0.2) },
-  { id: 'redgiant', name: 'หมึกยักษ์แดง', sci: 'Dosidicus gigas', kg: [8, 22], price: 900, w: 0.01, len: 0.72, rad: 0.13, shape: 'squid', fin: 'tip', base: '#d9543f', spot: '#7a1d12', depth: [35, 80], s: 2.0, style: 'heavy', hab: 'นักล่าตัวโตจากเขตน้ำลึก ดุและแรงมาก ชอบคืนพายุ', rar: 'legend', cond: (c) => (c.zone === 'abyss' || c.zone === 'secret' ? 1 : 0) * (c.weather === 'storm' ? 2.5 : c.weather === 'rain' ? 1.5 : 1) * (c.depth > 35 ? 1 : 0.1) },
+  { id: 'redgiant', name: 'หมึกยักษ์แดง', sci: 'Dosidicus gigas', kg: [8, 22], price: 900, w: 0.006, len: 0.72, rad: 0.13, shape: 'squid', fin: 'tip', base: '#d9543f', spot: '#7a1d12', depth: [35, 80], s: 2.0, style: 'heavy', hab: 'นักล่าตัวโตจากเขตน้ำลึก ดุและแรงมาก ชอบคืนพายุ', rar: 'legend', cond: (c) => (c.zone === 'abyss' || c.zone === 'secret' ? 1 : 0) * (c.weather === 'storm' ? 2.5 : c.weather === 'rain' ? 1.5 : 1) * (c.depth > 35 ? 1 : 0.1) },
   { id: 'kingfish', name: 'ปลาอินทรี', sci: 'Scomberomorus commerson', kg: [1.5, 7], price: 260, w: 0.03, len: 0.46, rad: 0.06, shape: 'fish', top: '#2f4e6e', belly: '#e2eaef', bars: true, base: '#9fb6c6', spot: '#33465a', depth: [3, 30], s: 1.5, style: 'quick', hab: 'ปลาล่าเหยื่อว่ายเร็ว ดึงสายแรง ตามฝูงหมึกขึ้นมากินกลางน้ำ', rar: 'uncommon', fishy: true, cond: (c) => (c.depth < 30 ? 1 : 0.2) * (c.zone === 'front' || c.zone === 'koh' ? 1.5 : 0.8) },
   { id: 'barracuda', name: 'ปลาสาก', sci: 'Sphyraena jello', kg: [1, 5], price: 180, w: 0.025, len: 0.5, rad: 0.045, shape: 'fish', top: '#53616c', belly: '#dfe4e6', bars: true, base: '#9aa5ad', spot: '#2c3a44', depth: [2, 22], s: 1.4, style: 'quick', hab: 'ตัวยาวฟันคม ชอบแนวน้ำเปลี่ยนสี', rar: 'uncommon', fishy: true, cond: (c) => (c.depth < 22 ? 1 : 0.15) * (c.zone === 'front' ? 2 : 0.6) },
   { id: 'snapper', name: 'ปลากะพงแดง', sci: 'Lutjanus argentimaculatus', kg: [0.8, 4], price: 330, w: 0.035, len: 0.36, rad: 0.07, shape: 'fish', top: '#8a3a2a', belly: '#f2c4ac', base: '#c97a5e', spot: '#6e2a1e', depth: [15, 70], s: 1.35, style: 'heavy', hab: 'อยู่ใกล้พื้น กองหิน และซากเรือ เหยื่อต้องลงไปถึงพื้น', rar: 'uncommon', fishy: true, cond: (c) => (c.depth > c.bottom - 6 ? 1 : 0.1) * (c.zone === 'reef' ? 2 : c.zone === 'wreck' ? 4 : 0.6) },
@@ -2980,6 +2991,7 @@ function fishCtx(depth, bottom) {
 function zoneAt(x, z) {
   for (const w of WRECKS) if (Math.hypot(x - w.x, z - w.z) < 60) return 'wreck';
   if (EXP.secret && EXP.secret.night === S.night && Math.hypot(x - EXP.secret.x, z - EXP.secret.z) < 80) return 'secret';
+  if (Math.hypot(x - ABYSS.x, z - ABYSS.z) < ABYSS.r) return 'abyss';
   return SPOTS[S.spot].id;
 }
 // ---- achievements -> titles and boat decorations
@@ -3030,6 +3042,225 @@ let lbDirty = false;
 // hook for weekly / story / co-op quests (filled in by later systems; must never throw into a catch)
 const PROG_HOOKS = [];
 function progEvent(kind, d) { for (const f of PROG_HOOKS) { try { f(kind, d || {}); } catch (e) { console.warn('progEvent', e); } } }
+// ---- ocean events & exploration ------------------------------------------------------------------------------
+// One event at a time, chosen by the room's host (lowest uid; solo = you) and broadcast with netEmit('oev').
+// The boat is shared, so whoever's boat gets there finishes it for everyone; S.prog.evDone stops double rewards.
+// Logic runs at 4 Hz; per frame only the active prop bobs. Props are built on first use and reused.
+const ABYSS = { x: -150, z: -1050, r: 150 };
+const seaBottom = () => (EXP.zone === 'abyss' ? 70 : SPOTS[S.spot].bottom);
+const EVK = {
+  chest: { name: 'กล่องลอยน้ำ', icon: '📦', r: 10, slow: true, dist: [110, 260], dur: 110, offer: 'เห็นอะไรวิบวับลอยอยู่กลางทะเล น่าจะเป็นกล่องของที่หลุดจากเรือ', go: 'ขับเข้าไปใกล้กล่องแล้วชะลอเรือ พี่ชัยจะเอาตะขอเกี่ยวขึ้นมา' },
+  distress: { name: 'เรือขอความช่วยเหลือ', icon: '🆘', r: 20, slow: true, dist: [180, 380], dur: 150, offer: 'วิทยุ: "เรือเครื่องดับ ลอยลำอยู่ ใครอยู่แถวนี้ช่วยที!"', go: 'ขับไปเทียบเรือที่ยิงพลุแดง แล้วชะลอเรือให้ส่งเชือกได้' },
+  derelict: { name: 'เรือร้าง', icon: '🛶', r: 18, slow: true, dist: [200, 420], dur: 180, offer: 'มีเรือไม่มีคนลอยลำอยู่ ไฟดับทั้งลำ… อาจมีของหลงเหลือ', go: 'ขับไปเทียบเรือร้างแล้วชะลอ พี่ชัยจะข้ามไปค้นดู' },
+  radio: { name: 'สัญญาณวิทยุลึกลับ', icon: '📻', r: 70, dist: [260, 520], dur: 240, offer: 'วิทยุมีเสียงแทรกเป็นพิกัด… "คืนนี้หมึกตัวใหญ่ขึ้นที่จุดนี้"', go: 'ตามพิกัดไป ถึงแล้วตกหมึกแถวนั้น ตัวหายากจะชุมทั้งคืน' },
+  giant: { name: 'หนวดหมึกยักษ์', icon: '🦑', r: 90, dist: [150, 340], dur: 70, offer: 'เรือข้างๆ วิทยุมาว่าเห็นหนวดยักษ์โผล่พ้นน้ำ!', go: 'ไปให้ถึงก่อนมันดำหาย ตกหมึกแถวนั้นมีลุ้นหมึกยักษ์แดง' },
+};
+const EVQ = { t: 0, nextAt: 0, n: 0, sz: 0, hostEmitT: 0, inT: 0, offerT: 0, accepted: false, props: {}, prop: null, beacon: null, buoys: null, said: {} };
+function evHost() { if (!NET.code || !NET.fbUser) return true; const me = NET.fbUser.uid; for (const u of NET.remotes.keys()) if (u < me) return false; return true; }
+function evNight() {
+  EXP.ev = null; EXP.secret = null; EXP.giant = null; EVQ.n = 0; EVQ.said = {}; EVQ.nextAt = 19 * 60 + 10 + Math.random() * 50; evShow();
+}
+function evPick() {
+  const se = NIGHT.season, we = NIGHT.week, w = [];
+  const add = (k, v) => { if (v > 0) w.push([k, v]); };
+  add('chest', 3 * ((se.ev && se.ev.chest) || 1));
+  add('distress', 2 * ((se.ev && se.ev.distress) || 1) * ((we.ev && we.ev.distress) || 1) * (NIGHT.weather === 'storm' || NIGHT.weather === 'rain' ? 1.5 : 1));
+  add('derelict', NIGHT.fog ? 2.5 : 1.3);
+  if (!EVQ.said.radio) add('radio', 1.1);
+  if (!EVQ.said.giant && night > 0.6) add('giant', NIGHT.weather === 'storm' ? 1.6 : NIGHT.moonK > 0.85 ? 1.2 : 0.6);
+  let r = Math.random() * w.reduce((a, b) => a + b[1], 0); for (const [k, v] of w) if ((r -= v) <= 0) return k; return 'chest';
+}
+function evSpot(k) {
+  const K = EVK[k];
+  for (let i = 0; i < 24; i++) {
+    const a = Math.random() * Math.PI * 2, d = rand(K.dist[0], K.dist[1]), x = BW.x + Math.cos(a) * d, z = BW.z + Math.sin(a) * d;
+    if (Math.hypot(x, z) > SEA_R - 80) continue;
+    if (ROCKS.some((r) => Math.hypot((x - r.x) / (r.rx + 30), (z - r.z) / (r.rz + 30)) < 1)) continue;
+    return { x: Math.round(x), z: Math.round(z) };
+  }
+  return { x: Math.round(BW.x * 0.6), z: Math.round(BW.z * 0.6 + 150) };
+}
+function evSpawn(k, at) {
+  const p = at || evSpot(k), id = `${NET.code || 'solo'}-${S.night}-${Math.random().toString(36).slice(2, 8)}`;
+  const ev = { id, k, x: p.x, z: p.z, until: Math.round(gameMin + EVK[k].dur), s: Math.floor(Math.random() * 1e6) };
+  EVQ.n++; EVQ.said[k] = 1; evStart(ev, true);
+  netEmit('oev', ev);
+}
+function evValid(e) { return e && typeof e === 'object' && typeof e.id === 'string' && e.id.length < 60 && EVK[e.k] && [e.x, e.z, e.until].every((n) => typeof n === 'number' && isFinite(n)) && Math.hypot(e.x, e.z) <= SEA_R; }
+function evStart(ev, mine) {
+  if (S.prog.evDone.includes(ev.id)) return;
+  EXP.ev = { id: ev.id, k: ev.k, x: ev.x, z: ev.z, until: ev.until, s: ev.s | 0 }; EVQ.accepted = false; EVQ.inT = 0; EVQ.offerT = 30; EVQ.said[ev.k] = 1;
+  if (ev.k === 'giant') EXP.giant = { x: ev.x, z: ev.z, until: ev.until };
+  sfx('click'); tone(880, 0.12, 0.05, 'sine'); tone(1320, 0.16, 0.04, 'sine', 0.14);
+  evShow(); evProp();
+  if (crew.visible && Math.random() < 0.8) setTimeout(() => crewSay(ev.k === 'distress' ? 'มีคนขอความช่วยเหลือ ไปช่วยกันไหม คนทะเลต้องช่วยกัน' : ev.k === 'giant' ? 'หนวดยักษ์!? ชีวิตนี้พี่เคยเห็นแค่ครั้งเดียว ไปดูกัน!' : ev.k === 'radio' ? 'วิทยุแปลกๆ นะ… แต่ลองไปก็ไม่เสียหาย' : ev.k === 'derelict' ? 'เรือร้างกลางทะเล ระวังหน่อยนะ' : 'เห็นไหม มีอะไรลอยอยู่ตรงนั้น', 5, true), 900);
+}
+function evAccept(on) {
+  if (!EXP.ev) return;
+  if (on) { EVQ.accepted = true; toast(`${EVK[EXP.ev.k].icon} ตามไปดู: ${EVK[EXP.ev.k].go}`, 'good'); }
+  else { EVQ.accepted = false; EVQ.offerT = 0; }
+  evShow();
+}
+function evEnd(why) { EXP.ev = null; EVQ.accepted = false; evShow(); evProp(); if (evHost()) EVQ.nextAt = gameMin + rand(70, 140); }
+function evFinish(ev, local) {
+  if (!ev || S.prog.evDone.includes(ev.id)) return;
+  S.prog.evDone.push(ev.id); if (S.prog.evDone.length > 80) S.prog.evDone.splice(0, S.prog.evDone.length - 80);
+  const r = rng((ev.s | 0) + 17), K = EVK[ev.k], relK = S.prog.rel >= 80 ? 1.2 : 1, helpK = ((NIGHT.week && NIGHT.week.help) || 1) * relK; let msg = '';
+  if (ev.k === 'chest') {
+    const m = Math.round((300 + r() * 600) * relK); S.money += m; S.prog.stats.chests++; msg = `เปิดกล่องลอยน้ำ ได้เงิน ${baht(m)}`;
+    if (r() < 0.25 && local && evHost()) { msg += ' · ในกล่องมีแผนที่สมบัติ!'; setTimeout(() => { if (!EXP.ev && !nightOver) { const a = Math.random() * 6.28, d = rand(380, 560); evSpawn('chest', { x: Math.round(clamp(BW.x + Math.cos(a) * d, -SEA_R * 0.7, SEA_R * 0.7)), z: Math.round(clamp(BW.z + Math.sin(a) * d, -SEA_R * 0.7, SEA_R * 0.7)) }); } }, 2500); }
+  } else if (ev.k === 'distress') {
+    const m = Math.round((500 + r() * 500) * helpK); S.money += m; S.prog.stats.helped++; if (typeof relGain === 'function') relGain(3); else S.prog.rel = Math.min(100, S.prog.rel + 3); msg = `ช่วยลากเรือที่เครื่องดับสำเร็จ เขาให้เงินขอบคุณ ${baht(m)}`;
+    if (crew.visible) crewSay('ทำดีแล้ว วันหนึ่งเราอาจเป็นคนที่ต้องขอให้เขาช่วยบ้าง', 5, true);
+  } else if (ev.k === 'derelict') {
+    const m = Math.round((150 + r() * 350) * relK), f = 12 + Math.round(r() * 10); S.money += m; S.fuel = Math.min(100, S.fuel + f); fuelWarned = false; msg = `ค้นเรือร้าง ได้เงิน ${baht(m)} กับน้ำมัน ${f} ลิตร`;
+    if (r() < 0.2 && !S.lures.glow) { S.lures.glow = true; msg += ' · เจอเหยื่อเรืองแสงด้วย!'; }
+  } else if (ev.k === 'radio') {
+    EXP.secret = { x: ev.x, z: ev.z, night: S.night }; S.prog.found.secret = (S.prog.found.secret || 0) + 1; msg = 'ถึงพิกัดลึกลับแล้ว! แถวนี้หมึกหายากชุมไปทั้งคืน';
+  } else if (ev.k === 'giant') {
+    S.prog.found.giant = (S.prog.found.giant || 0) + 1; msg = 'ทันเห็นหนวดยักษ์ดำลงไป! ตกหมึกแถวนี้ลุ้นตัวยักษ์ได้';
+  }
+  sfx('coin'); toast(`${K.icon} ${msg}`, 'good'); progEvent('event', { k: ev.k }); checkAch(); lbDirty = true; save(); lampText();
+  if (local) netEmit('oevDone', { id: ev.id });
+  if (ev.k === 'radio' || ev.k === 'giant') { EXP.ev = null; evShow(); evProp(); if (evHost()) EVQ.nextAt = gameMin + rand(70, 140); }
+  else { EVQ.fadeT = 3; EXP.ev = null; if (EVQ.beacon) EVQ.beacon.visible = false; evShow(); if (evHost()) EVQ.nextAt = gameMin + rand(70, 140); }
+}
+function evNet(m) {
+  const d = m.data;
+  if (m.type === 'oev') { if (!evValid(d) || S.prog.evDone.includes(d.id) || (EXP.ev && EXP.ev.id === d.id)) return; evStart(d, false); toast(`${EVK[d.k].icon} ${EVK[d.k].name}`, '', m.name); }
+  else if (m.type === 'oevDone') { if (d && EXP.ev && EXP.ev.id === d.id) evFinish(EXP.ev, false); }
+}
+// ---- the 3D bits: buoys at wrecks, a light beacon over the event, and the event's own prop
+function evBuildBuoys() {
+  const g = [], body = std(0xe8642c, 0.6), lampM = new THREE.MeshBasicMaterial({ color: 0xffe08a }), ring = std(0xf0f0ea, 0.7);
+  for (const w of WRECKS.concat([{ id: 'abyss', x: ABYSS.x, z: ABYSS.z, deep: true }])) {
+    const b = new THREE.Group(); b.position.set(w.x + 6, 0, w.z + 4);
+    const c = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.75, 1.6, 10), w.deep ? std(0x2a3f8a, 0.6) : body); c.position.y = 0.4; b.add(c);
+    const s = new THREE.Mesh(new THREE.CylinderGeometry(0.78, 0.78, 0.25, 10), ring); s.position.y = 0.55; b.add(s);
+    const p = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 1.6, 5), ring); p.position.y = 1.9; b.add(p);
+    const l = new THREE.Mesh(new THREE.SphereGeometry(0.18, 8, 6), lampM); l.position.y = 2.75; b.add(l);
+    b.visible = false; scene.add(b); g.push({ w, b, l });
+  }
+  EVQ.lampM = lampM; return g;
+}
+function evBeacon() {
+  if (EVQ.beacon) return EVQ.beacon;
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 1.6, 70, 10, 1, true), new THREE.MeshBasicMaterial({ color: 0xffb347, transparent: true, opacity: 0.22, blending: THREE.AdditiveBlending, depthWrite: false, fog: false, side: THREE.DoubleSide }));
+  m.position.y = 35; m.visible = false; m.frustumCulled = true; scene.add(m); return (EVQ.beacon = m);
+}
+function evMakeProp(k) {
+  const g = new THREE.Group();
+  if (k === 'chest') {
+    box(1.1, 0.6, 0.8, std(0x7a5432, 0.85), 0, 0.15, 0, g); box(1.14, 0.12, 0.84, std(0xc9a24a, 0.4, 0.6), 0, 0.42, 0, g);
+    const f = new THREE.Mesh(new THREE.SphereGeometry(0.12, 8, 6), new THREE.MeshBasicMaterial({ color: 0xfff0b0 })); f.position.set(0, 0.6, 0); g.add(f); g.userData.blink = f;
+  } else if (k === 'distress' || k === 'derelict') {
+    const dead = k === 'derelict', hull = dead ? std(0x4b4036, 0.95) : M.navy, cab = dead ? std(0x77705f, 0.9) : M.white;
+    box(3, 1.4, 11, hull, 0, 0.3, 0, g); box(2.4, 1.6, 3, cab, 0, 1.8, 2.2, g); box(0.15, 4, 0.15, cab, 0, 3, -2, g);
+    if (!dead) { const f = new THREE.Sprite(new THREE.SpriteMaterial({ map: lampGlowTex, color: 0xff4030, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, fog: false })); f.position.set(0, 9, 0); f.scale.setScalar(7); g.add(f); g.userData.blink = f; }
+    else g.rotation.z = 0.18;
+  } else if (k === 'giant') {
+    const mat = std(0x7a1f22, 0.55), arms = [];
+    for (let i = 0; i < 5; i++) {
+      const a = i / 5 * Math.PI * 2, pts = []; for (let j = 0; j <= 8; j++) { const t = j / 8; pts.push(new V3(Math.sin(t * 2.4) * 2.2 * t, t * 9, Math.cos(t * 3) * 0.6 * t)); }
+      const m = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 16, 0.5, 6, false), mat);
+      const piv = new THREE.Group(); piv.position.set(Math.cos(a) * 6, -9, Math.sin(a) * 6); piv.rotation.y = -a; piv.add(m); g.add(piv); arms.push(piv);
+    }
+    g.userData.arms = arms;
+  } else return null;
+  g.visible = false; scene.add(g); return g;
+}
+function evProp() {
+  if (EVQ.prop) EVQ.prop.visible = false; EVQ.prop = null;
+  const b = evBeacon(); b.visible = false;
+  const ev = EXP.ev; if (!ev) return;
+  if (!EVQ.props[ev.k] && ev.k !== 'radio') EVQ.props[ev.k] = evMakeProp(ev.k);
+  EVQ.prop = EVQ.props[ev.k] || null;
+  if (EVQ.prop) { EVQ.prop.position.set(ev.x, waveH(ev.x, ev.z, T), ev.z); EVQ.prop.rotation.y = (ev.s % 628) / 100; EVQ.prop.visible = !ISL.on && Math.hypot(ev.x - BW.x, ev.z - BW.z) < (ev.k === 'giant' ? 420 : 700); }
+  b.position.x = ev.x; b.position.z = ev.z; b.material.color.setHex(ev.k === 'distress' ? 0xff5040 : ev.k === 'radio' ? 0x7fd3ff : ev.k === 'giant' ? 0xff3060 : 0xffb347);
+  b.visible = ev.k !== 'giant';
+}
+// ---- DOM: offer / tracker box
+function evShow() {
+  const box = $('evBox'); if (!box) return;
+  const ev = EXP.ev, show = !!ev && started && !ISL.on && (EVQ.accepted || EVQ.offerT > 0);
+  box.hidden = !show; if (!show) return;
+  const K = EVK[ev.k];
+  $('evYes').hidden = EVQ.accepted; $('evNo').textContent = EVQ.accepted ? 'เลิกตาม (N)' : 'ข้าม (N)';
+  $('evP').textContent = EVQ.accepted ? K.go : K.offer;
+  evTrack();
+}
+function evTrack() {
+  const ev = EXP.ev; if (!ev || $('evBox').hidden) return;
+  const K = EVK[ev.k], dx = ev.x - BW.x, dz = ev.z - BW.z, d = Math.hypot(dx, dz), hd = bearingOf(Math.sin(BW.yaw), Math.cos(BW.yaw));
+  let rel = bearingOf(dx, dz) - hd; rel = ((rel + 540) % 360) - 180;
+  const left = Math.max(0, Math.round(ev.until - gameMin));
+  const t = `${K.icon} ${K.name} · ${d < K.r ? 'ถึงแล้ว' : Math.round(d / 10) * 10 + ' ม. ' + compassName(bearingOf(dx, dz))} · เหลือ ${left} นาที`;
+  if ($('evT').textContent !== t) $('evT').textContent = t;
+  $('evArrow').style.transform = `rotate(${Math.round(rel)}deg)`;
+  const tr = $('evTrack'), on = EVQ.inT > 0 && K.slow; tr.hidden = !on; if (on) $('evFill').style.width = Math.min(100, EVQ.inT / 2 * 100).toFixed(0) + '%';
+}
+// ---- 4 Hz logic + per-frame bobbing
+function expTick(dt) {
+  if (!started || !NIGHT) return;
+  const ev = EXP.ev;
+  if (EVQ.prop && EVQ.prop.visible && !(EVQ.fadeT > 0)) {
+    const p = EVQ.prop; p.position.y = waveH(p.position.x, p.position.z, T) - (ev && ev.k === 'distress' || ev && ev.k === 'derelict' ? 0.4 : 0.1);
+    if (p.userData.blink) p.userData.blink.visible = Math.sin(T * 5) > -0.2;
+    if (p.userData.arms) p.userData.arms.forEach((a, i) => { const ph = T * 0.6 + i * 1.3, up = Math.max(0, Math.sin(ph)); a.position.y = -9 + up * 7.5; a.rotation.z = Math.sin(T * 1.1 + i) * 0.35; a.rotation.x = Math.cos(T * 0.9 + i * 2) * 0.25; });
+  }
+  if (EVQ.fadeT > 0) { EVQ.fadeT -= dt; if (EVQ.prop) EVQ.prop.position.y -= dt * 0.4; if (EVQ.fadeT <= 0) evProp(); }
+  if (EVQ.beacon && EVQ.beacon.visible) EVQ.beacon.material.opacity = 0.16 + 0.08 * Math.sin(T * 3);
+  if (EVQ.buoys && EVQ.lampM) EVQ.lampM.color.setScalar(Math.sin(T * 3.2) > 0.6 ? 1 : 0.15);
+  EVQ.t += dt; if (EVQ.t < 0.25) return; const tk = Math.min(EVQ.t, 1); EVQ.t = 0; // real elapsed time, even at low fps
+  // where are we: wreck / secret / abyss / spot
+  const z0 = EXP.zone; EXP.zone = ISL.on ? 'island' : zoneAt(BW.x, BW.z);
+  if (EXP.zone !== z0 && !ISL.on && !traveling) evZone(EXP.zone);
+  if (!EVQ.buoys) EVQ.buoys = evBuildBuoys();
+  for (const o of EVQ.buoys) o.b.visible = !ISL.on && (!o.w.deep || !!S.prog.found.abyss) && Math.hypot(o.b.position.x - BW.x, o.b.position.z - BW.z) < 650;
+  // the room host schedules the night's events
+  if (evHost() && !ev && !nightOver && !traveling && !ISL.on && gameMin >= EVQ.nextAt && gameMin < 1700 && EVQ.n < 6) evSpawn(evPick());
+  if (NET.code && evHost() && NET.remotes.size > EVQ.sz && EXP.ev) { const e = EXP.ev; setTimeout(() => { if (EXP.ev === e) netEmit('oev', e); }, 1500); }
+  EVQ.sz = NET.code ? NET.remotes.size : 0;
+  if (!ev) return;
+  if (gameMin > ev.until || nightOver) { if (EVQ.accepted) toast(`${EVK[ev.k].icon} ${EVK[ev.k].name} หายไปแล้ว ไม่ทันซะแล้ว`); evEnd('late'); return; }
+  if (EVQ.offerT > 0 && !EVQ.accepted) { EVQ.offerT -= tk; if (EVQ.offerT <= 0) evShow(); }
+  if (EVQ.prop) EVQ.prop.visible = !ISL.on && Math.hypot(ev.x - BW.x, ev.z - BW.z) < (ev.k === 'giant' ? 420 : 700);
+  if (EVQ.beacon) EVQ.beacon.visible = !ISL.on && ev.k !== 'giant';
+  const K = EVK[ev.k], d = Math.hypot(ev.x - BW.x, ev.z - BW.z);
+  if (d < K.r && !ISL.on && !traveling && (!K.slow || Math.abs(BW.v) < 2.6)) { EVQ.inT += tk; if (EVQ.inT >= (K.slow ? 2 : 0.25)) { evFinish(ev, true); return; } } else EVQ.inT = 0;
+  evTrack();
+}
+function evZone(z) {
+  const F = S.prog.found;
+  if (z === 'wreck') { const w = WRECKS.find((w) => Math.hypot(BW.x - w.x, BW.z - w.z) < 60); if (w && !F[w.id]) { F[w.id] = S.night; S.prog.stats.wrecks++; toast(`🧭 ค้นพบ${w.name}! ใต้น้ำแถวนี้มีปลาใหญ่หลบอยู่ และอาจมีกล่องเหรียญติดเบ็ดขึ้นมา`, 'good'); if (crew.visible) crewSay('ตรงนี้แหละซากเรือ ปลาเก๋ากับปลากะพงชอบหลบอยู่ข้างล่าง หย่อนเหยื่อให้ถึงพื้นนะ', 6, true); progEvent('found', { id: w.id }); checkAch(); save(); } }
+  if (z === 'abyss' && !F.abyss) { F.abyss = S.night; toast('🧭 ค้นพบเขตน้ำลึก! พื้นทะเลลึกกว่า 70 เมตร สัตว์แปลกๆ อยู่ที่นี่', 'good'); if (crew.visible) crewSay('น้ำดำสนิทเลย… ที่นี่แหละที่ลือกันว่ามีหมึกยักษ์แดง', 6, true); progEvent('found', { id: 'abyss' }); checkAch(); save(); }
+  if (z === 'abyss') toast('เข้าเขตน้ำลึก · พื้นทะเล ~70 ม.');
+  if (z === 'secret' && EXP.secret) toast('📻 ถึงพิกัดลึกลับ หมึกหายากชุมแถวนี้', 'good');
+}
+// rows for the helm HUD + marks on the radar
+function expTargets() {
+  const out = [];
+  if (EXP.ev) out.push({ name: `${EVK[EXP.ev.k].icon} ${EVK[EXP.ev.k].name}`, x: EXP.ev.x, z: EXP.ev.z, col: '#ff8a5c', ev: true });
+  if (EXP.secret && EXP.secret.night === S.night) out.push({ name: '📻 พิกัดลึกลับ', x: EXP.secret.x, z: EXP.secret.z, col: '#7fd3ff' });
+  for (const w of WRECKS) out.push({ name: (S.prog.found[w.id] ? '⚓ ' : '❔ ') + w.name, x: w.x, z: w.z, col: '#c9a0ff' });
+  if (S.prog.found.abyss) out.push({ name: '🌑 เขตน้ำลึก', x: ABYSS.x, z: ABYSS.z, col: '#7f9bff' });
+  return out;
+}
+function expRadar(rc, R) {
+  for (const t of expTargets()) {
+    const dx = t.x - BW.x, dz = t.z - BW.z, d = Math.hypot(dx, dz); if (d < 30) continue;
+    const k = d < 40 ? d / 45 : 0.9, px = dx / d * R * k, py = dz / d * R * k;
+    rc.fillStyle = t.col; rc.save(); rc.translate(px, py); rc.rotate(Math.PI / 4); const s = t.ev ? 6 + Math.sin(T * 6) * 1.5 : 4.5; rc.fillRect(-s, -s, s * 2, s * 2); rc.restore();
+  }
+}
+if (!EXP.zone) EXP.zone = '';
+addEventListener('keydown', (e) => {
+  if (!EXP.ev || $('evBox').hidden || menuOpen || (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName))) return;
+  if (e.code === 'KeyY' && !EVQ.accepted) evAccept(true);
+  else if (e.code === 'KeyN') evAccept(false);
+});
+$('evYes').addEventListener('click', (e) => { e.stopPropagation(); evAccept(true); });
+$('evNo').addEventListener('click', (e) => { e.stopPropagation(); evAccept(false); });
 let NIGHT = null;
 function moonName(k, waxing) { if (k < 0.12) return 'เดือนมืด'; if (k > 0.9) return 'เดือนเพ็ญ'; return waxing ? 'ข้างขึ้น' : 'ข้างแรม'; }
 function setupNight() {
@@ -3041,6 +3272,7 @@ function setupNight() {
   const phase = ((S.night + 2) % 30) / 30, moonK = 0.5 - 0.5 * Math.cos(phase * 2 * Math.PI);
   const market = {}; for (const sp of SPECIES) market[sp.id] = marketAt(S.night, sp.id) * ((we.price && we.price[sp.id]) || 1);
   NIGHT = { season: se, week: we, fog, weather, moonK, moon: moonName(moonK, phase < 0.5), market, ice: false, blackMul: 0.8 + r() * 0.6, quests: makeQuests(r), stats: { count: 0, kg: 0 } };
+  evNight();
 }
 function makeQuests(r) {
   const pick = (a) => a[Math.floor(r() * a.length)];
@@ -3095,7 +3327,7 @@ let sonarAcc = 0;
 function heat(v) { v = clamp(v, 0, 1); if (v < 0.33) return `rgb(${20 + v * 120 | 0},${60 + v * 400 | 0},${120 + v * 200 | 0})`; if (v < 0.66) return `rgb(${60 + (v - 0.33) * 560 | 0},${190 + (v - 0.33) * 150 | 0},${120 - (v - 0.33) * 300 | 0})`; return `rgb(255,${240 - (v - 0.66) * 500 | 0},40)`; }
 function drawSonar(dt) {
   if (!S.up.sonar) return;
-  const Wd = sonarCv.width, H = sonarCv.height, maxD = 45, bottom = SPOTS[S.spot].bottom;
+  const Wd = sonarCv.width, H = sonarCv.height, maxD = 45, bottom = seaBottom();
   sonarAcc += dt;
   if (sonarAcc > 0.12) {
     sonarAcc = 0; sh2.drawImage(sonarHist, -3, 0);
@@ -3397,7 +3629,9 @@ function helmHud() {
   $('hhWho').textContent = HELM.on ? (TOUCH ? 'จอย = เร่ง/เลี้ยว · ปุ่มเขียว = ออก' : 'W/S เร่ง/ถอย · A/D เลี้ยว · Space เบรก · G สมอ · E ออก') : drv ? `${drv} กำลังขับ` : 'เรือกำลังแล่น';
   const rows = SPOT_POS.map(([sx, sz], i) => { const dx = sx - BW.x, dz = sz - BW.z, d = Math.hypot(dx, dz); let rel = bearingOf(dx, dz) - hd; rel = ((rel + 540) % 360) - 180; return { i, d, rel }; });
   const html = rows.map((r) => `<div class="hhRow${r.i === S.spot && r.d < 200 ? ' here' : ''}"><i style="transform:rotate(${Math.round(r.rel)}deg)">▲</i><span>${SPOTS[r.i].name}</span><b>${r.d < 150 ? 'อยู่ที่นี่' : r.d < 1000 ? Math.round(r.d / 10) * 10 + ' ม.' : (r.d / 1000).toFixed(1) + ' กม.'}</b></div>`).join('');
-  const sp = $('hhSpots'); if (sp.dataset.k !== html) { sp.dataset.k = html; sp.innerHTML = html; }
+  const tg = expTargets(), near = tg.filter((t) => !t.ev && !t.name.startsWith('📻')).map((t) => ({ t, d: Math.hypot(t.x - BW.x, t.z - BW.z) })).sort((a, b) => a.d - b.d)[0];
+  let html2 = html; for (const t of tg.filter((t) => t.ev || t.name.startsWith('📻')).concat(near ? [near.t] : [])) { const dx = t.x - BW.x, dz = t.z - BW.z, d = Math.hypot(dx, dz); let rel = bearingOf(dx, dz) - hd; rel = ((rel + 540) % 360) - 180; html2 += `<div class="hhRow x"><i style="transform:rotate(${Math.round(rel)}deg);color:${t.col}">▲</i><span>${t.name}</span><b>${d < 60 ? 'อยู่ที่นี่' : d < 1000 ? Math.round(d / 10) * 10 + ' ม.' : (d / 1000).toFixed(1) + ' กม.'}</b></div>`; }
+  const sp = $('hhSpots'); if (sp.dataset.k !== html2) { sp.dataset.k = html2; sp.innerHTML = html2; }
 }
 // anchor rope from the bow while anchored
 const anchorLine = makeLine(0x8b6c43, 0.9);
@@ -3704,7 +3938,7 @@ const TMAX = 1.45;
 function biteRate(depth, horiz, useJig) {
   let r = 0.015 + (useJig && jigT < 2.5 ? 0.07 : 0);
   r += 0.16 * school.dens * Math.exp(-(((depth - school.depth) / school.spread) ** 2));
-  const sp = SPOTS[S.spot]; if (depth > sp.bottom - 2) r += 0.04;
+  if (depth > seaBottom() - 2) r += 0.04;
   if (depth < 2) r *= 0.2;
   r *= lampsLive() ? lerp(0.35, 1.0, night) * (1 + 0.3 * S.up.lamp) * lerp(1.3, 0.75, NIGHT.moonK) : lerp(0.3, 0.1, night);
   r *= 1 + 0.3 * WX.rain;
@@ -3717,7 +3951,7 @@ function pickSpecies(depth) {
   if (DT.k > 0.5 && Math.random() < 0.3) { const q = Math.random(); return q < 0.55 ? SP.mutant : q < 0.8 ? SP.alien : SP.doll; }
   if (S.night >= 3 && curWater().anomaly && Math.random() < 0.04) return SP.mutant;
   if (Math.random() < 0.05) return Math.random() < 0.75 ? SP.mackerel : SP.sandal;
-  const spot = SPOTS[S.spot], bottom = spot.bottom;
+  const spot = SPOTS[S.spot], bottom = seaBottom();
   const ctx = fishCtx(depth, bottom);
   if (ctx.zone === 'wreck' && depth > bottom - 6 && Math.random() < 0.035) return SP.coinbox;
   const ws = SPECIES.map((s) => {
@@ -3805,7 +4039,7 @@ function updateFishing(dt) {
     else if (lure.pos.y < waveH(lure.pos.x, lure.pos.z, T)) { lure.x = lure.pos.x; lure.z = lure.pos.z; lure.depth = 0; st = 'water'; interest = 0; biteAt = rand(0.6, 1.4); nibbleT = 0; tutAdvance('cast'); spawnSplash(tmp.set(lure.x, waveH(lure.x, lure.z, T), lure.z), 0.8); sfx('splash'); }
     setLine(fishLine, tipW, lure.pos, 0.15);
   } else if (st === 'water' || st === 'bite' || st === 'fight') {
-    const bottom = SPOTS[S.spot].bottom - 0.3;
+    const bottom = seaBottom() - 0.3;
     if (st === 'water') {
       if (reeling) { const rem = reelStep(1.5 + 0.2 * S.up.reel, dt); if (rem < 1.0 || (lure.depth < 0.4 && Math.hypot(tipW.x - lure.x, tipW.z - lure.z) < 2.2)) { st = 'idle'; lure.pos.copy(tipW); lure.vel.set(0, 0, 0); } }
       else lure.depth = Math.min(bottom, lure.depth + (S.lure === 'fast' ? 1.9 : 0.95) * dt);
@@ -4454,6 +4688,7 @@ function onNetEvent(m) {
   else if (m.type === 'gen') { remoteGenBreak(); toast('ไฟดับ! เครื่องปั่นไฟเสีย', 'bad', m.name); }
   else if (m.type === 'genFix') { remoteGenFix(); toast('ซ่อมเครื่องปั่นไฟเรียบร้อยแล้ว ไฟกลับมาแล้ว', 'good', m.name); }
   else if (m.type === 'fuel') { const amt = num(m.data && m.data.amt, 1, 100, 0); if (amt > 0) { S.fuel = Math.min(100, S.fuel + amt); fuelWarned = false; save(); lampText(); toast(`${m.name} เติมน้ำมันเครื่องปั่นไฟแล้ว ตอนนี้ ${Math.ceil(S.fuel)}%`, 'good'); } }
+  else if (m.type === 'oev' || m.type === 'oevDone') evNet(m);
   else if (m.type === 'island') { islandSync(!!(m.data && m.data.on), m.name); }
   else if (m.type === 'nap') { const mins = num(m.data && m.data.mins, 1, 30, 0); if (mins > 0 && !nightOver) { gameMin += mins; toast(`${m.name} งีบหลับไป ${Math.round(mins)} นาที เวลาเดินไปด้วย`, 'good'); } }
   else if (m.type === 'gull') { remoteGull(); toast('นกนางนวลบินมาที่ถังหมึกแล้ว! ไปไล่มันเร็ว', 'bad', m.name); }
@@ -6174,7 +6409,7 @@ function promptFor() {
       if (holdT >= 0.22 && primaryHeld) return 'กำลังม้วนเก็บสาย… ปล่อยเพื่อหยุด';
       let t = nibbleT > 0 ? 'มีอะไรมาตอด… อย่าเพิ่งกด รอให้กินจริง' : (T1 ? 'รอลุ้นหมึกกิน · แตะ = โยกเหยื่อ ยกขึ้น ล่อหมึก (ปล่อยแล้วจมเอง) · กดค้าง = ม้วนเก็บ · ปุ่ม "เก็บสาย" = เก็บทันที' : 'รอลุ้นหมึกกิน · แตะ = โยกเหยื่อ ยกขึ้น ล่อหมึก (ปล่อยแล้วจมเอง) · กดค้าง = ม้วนเก็บ · กด Q = เก็บทันที');
       if (lure.depth < 2) t = 'รอให้เหยื่อจมลงไปก่อน';
-      if (lure.depth >= SPOTS[S.spot].bottom - 0.4) t = 'เหยื่อถึงพื้นแล้ว · ' + t;
+      if (lure.depth >= seaBottom() - 0.4) t = 'เหยื่อถึงพื้นแล้ว · ' + t;
       return t;
     }
     case 'bite': return 'หมึกกิน! กดค้างเลย';
@@ -6247,6 +6482,7 @@ function drawRadar(dt) {
   const sc = R / 45;
   if (st === 'water' || st === 'bite' || st === 'fight') { rc.fillStyle = '#ffb347'; rc.beginPath(); rc.arc((lure.x - boat.position.x) * sc, (lure.z - boat.position.z) * sc, 6, 0, 7); rc.fill(); }
   rc.font = '700 15px Sarabun, sans-serif'; SPOT_POS.forEach(([sx, sz], i) => { const dx = sx - BW.x, dz = sz - BW.z, d = Math.hypot(dx, dz); if (d < 40) return; const px = dx / d * R * 0.9, py = dz / d * R * 0.9; rc.fillStyle = i === S.spot ? '#7ff0b0' : '#ffd166'; rc.beginPath(); rc.arc(px, py, 5.5, 0, 7); rc.fill(); rc.fillStyle = '#04121e'; rc.fillText(String(i + 1), px, py + 0.5); });
+  expRadar(rc, R);
   for (const r of NET.remotes.values()) if (r.line.visible) { rc.fillStyle = '#ffe2b0'; rc.beginPath(); rc.arc((r.lx - boat.position.x) * sc, (r.lz - boat.position.z) * sc, 5, 0, 7); rc.fill(); }
   rc.rotate(sweep); const sg = rc.createLinearGradient(0, 0, R, 0); sg.addColorStop(0, 'rgba(140,220,255,0)'); sg.addColorStop(1, 'rgba(140,220,255,.28)'); rc.fillStyle = sg; rc.beginPath(); rc.moveTo(0, 0); rc.arc(0, 0, R - 4, -0.5, 0); rc.closePath(); rc.fill();
   rc.restore();
@@ -6706,7 +6942,7 @@ function frame() {
   safe('updateCrew', () => updateCrew(dt)); safe('updateVisuals', () => updateVisuals(dt)); safe('updateRepair', () => updateRepair(dt)); safe('updateSparks', () => updateSparks(dt));
   safe('updateNeeds', () => updateNeeds(dt)); safe('updateWater', () => updateWater(dt)); safe('updateEat', () => { updateEat(dt); updateBoil3D(dt); }); safe('updateCrate', () => { updateCrate(dt); updateStations(dt); updatePots(dt); updateFuel(dt); }); safe('updateBelowDeck', () => updateBelowDeck(dt));
   if (started) { safe('updateHUD', () => updateHUD(dt, ts)); HUDC.acc += dt; if (HUDC.acc >= 0.05) { const a = HUDC.acc; HUDC.acc = 0; safe('drawRadar', () => drawRadar(a)); safe('drawSonar', () => drawSonar(a)); } }
-  safe('lights', lightSlots); safe('anchor', updateAnchorLine); safe('ambience', () => ambience(dt));
+  safe('exp', () => expTick(dt)); safe('lights', lightSlots); safe('anchor', updateAnchorLine); safe('ambience', () => ambience(dt));
   HUDC.n++; renderer.shadowMap.needsUpdate = sunL.intensity > 0.02 && (qName !== 'low' || HUDC.n % 2 === 0);
   safe('render', () => { if (composer && !ERRS.has('composer')) { try { composer.render(); } catch (e) { ERRS.add('composer'); console.error(e); renderer.render(scene, camera); } } else renderer.render(scene, camera); });
 }
