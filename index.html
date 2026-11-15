@@ -323,6 +323,7 @@ body.touch #mBar{display:flex;position:absolute;left:50%;transform:translateX(-5
 body.touch #mBar button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-width:52px;min-height:48px;padding:3px 6px;border:0;border-radius:12px;background:transparent;color:var(--ink);font:600 11px var(--body);touch-action:manipulation}
 body.touch #mBar button span{font-size:17px;line-height:1}
 body.touch #mBar button em{font-style:normal}
+@media (max-width:920px){body.touch #mBar button{min-width:44px;padding:3px 3px;font-size:10.5px}body.touch #mBar{gap:1px}}
 body.touch #mBar button:active,body.touch #mBar button[aria-pressed="true"]{background:rgba(255,255,255,.14)}
 body.touch #bMenu,body.touch #bMusic{display:none}
 body.touch #radarWrap{left:auto;bottom:auto;right:calc(10px + env(safe-area-inset-right,0px));top:calc(8px + env(safe-area-inset-top,0px));width:84px;height:84px}
@@ -417,9 +418,20 @@ body.touch #alerts{top:calc(56px + env(safe-area-inset-top,0px))}
 .mhead .money{margin-left:auto;font:600 18px var(--display);color:var(--hull)}
 .mhead .x{min-height:40px;min-width:40px;padding:0;font-size:20px}
 .tabs{display:flex;gap:4px;padding:10px 12px 0;overflow-x:auto;border-bottom:1px solid var(--line)}
+@media (max-height:520px){
+  #menu,#kitchen{padding-block:max(6px,env(safe-area-inset-top,0px))}
+  .mpanel{max-height:100%;border-radius:12px}
+  .mhead{padding:8px 12px 0}.mhead h2{font-size:18px}.mhead .x{min-height:38px;min-width:38px}
+  .tabs{padding:4px 8px 0}
+  .tab{min-height:38px!important;padding:6px 11px!important;font-size:13.5px!important}
+  .mbody{padding:10px 12px 12px;gap:9px}
+  body.touch .toast{font-size:12.5px;padding:5px 11px;line-height:1.35}
+  body.touch #toasts{top:calc(56px + env(safe-area-inset-top,0px));width:min(380px,calc(100% - 330px));min-width:260px}
+}
 .tab{flex:none;font:600 14px var(--body);padding:9px 13px;min-height:42px;border:0;border-bottom:3px solid transparent;background:none;color:var(--mute);cursor:pointer}
 .tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--hull)}
-.mbody{padding:14px 16px 18px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;font-size:14.5px}
+.mpanel>.mhead,.mpanel>.tabs{flex-shrink:0}
+.mbody{flex:1 1 auto;min-height:0;padding:14px 16px 18px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;font-size:14.5px}
 .mbody h3{margin:4px 0 0;font:600 16px var(--display)}
 .mbody .hint{color:var(--mute);font-size:13.5px;line-height:1.45}
 .grid2{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
@@ -600,6 +612,7 @@ body.touch #card.rel{bottom:calc(64px + env(safe-area-inset-bottom,0px))}
     <button type="button" id="mbQuest"><span aria-hidden="true">✓</span>ภารกิจ</button>
     <button type="button" id="mbMusic"><span aria-hidden="true">♪</span>เพลง</button>
     <button type="button" id="mbStat"><span aria-hidden="true">ⓘ</span>สถานะ</button>
+    <button type="button" id="mbFull" hidden><span aria-hidden="true">⛶</span><em id="mbFullL">เต็มจอ</em></button>
     <button type="button" id="mbHud" aria-pressed="false"><span aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg></span><em id="mbHudL">ซ่อน</em></button>
   </nav>
   <button class="tbtn" id="bMusic" type="button" aria-label="เปิดเครื่องเล่นเพลง">
@@ -655,6 +668,7 @@ body.touch #card.rel{bottom:calc(64px + env(safe-area-inset-bottom,0px))}
       <button class="btn" type="button" data-q="high">สูง</button>
       <button class="btn" type="button" data-q="medium">กลาง</button>
       <button class="btn" type="button" data-q="low">ต่ำ (ลื่นกว่า)</button>
+      <button class="btn" type="button" data-q="min">ประหยัดสุด</button>
     </div>
     <div class="seg"><label for="volStart">ระดับเสียง</label><input type="range" id="volStart" min="0" max="100" style="width:160px;accent-color:#f08a2b"></div>
     <div class="stat" id="saveStat"></div>
@@ -936,9 +950,9 @@ S.story = Object.assign({ pages: 0, done: false, seen: false }, S.story); if (!S
 function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) {} }
 if (S.total > 0) $('saveStat').innerHTML = `เงิน <b>${baht(S.money)}</b> · จับได้ทั้งหมด <b>${S.total}</b> ตัว · คืนที่ <b>${S.night}</b>` + (S.title ? ` · ฉายา <b>${S.title}</b>` : '');
 
-const QUAL = { high: { pr: 2, bloom: true, shadow: 2048, N: 240, lights: 4, rain: 1400 }, medium: { pr: 1.5, bloom: true, shadow: 1024, N: 190, lights: 4, rain: 1000 }, low: { pr: 1, bloom: false, shadow: 512, N: 140, lights: 2, rain: 450, far: 3000 } };
-const QORDER = ['high', 'medium', 'low'];
-const hwGuess = () => { const cores = navigator.hardwareConcurrency || 4, mem = navigator.deviceMemory || 4; if (TOUCH) return cores <= 4 || mem <= 3 ? 'low' : mem <= 6 ? 'medium' : 'high'; return cores <= 2 ? 'medium' : 'high'; };
+const QUAL = { high: { pr: 2, bloom: true, shadow: 2048, N: 240, lights: 4, rain: 1400 }, medium: { pr: 1.5, bloom: true, shadow: 1024, N: 190, lights: 4, rain: 1000 }, low: { pr: 1, bloom: false, shadow: 512, N: 140, lights: 2, rain: 450, far: 3000, noPost: true }, min: { pr: 0.75, bloom: false, shadow: 512, N: 140, lights: 2, rain: 250, far: 2200, noPost: true } };
+const QORDER = ['high', 'medium', 'low', 'min'];
+const hwGuess = () => { const cores = navigator.hardwareConcurrency || 4, mem = navigator.deviceMemory || 4; if (TOUCH) return cores <= 4 || mem <= 3 ? 'min' : mem <= 6 ? 'low' : 'medium'; return cores <= 2 ? 'medium' : 'high'; };
 let qUserSet = false, qName = hwGuess();
 try { const q = localStorage.getItem('squid-q'); if (q && QUAL[q]) { qName = q; qUserSet = true; } } catch (e) {}
 let Q = QUAL[qName];
@@ -949,7 +963,7 @@ function autoAdjustQuality(dt) {
   if (FPS.t > 0) return;
   const avg = FPS.n ? FPS.acc / FPS.n : 60; FPS.acc = 0; FPS.n = 0; FPS.t = 8;
   const i = QORDER.indexOf(qName);
-  if (avg < 32 && i < QORDER.length - 1) { setQuality(QORDER[i + 1]); qUserSet = false; toast('ลดคุณภาพภาพให้อัตโนมัติ เพื่อให้เกมลื่นขึ้น (ปรับเองได้ที่เมนูตั้งค่า)', 'good'); }
+  if (avg < (TOUCH ? 38 : 32) && i < QORDER.length - 1) { setQuality(QORDER[i + 1]); qUserSet = false; toast('ลดคุณภาพภาพให้อัตโนมัติ เพื่อให้เกมลื่นขึ้น (ปรับเองได้ที่เมนูตั้งค่า)', 'good'); }
 }
 
 // =============== renderer ===============
@@ -983,6 +997,8 @@ const GradeShader = {
   }`,
 };
 function setupComposer() {
+  if (composer) { try { composer.renderTarget1.dispose(); composer.renderTarget2.dispose(); } catch (e) {} }
+  if (Q.noPost) { composer = null; gradePass = null; return; } // low/min: draw straight to the screen (saves two full-screen passes)
   const pr = renderer.getPixelRatio();
   const rt = new THREE.WebGLRenderTarget(Math.max(1, Math.floor(innerWidth * pr)), Math.max(1, Math.floor(innerHeight * pr)), { type: THREE.HalfFloatType, samples: qName === 'low' ? 0 : 4 });
   composer = new EffectComposer(renderer, rt);
@@ -993,7 +1009,7 @@ function setupComposer() {
   composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(innerWidth, innerHeight);
 }
 setupComposer();
-if (!qUserSet) { try { const gl = renderer.getContext(), ext = gl.getExtension('WEBGL_debug_renderer_info'), gpu = ext ? String(gl.getParameter(ext.UNMASKED_RENDERER_WEBGL)) : ''; if (/swiftshader|llvmpipe|software|mali-[4t]|adreno[^0-9]*[1-5]\d\d\b|powervr sgx|intel.*hd graphics [2-5]\d{3}/i.test(gpu) || !renderer.capabilities.isWebGL2) { qName = 'low'; Q = QUAL.low; renderer.setPixelRatio(1); renderer.shadowMap.type = THREE.PCFShadowMap; setupComposer(); } } catch (e) {} }
+if (!qUserSet) { try { const gl = renderer.getContext(), ext = gl.getExtension('WEBGL_debug_renderer_info'), gpu = ext ? String(gl.getParameter(ext.UNMASKED_RENDERER_WEBGL)) : ''; if (/swiftshader|llvmpipe|software|mali-[4t]|adreno[^0-9]*[1-5]\d\d\b|powervr sgx|intel.*hd graphics [2-5]\d{3}/i.test(gpu) || !renderer.capabilities.isWebGL2) { if (qName !== 'min') { qName = 'low'; Q = QUAL.low; } renderer.setPixelRatio(Math.min(1, Q.pr)); renderer.shadowMap.type = THREE.PCFShadowMap; setupComposer(); } } catch (e) {} }
 
 // =============== sky ===============
 function makeSky() { const s = new Sky(); s.scale.setScalar(3000); const u = s.material.uniforms; u.turbidity.value = 6; u.rayleigh.value = 2; u.mieCoefficient.value = 0.006; u.mieDirectionalG.value = 0.86; return s; }
@@ -4109,7 +4125,7 @@ function updateTime(dt) {
   fogC.copy(FOG_GOLD).lerp(FOG_DAY, smooth(3, 25, elev)).multiplyScalar(1 - 0.4 * WX.cloud).lerp(FOG_NIGHT, night).lerp(FOG_DARK, DT.k * 0.9); scene.fog.color.copy(fogC);
   WX.fog += ((NIGHT.fog ? 1 : 0) - WX.fog) * Math.min(1, dt * 0.05);
   scene.fog.density = 0.0026 + WX.cloud * 0.002 + WX.rain * 0.0035 + DT.k * 0.0045 + WX.fog * 0.0075;
-  renderer.toneMappingExposure = lerp(0.5, 0.9, night);
+  renderer.toneMappingExposure = lerp(0.5, 0.9, night) * (composer ? 1 : 1 - 0.55 * DT.k); // no grade pass: darken with exposure instead
   starMat.opacity = night * 0.9 * (1 - WX.cloud) * (1 - DT.k); moonMat.opacity = smooth(0.1, 0.7, night) * moonVis; moonGlow.material.opacity = night * 0.8 * moonVis;
   if (lampAuto && started && !lampsOn && night > 0.25 && powerOn()) { toggleLamps(false); S.deck = true; lampText(); crewSay('ฟ้ามืดแล้ว เปิดไฟล่อหมึกเลย'); }
   lampK += ((lampsLive() ? 1 : 0) - lampK) * Math.min(1, dt * 3); deckK += ((S.deck && powerOn() && night > 0.15 ? 1 : 0) - deckK) * Math.min(1, dt * 3);
@@ -4507,6 +4523,11 @@ try { if (localStorage.getItem('squid-ctrl') === '1') $('ctrl').classList.add('m
   $('mbMenu').addEventListener('click', () => openMenu());
   $('mbQuest').addEventListener('click', () => openMenu('quest'));
   $('mbMusic').addEventListener('click', () => { if (musicOpen) closeMusic(); else openMusic(); });
+  const fsEl = document.documentElement, fsOk = !!(fsEl.requestFullscreen || fsEl.webkitRequestFullscreen);
+  const fsOn = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
+  const fsSync = () => { $('mbFullL').textContent = fsOn() ? 'ย่อจอ' : 'เต็มจอ'; };
+  $('mbFull').hidden = !fsOk; document.addEventListener('fullscreenchange', fsSync); document.addEventListener('webkitfullscreenchange', fsSync);
+  $('mbFull').addEventListener('click', () => { if (fsOn()) { (document.exitFullscreen || document.webkitExitFullscreen).call(document); } else goFullLandscape(); });
   $('mbHud').addEventListener('click', () => setHudMin(!document.body.classList.contains('hudMin')));
   $('sonarBox').querySelector('h4').addEventListener('click', () => { const c = !$('sonarBox').classList.contains('collapsed'); $('sonarBox').classList.toggle('collapsed', c); mstate.sonar = c; msave(); });
   if (mstate.min) setHudMin(true); if (mstate.sonar) $('sonarBox').classList.add('collapsed');
@@ -5056,7 +5077,8 @@ function renderMenu() {
     mr.appendChild(btn(MUS.playing ? 'หยุดเพลง' : 'เล่นเพลงชิวๆ', () => { musToggle(); renderMenu(); })); body.appendChild(mr);
     body.appendChild(el('div', 'hint', TOUCH ? 'กดปุ่มโน้ตเพลงมุมขวาบนเพื่อเลือกเพลง' : 'กด P ระหว่างเล่นเพื่อเปิดเครื่องเล่น เลือกเพลง สุ่ม หรือเล่นวนได้'));
     body.appendChild(el('h3', '', 'ภาพ'));
-    const qr = el('div', 'seg'); if (!qUserSet) qr.appendChild(el('div', 'hint', 'ตอนนี้ปรับอัตโนมัติตามเครื่องอยู่ · เลือกเองได้ด้านล่าง')); for (const [q, lb] of [['high', 'สูง'], ['medium', 'กลาง'], ['low', 'ต่ำ (ลื่นกว่า)']]) { const b = btn(lb, () => { setQuality(q, true); renderMenu(); }); b.setAttribute('aria-pressed', String(qName === q)); qr.appendChild(b); } body.appendChild(qr);
+    const qr = el('div', 'seg'); if (!qUserSet) qr.appendChild(el('div', 'hint', 'ตอนนี้ปรับอัตโนมัติตามเครื่องอยู่ · เลือกเองได้ด้านล่าง')); for (const [q, lb] of [['high', 'สูง'], ['medium', 'กลาง'], ['low', 'ต่ำ (ลื่นกว่า)'], ['min', 'ประหยัดสุด']]) { const b = btn(lb, () => { setQuality(q, true); renderMenu(); }); b.setAttribute('aria-pressed', String(qName === q)); qr.appendChild(b); } body.appendChild(qr);
+    if (TOUCH && (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)) body.appendChild(btn('เต็มจอ + ล็อกแนวนอน', () => { goFullLandscape(); closeMenu(); }, 'btn'));
     body.appendChild(el('h3', '', 'ความยากและความหลอน'));
     const dr = el('div', 'joinrow');
     const hb = btn(S.hard ? 'โหมดท้าทาย: เปิด' : 'โหมดท้าทาย: ปิด', () => { S.hard = !S.hard; save(); renderMenu(); }); hb.setAttribute('aria-pressed', String(!!S.hard)); dr.appendChild(hb);
@@ -7235,7 +7257,19 @@ function setQuality(name, manual) {
   setupComposer(); for (const b of document.querySelectorAll('.seg .btn')) b.setAttribute('aria-pressed', String(b.dataset.q === name));
 }
 for (const b of document.querySelectorAll('.seg .btn')) { b.addEventListener('click', () => { setQuality(b.dataset.q, true); renderMenu(); }); b.setAttribute('aria-pressed', String(b.dataset.q === qName)); }
+// phones: go full screen and lock to landscape (Android Chrome; iPhone Safari can't, it simply stays as is)
+function goFullLandscape() {
+  if (!TOUCH) return;
+  const d = document.documentElement, rq = d.requestFullscreen || d.webkitRequestFullscreen;
+  if (!rq) return;
+  try {
+    const p = rq.call(d, { navigationUI: 'hide' });
+    const lock = () => { try { if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {}); } catch (e) {} };
+    if (p && p.then) p.then(lock).catch(() => {}); else lock();
+  } catch (e) {}
+}
 $('go').addEventListener('click', () => {
+  goFullLandscape();
   audioInit(); started = true; $('start').hidden = true; $('hud').hidden = false; $('touch').hidden = !TOUCH; requestLock(); renderTut(); musAutostart(); musRefresh();
   setTimeout(() => toast(`คืนที่ ${S.night}: ${wxName()} · ${NIGHT.moon} · ${SPOTS[S.spot].name}`, 'good'), 400);
   setTimeout(() => toast(TOUCH ? 'เดินไปที่ขอบเรือ หันออกทะเล แล้วกดปุ่มส้มค้างไว้' : 'เดินไปที่ขอบเรือ หันออกทะเล · Tab เปิดเมนูตลาดและอัปเกรด', ''), 1600);
