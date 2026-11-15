@@ -443,6 +443,10 @@ body.touch #alerts{top:calc(56px + env(safe-area-inset-top,0px))}
 .jcard i{font-size:12.5px;color:var(--mute)}
 .jcard span{font-size:13px;color:var(--mute)}
 .jcard.lock{opacity:.5}
+#card.rel{position:fixed;z-index:40}
+body.touch #card.rel{bottom:calc(64px + env(safe-area-inset-bottom,0px))}
+#cRel{pointer-events:auto;margin-top:8px;width:100%;min-height:40px;border-color:rgba(127,211,255,.6)}
+#sonarCall{pointer-events:auto;margin-top:6px;width:100%;min-height:34px;padding:4px 8px;font-size:13px}
 .lb{display:flex;flex-direction:column;gap:4px;margin-top:6px}.lbr{display:flex;gap:8px;align-items:baseline;padding:6px 10px;border-radius:8px;background:rgba(255,255,255,.04)}.lbr.me{background:rgba(127,224,166,.12)}.lbr b{width:22px;flex:none;color:var(--lamp)}.lbr span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.lbr em{font-style:normal;color:var(--mute);font-size:12.5px;flex:none}
 .swatch{width:26px;height:18px;border-radius:5px;border:1px solid rgba(255,255,255,.35);flex:none;margin-right:8px}
 .pstats{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin:6px 0 4px}
@@ -498,7 +502,7 @@ body.touch #alerts{top:calc(56px + env(safe-area-inset-top,0px))}
     <div class="box" id="evBox" hidden><h4><i id="evArrow">▲</i><span id="evT"></span></h4><p id="evP"></p><div class="track" id="evTrack" hidden><div class="fill" id="evFill"></div></div><div class="evBtns"><button id="evYes" class="btn pri" type="button">ไปดู (Y)</button><button id="evNo" class="btn" type="button">ข้าม (N)</button></div></div>
     <div class="box" id="questBox"><h4>ภารกิจคืนนี้ <span id="qSpot">หน้าเกาะมันใน</span></h4><div id="qList"></div></div>
     <div class="box" id="waterBox"><h4>ค่าน้ำ <span id="wSpot">ยังไม่ได้วัด</span></h4><div id="wVals" class="wgrid"></div></div>
-    <div class="box" id="sonarBox" hidden><h4>โซนาร์ <span id="sonarTxt">ฝูงหมึก ~ 12 ม.</span></h4><canvas id="sonar" width="460" height="236"></canvas></div>
+    <div class="box" id="sonarBox" hidden><h4>โซนาร์ <span id="sonarTxt">ฝูงหมึก ~ 12 ม.</span></h4><canvas id="sonar" width="460" height="236"></canvas><button class="btn" id="sonarCall" type="button" hidden>📢 บอกความลึกให้ทุกคน (C)</button></div>
     <div class="box" id="players" hidden><h4>บนเรือ <span id="pCode"></span></h4><div id="pList"></div><div class="ph"><kbd>J</kbd> คัดลอกลิงก์ชวนเพื่อน</div></div>
   </div>
 
@@ -551,6 +555,7 @@ body.touch #alerts{top:calc(56px + env(safe-area-inset-top,0px))}
       <div><span>มูลค่าโดยประมาณ</span><b id="cVal">฿0</b></div>
     </div>
     <div class="new" id="cBest" hidden>ตัวใหญ่ที่สุดที่คุณเคยจับได้</div>
+    <button class="btn" id="cRel" type="button" hidden>🌊 ปล่อยคืนทะเล (T)</button>
   </div>
 
   <div id="ctrl">
@@ -2986,7 +2991,7 @@ function rarityK(s, c) {
   if (we.sp && we.sp[s.id]) k *= we.sp[s.id];
   if (c.zone === 'secret') k *= s.rar === 'legend' ? 4 : s.rar === 'rare' ? 2 : 1;
   if (c.giantT && (s.id === 'redgiant' || s.id === 'diamond')) k *= 6;
-  return k;
+  return k * beliefLuckK(s);
 }
 // where the lure is: fishing spot id, or a wreck / the secret spot / the abyss
 function fishCtx(depth, bottom) {
@@ -3583,6 +3588,388 @@ function renderCoop(body) {
 }
 // away flag: rAF stops in a background tab, so tell the room right away
 document.addEventListener('visibilitychange', () => { if (NET.myRef) update(NET.myRef, { aw: document.hidden ? 1 : 0, t: Date.now() }).catch(() => {}); });
+// ====================================================================================================
+// ===== LIFE AT SEA: morning market, sun-dried squid, crew roles + storm jobs, sailor beliefs, radio =====
+// All state ticks at 1 Hz (game-minute based); the only per-frame work is one pulsing ring when a storm job is up.
+// ====================================================================================================
+{ const P2 = S.prog;
+  if (!Array.isArray(P2.dry)) P2.dry = []; P2.dry = P2.dry.filter((d) => d && SP[d.id] && typeof d.kg === 'number' && typeof d.m === 'number' && typeof d.q === 'number').slice(0, 10);
+  if (!Array.isArray(P2.dried)) P2.dried = []; P2.dried = P2.dried.filter((d) => d && SP[d.id] && typeof d.kg === 'number' && typeof d.q === 'number').slice(0, 60);
+  for (const k of ['dryCover', 'dryNet']) P2[k] = !!P2[k];
+  for (const k of ['bless', 'luck', 'whistle', 'whistleN']) if (typeof P2[k] !== 'number') P2[k] = 0;
+}
+// ---------- sun-dried squid (หมึกแดดเดียว) ----------
+const RACK_CAP = 10, DRY_MIN = 420; // 7 game hours of air; morning sun at the island dries 4x faster
+const RACK = { pos: new V3(-2.7, 0, -6.1), g: null, inst: null, tarp: null, net: null, dirty: true, stealT: rand(200, 400), steal: false };
+const isSquid = (sp) => !sp.fishy && !sp.junk && !sp.strange && !sp.treasure && sp.shape !== 'crab' && sp.shape !== 'chest';
+const driedKg = (d) => +(d.kg * 0.38).toFixed(2);
+const driedValue = (d) => Math.round(driedKg(d) * SP[d.id].price * 3.4 * d.q * NIGHT.market[d.id]);
+function buildRack() {
+  const g = new THREE.Group(), wood = std(0x7a5a3a, 0.9, 0);
+  for (const z of [-8.1, -4.15]) cylBetween(new V3(-3.25, 2.0, z), new V3(-3.25, 3.6, z), 0.04, wood, g, 6);
+  cylBetween(new V3(-3.25, 3.55, -8.1), new V3(-3.25, 3.55, -4.15), 0.03, wood, g, 6);
+  const geo = new THREE.ConeGeometry(0.1, 0.46, 8); geo.scale(1, 1, 0.38); geo.rotateX(Math.PI);
+  const inst = new THREE.InstancedMesh(geo, new THREE.MeshStandardMaterial({ roughness: 0.7 }), RACK_CAP);
+  inst.instanceMatrix.setUsage(THREE.DynamicDrawUsage); inst.count = 0; inst.frustumCulled = false; g.add(inst);
+  const tarp = new THREE.Mesh(new THREE.PlaneGeometry(1.3, 4.4), std(0x2a6fb5, 0.8, 0)); tarp.material.side = THREE.DoubleSide; tarp.position.set(-3.25, 3.62, -6.12); tarp.rotation.set(-Math.PI / 2, 0, 0.18); tarp.visible = false; g.add(tarp);
+  const net = new THREE.Mesh(new THREE.PlaneGeometry(4.0, 0.8), new THREE.MeshBasicMaterial({ color: 0x9fd9b0, transparent: true, opacity: 0.22, side: THREE.DoubleSide, depthWrite: false })); net.position.set(-3.0, 3.1, -6.12); net.rotation.y = Math.PI / 2; net.visible = false; g.add(net);
+  boat.add(g); RACK.g = g; RACK.inst = inst; RACK.tarp = tarp; RACK.net = net;
+}
+function rackDraw() {
+  if (!RACK.g) buildRack();
+  const D = S.prog.dry, m = new THREE.Matrix4(), c = new THREE.Color(), wet = new THREE.Color(0xf1d3cb), dry = new THREE.Color(0xc9893a), bad = new THREE.Color(0x7d7a6a);
+  RACK.inst.count = D.length;
+  D.forEach((d, i) => { const s = clamp(0.75 + d.kg * 0.35, 0.75, 1.6) * (1 - 0.3 * Math.min(1, d.m / DRY_MIN)); m.makeScale(s, s, s).setPosition(-3.25, 3.25 - 0.1 * s, -7.75 + i * 0.36); RACK.inst.setMatrixAt(i, m); c.copy(wet).lerp(dry, Math.min(1, d.m / DRY_MIN)).lerp(bad, clamp(1 - d.q, 0, 0.8)); RACK.inst.setColorAt(i, c); });
+  RACK.inst.instanceMatrix.needsUpdate = true; if (RACK.inst.instanceColor) RACK.inst.instanceColor.needsUpdate = true;
+  RACK.tarp.visible = S.prog.dryCover; RACK.net.visible = S.prog.dryNet; RACK.dirty = false;
+}
+function rackMinute(min, sun) {
+  const D = S.prog.dry; if (!D.length) return;
+  const wetNow = !ISL.on && WX.rain > 0.3;
+  for (const d of D) {
+    if (d.m >= DRY_MIN) continue;
+    if (S.prog.dryCover) continue;                       // covered: safe from rain, but no air
+    if (wetNow) { d.q = Math.max(0.35, d.q - 0.004 * min); continue; }
+    d.m = Math.min(DRY_MIN, d.m + min * (sun ? 4 : 1) * (1 + 0.25 * Math.min(1, WX.amp - 0.85)));
+  }
+  RACK.dirty = true;
+}
+function rackHang(it) {
+  if (S.prog.dry.length >= RACK_CAP) return false;
+  const i = S.tub.indexOf(it); if (i < 0) return false;
+  S.tub.splice(i, 1); S.prog.dry.push({ id: it.id, kg: it.kg, m: 0, q: clamp(0.55 + 0.45 * it.f, 0.5, 1) }); RACK.dirty = true; return true;
+}
+function rackTakeDone() {
+  let n = 0; S.prog.dry = S.prog.dry.filter((d) => { if (d.m >= DRY_MIN) { S.prog.dried.push({ id: d.id, kg: driedKg(d), q: +d.q.toFixed(2) }); n++; return false; } return true; });
+  RACK.dirty = true; return n;
+}
+function renderRack(body) {
+  const D = S.prog.dry, done = D.filter((d) => d.m >= DRY_MIN).length;
+  body.appendChild(el('div', 'hint', 'แขวนหมึกจากถังไว้ตากลม ใช้เวลาราว 7 ชั่วโมงในเกม (แดดเช้าที่เกาะเร็วกว่า 4 เท่า) · หมึกแห้งขายที่เกาะได้ราคาดีกว่าหมึกสด · ฝนตกต้องคลุมผ้าใบ ไม่งั้นเสียคุณภาพ · ระวังเจ้าส้ม!'));
+  body.appendChild(el('h3', '', `ราวตาก ${D.length} / ${RACK_CAP}` + (done ? ` · แห้งแล้ว ${done} ตัว` : '')));
+  for (const d of D) { const row = el('div', 'kitem'), dv = el('div'); dv.appendChild(el('b', '', `${SP[d.id].name} ${d.kg.toFixed(2)} กก.`)); dv.appendChild(el('p', '', d.m >= DRY_MIN ? `แห้งแล้ว · คุณภาพ ${Math.round(d.q * 100)}%` : `แห้ง ${Math.round(d.m / DRY_MIN * 100)}% · คุณภาพ ${Math.round(d.q * 100)}%`)); row.appendChild(dv); body.appendChild(row); }
+  const row = el('div', 'joinrow');
+  row.appendChild(btn(S.prog.dryCover ? 'เปิดผ้าใบ (ให้โดนลม)' : 'คลุมผ้าใบ (กันฝน)', () => { S.prog.dryCover = !S.prog.dryCover; RACK.dirty = true; save(); renderKitchen(); }, 'btn'));
+  if (done) row.appendChild(btn(`เก็บหมึกแห้ง ${done} ตัว`, () => { const n = rackTakeDone(); save(); toast(`เก็บหมึกแห้ง ${n} ตัวใส่ถุงแล้ว เอาไปขายที่เกาะ`, 'good'); renderKitchen(); }, 'btn pri'));
+  if (!S.prog.dryNet) row.appendChild(btn('ซื้อตาข่ายกันแมว ฿300', () => { S.money -= 300; S.prog.dryNet = true; RACK.dirty = true; save(); sfx('coin'); renderKitchen(); }, 'btn', S.money < 300));
+  body.appendChild(row);
+  if (S.prog.dried.length) body.appendChild(el('div', 'hint', `หมึกแห้งในถุง ${S.prog.dried.length} ตัว · ราว ${baht(S.prog.dried.reduce((a, d) => a + driedValue(d), 0))} ที่ตลาด`));
+  const can = S.tub.filter((it) => isSquid(SP[it.id]));
+  body.appendChild(el('h3', '', `หมึกในถังที่แขวนได้ ${can.length} ตัว`));
+  if (!can.length) body.appendChild(el('div', 'hint', 'ไม่มีหมึกในถัง (ปลาและปูตากไม่ได้)'));
+  for (const it of can.slice(0, 12)) { const r = el('div', 'kitem'), dv = el('div'); dv.appendChild(el('b', '', `${SP[it.id].name} ${it.kg.toFixed(2)} กก.`)); dv.appendChild(el('p', '', `สด ${Math.round(it.f * 100)}% · ตากแล้วเหลือ ~${(it.kg * 0.38).toFixed(2)} กก.`)); r.appendChild(dv); r.appendChild(btn('แขวน', () => { if (rackHang(it)) { save(); rebuildTub(); sfx('click'); } renderKitchen(); }, 'btn', D.length >= RACK_CAP)); body.appendChild(r); }
+}
+function openRack() { if (!inputOn()) return; kitchenOpen = true; primaryHeld = false; if (document.pointerLockElement) document.exitPointerLock(); K.view = 'rack'; $('kitchen').hidden = false; renderKitchen(); }
+// the cat helps itself when nobody is watching the rack
+function rackCat(dt) {
+  if (!S.up.cat || S.prog.dryNet || !S.prog.dry.length || ISL.on || nightOver || traveling) return;
+  if (RACK.steal) {
+    if (CAT.path.length || CAT.fetching != null) return;
+    RACK.steal = false;
+    if (Math.hypot(catG.position.x - (-2.5), catG.position.z - (-6.6)) > 0.8) return;
+    if (toLocalDist(RACK.pos) < 3 && P.zone === 'deck') { toast('จับได้คาหนังคาเขา! เจ้าส้มทำหน้าไม่รู้ไม่ชี้แล้วเดินหนีไป', 'say'); return; }
+    const i = Math.floor(Math.random() * S.prog.dry.length), d = S.prog.dry.splice(i, 1)[0]; RACK.dirty = true; save();
+    toast(`เจ้าส้มแอบคาบ${SP[d.id].name}จากราวตากไปกินซะแล้ว! ซื้อตาข่ายกันแมวที่ราวตากได้`, 'bad'); tone(700, 0.18, 0.05, 'triangle', 0, null, 520);
+    if (crew.visible) setTimeout(() => crewSay('เจ้าส้ม! ขโมยหมึกอีกแล้วนะ', 4, true), 900);
+    return;
+  }
+  RACK.stealT -= dt; if (RACK.stealT > 0) return; RACK.stealT = rand(240, 480);
+  if (CAT.zone !== 'deck' || CAT.path.length || CAT.fetching != null || (P.zone === 'deck' && toLocalDist(RACK.pos) < 4)) return;
+  const route = catGraphPath({ x: catG.position.x, z: catG.position.z }, { x: -2.5, z: -6.6 }); if (!route) return;
+  CAT.path = route.map((q) => ({ x: q.x, z: q.z, y: CAT_DY })); CAT.onBunk = false; RACK.steal = true;
+}
+// ---------- morning market at the island (ตลาดเช้า) ----------
+const VENDORS = {
+  leng: { name: 'เฮียเล้ง · แพปลา', pos: { x: 36.2, z: -5.2 }, col: 0x2f5d8a, say: ['ตัวใหญ่ๆ เฮียให้ราคาดี', 'เหมาหมดเลยไหม เฮียรีบ', 'วันนี้ราคาแพปลาขึ้นนิดหน่อย'], buys: (it) => !SP[it.id].strange, k: (it, M) => M.mood * (it.kg >= 1 ? 1.15 : 1) },
+  niam: { name: 'ยายเนียม · ตลาดเช้า', pos: { x: 40.6, z: -11.2 }, col: 0x8a4a7a, female: true, say: ['ยายเอาแต่ของสดๆ นะหลาน', 'หมึกแห้งยายรับหมด ลูกค้าชอบ', 'สดแบบนี้ยายให้เพิ่ม'], buys: (it) => isSquid(SP[it.id]) && it.f >= 0.75, k: (it, M) => M.mood * (it.f >= 0.9 ? 1.25 : 1) },
+};
+const MKTQ = { night: -1, v: {} };
+function mktState(id) {
+  if (MKTQ.night !== S.night) { MKTQ.night = S.night; MKTQ.v = {}; }
+  if (!MKTQ.v[id]) { const r = rng(S.night * 131 + (id === 'leng' ? 1 : 2)); MKTQ.v[id] = { mood: id === 'leng' ? 0.92 + r() * 0.2 : 0.95 + r() * 0.15, tries: 0, closed: false, mult: 1 }; }
+  return MKTQ.v[id];
+}
+function mktRaw() { return [S.tub, S.freezer, S.crewBox]; }
+function mktOffer(id) {
+  const V = VENDORS[id], M = mktState(id); let v = 0, n = 0;
+  for (const arr of mktRaw()) for (const it of arr) if (V.buys(it)) { v += sellValue(it, true) * V.k(it, M); n++; }
+  let dv = 0; if (id === 'niam') for (const d of S.prog.dried) dv += driedValue(d) * 1.25;
+  return { fresh: Math.round(v * M.mult), n, dried: Math.round(dv * M.mult), dn: id === 'niam' ? S.prog.dried.length : 0 };
+}
+function mktSell(id) {
+  const V = VENDORS[id], o = mktOffer(id); if (!o.n && !o.dn) return;
+  for (const arr of mktRaw()) { const keep = arr.filter((it) => !V.buys(it)); arr.length = 0; arr.push(...keep); }
+  if (id === 'niam') S.prog.dried = [];
+  S.money += o.fresh + o.dried; rebuildTub(); rebuildCrate(); save(); sfx('coin');
+  toast(`ขายให้${V.name.split(' · ')[0]} ได้ ${baht(o.fresh + o.dried)}`, 'good'); progEvent('market', { id, v: o.fresh + o.dried });
+}
+function mktHaggle(id) {
+  const M = mktState(id), V = VENDORS[id], who = V.name.split(' · ')[0]; if (M.closed || M.tries >= 2) return;
+  const p = [0.6, 0.35][M.tries]; M.tries++;
+  if (Math.random() < p) { M.mult *= rand(1.05, 1.12); toast(`${who}: ${pickOne(['เอ้า ก็ได้ๆ เพิ่มให้นิดนึง', 'ต่อเก่งนะเรา เอาไปเลย', 'ได้ๆ ลูกค้าประจำ'])}`, 'good'); sfx('coin'); }
+  else if (M.tries >= 2) { M.closed = true; toast(`${who}: ${pickOne(['ต่อมากไปแล้ว ไม่เอาแล้ว ไปขายที่อื่นเถอะ', 'ราคานี้ไม่ไหวจริงๆ วันนี้ไม่ซื้อแล้ว'])}`, 'bad'); }
+  else { M.mult *= 0.97; toast(`${who}: ${pickOne(['ไม่ได้หรอก ราคานี้ก็ดีแล้ว', 'โอ๊ย ขาดทุนแย่ ลดให้อีกหน่อยด้วยซ้ำ'])}`, 'bad'); }
+}
+function renderVendor(body) {
+  const id = K.vendor, V = VENDORS[id], M = mktState(id), o = mktOffer(id);
+  $('kStep').textContent = baht(S.money);
+  body.appendChild(el('div', 'hint', `${V.name.split(' · ')[0]}: ${pickOne(V.say)}`));
+  body.appendChild(el('div', 'hint', id === 'leng' ? 'เหมาซื้อทุกอย่างยกเว้นของแปลก · ตัวหนัก 1 กก. ขึ้นไปให้เพิ่ม 15% · ราคาขึ้นลงตามอารมณ์แต่ละเช้า' : 'ซื้อเฉพาะหมึกที่สด 75% ขึ้นไป · สด 90% ขึ้นไปให้เพิ่ม 25% · รับหมึกแห้งราคาพิเศษ +25%'));
+  if (M.closed) { body.appendChild(el('h3', '', 'วันนี้ไม่ซื้อแล้ว (ต่อราคามากไป)')); return; }
+  body.appendChild(el('h3', '', `เสนอราคา ${baht(o.fresh + o.dried)}`));
+  body.appendChild(el('div', 'hint', `ของสด ${o.n} ตัว ${baht(o.fresh)}` + (o.dn ? ` · หมึกแห้ง ${o.dn} ตัว ${baht(o.dried)}` : '') + ` · เทียบร้านป้าแดง (+10%) ${baht(Math.round(mktRaw().reduce((a, arr) => a + arr.filter(V.buys).reduce((b, it) => b + sellValue(it, true) * 1.1, 0), 0)))}`));
+  const row = el('div', 'joinrow');
+  row.appendChild(btn('ตกลง ขายเลย', () => { mktSell(id); renderKitchen(); }, 'btn pri', !o.n && !o.dn));
+  row.appendChild(btn(M.tries ? `ต่อราคาอีกครั้ง (เสี่ยงกว่า)` : 'ต่อราคา', () => { mktHaggle(id); renderKitchen(); }, 'btn', M.tries >= 2 || (!o.n && !o.dn)));
+  body.appendChild(row);
+  body.appendChild(el('div', 'hint', 'ต่อราคาได้ 2 ครั้ง ครั้งแรกมีโอกาสสำเร็จสูง ครั้งที่สองถ้าพลาดแม่ค้าจะไม่ซื้อแล้วทั้งเช้า'));
+}
+function openVendor(id) { if (!inputOn()) return; kitchenOpen = true; primaryHeld = false; if (document.pointerLockElement) document.exitPointerLock(); K.view = 'mkt'; K.vendor = id; $('kitchen').hidden = false; renderKitchen(); }
+function renderDriedShop(body) { // ป้าแดง also buys dried squid at the normal price
+  if (!S.prog.dried.length) return;
+  const v = S.prog.dried.reduce((a, d) => a + driedValue(d), 0), row = el('div', 'kitem'), dv = el('div');
+  dv.appendChild(el('b', '', `หมึกแห้ง ${S.prog.dried.length} ตัว`)); dv.appendChild(el('p', '', `ป้าให้ ${baht(v)} (ยายเนียมให้มากกว่า)`)); row.appendChild(dv);
+  row.appendChild(btn('ขายหมึกแห้ง', () => { S.money += v; S.prog.dried = []; save(); sfx('coin'); renderKitchen(); }, 'btn')); body.appendChild(row);
+}
+function buildStalls() { // two market stalls on the beach (static, island only); called once at start-up
+  const G = islandG, add = (m) => { m.userData.st = 1; G.add(m); return m; }, wood = std(0x8a6440, 0.85, 0);
+  for (const [id, V] of Object.entries(VENDORS)) {
+    const { x, z } = V.pos, tx = x + 1.3;
+    add(new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.9, 2.4), wood)).position.set(tx, 2.75, z);
+    for (const [dx, dz] of [[-0.6, -1.3], [-0.6, 1.3], [0.7, -1.3], [0.7, 1.3]]) add(new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 2.4, 6), wood)).position.set(tx + dx, 3.5, z + dz);
+    const aw = add(new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.05, 3.0), std(id === 'leng' ? 0x2e86c1 : 0xd35400, 0.8, 0))); aw.position.set(tx + 0.05, 4.7, z); aw.rotation.z = -0.12;
+    for (let i = 0; i < 3; i++) add(new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.1, 0.38), std(0xdfe8ee, 0.3, 0.2))).position.set(tx, 3.25, z - 0.8 + i * 0.8);
+    const av = makeAvatar(V.col, false, { female: !!V.female, skin: 0xb98060 }); av.position.set(x + 2.2, 2.3, z); av.rotation.y = -Math.PI / 2; G.add(av);
+    const lb = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTex(V.name, '#ffd27a'), transparent: true, depthWrite: false })); lb.scale.set(1.5, 0.3, 1); lb.position.y = 2.15; av.add(lb);
+    ISL_OBS.push([tx - 0.55, tx + 2.5, z - 1.35, z + 1.35]);
+  }
+  G.traverse((o) => { if (o.isMesh && o.castShadow === false && o.userData.st) o.castShadow = true; });
+}
+// ---------- sailor beliefs ----------
+const BEL = { wind: 0, reminded: -1, firstOffer: null, offerT: 0 };
+const blessed = () => S.prog.bless === S.night;
+const lucky = () => S.prog.luck === S.night;
+function beliefLuckK(s) { return (s.rar === 'rare' || s.rar === 'legend') ? (blessed() ? 1.1 : 1) * (lucky() ? 1.15 : 1) : 1; }
+function bless() {
+  if (blessed()) { toast('คืนนี้ไหว้แม่ย่านางแล้ว ท่านคุ้มครองอยู่', 'good'); return; }
+  S.prog.bless = S.night; save(); tone(880, 0.8, 0.06); tone(1320, 1.0, 0.04, 'sine', 0.25);
+  toast('ไหว้แม่ย่านางแล้ว 🙏 คืนนี้คำสาปเข้ายากขึ้นครึ่งหนึ่ง และหมึกหายากเข้าง่ายขึ้นเล็กน้อย', 'good');
+  if (crew.visible) setTimeout(() => crewSay('ดีมาก ออกเรือต้องไหว้แม่ย่านางก่อนทุกครั้ง พ่อพี่สอนไว้', 5, true), 800);
+}
+function whistle(remote) {
+  BEL.wind = Math.min(1.6, BEL.wind + 1); sfx('click');
+  tone(1650, 0.22, 0.05, 'sine', 0, null, 2100); tone(2100, 0.3, 0.05, 'sine', 0.24, null, 1500);
+  if (remote) { toast(`${remote} ผิวปากบนเรือ… ลมเริ่มแรงขึ้น`, 'say'); return; }
+  S.prog.whistle === S.night ? S.prog.whistleN++ : (S.prog.whistle = S.night, S.prog.whistleN = 1); save();
+  if (crew.visible) crewSay(S.prog.whistleN > 1 ? 'บอกแล้วไงว่าห้ามผิวปาก! เดี๋ยวลมพัดเรือคว่ำ' : 'อย่าผิวปากบนเรือ! คนเรือเขาถือ ผิวปากเรียกลม', 5, true);
+  else toast('ผิวปากบนเรือ… คนเรือเชื่อว่าเป็นการเรียกลม', 'say');
+  if (S.prog.whistleN >= 3 && Math.random() < 0.35) setTimeout(() => addCurse('ผิวปากเรียกลมซ้ำๆ'), 2500);
+  netEmit('whistle', {});
+}
+function beliefFirstCatch(sp, kg, obj) {
+  if (NIGHT.stats.count !== 1 || sp.junk || sp.strange || sp.treasure || lucky()) return;
+  BEL.firstOffer = { id: sp.id, kg, obj }; BEL.offerT = 7; cardTimer = Math.max(cardTimer, 7);
+  $('cTag').textContent = 'ตัวแรกของคืน · คนเรือถือว่าควรปล่อยคืนทะเล'; $('cRel').textContent = document.body.classList.contains('touch') ? '🌊 ปล่อยคืนทะเล' : '🌊 ปล่อยคืนทะเล (T)'; $('cRel').hidden = false; $('card').classList.add('rel');
+}
+function releaseFirst() {
+  const o = BEL.firstOffer; if (!o) return; BEL.firstOffer = null; $('cRel').hidden = true; $('card').classList.remove('rel');
+  const i = S.tub.findIndex((it) => it.id === o.id && it.kg === o.kg); if (i >= 0) S.tub.splice(i, 1);
+  const fi = flyers.findIndex((f) => f.obj === o.obj); if (fi >= 0) flyers.splice(fi, 1);
+  if (o.obj) { if (o.obj.parent) o.obj.parent.remove(o.obj); freeObj(o.obj); }
+  rebuildTub(); S.prog.luck = S.night; save(); sfx('splash');
+  toast('ปล่อยตัวแรกคืนทะเลแล้ว 🌊 ขอให้คืนนี้ได้ตัวใหญ่ · หมึกหายากเข้าง่ายขึ้นทั้งคืน', 'good');
+  if (crew.visible) setTimeout(() => crewSay('ทำตามธรรมเนียมเลยนะ เดี๋ยวทะเลตอบแทนเอง', 4, true), 700);
+}
+function beliefTick(dt) {
+  BEL.wind = Math.max(0, BEL.wind - dt / 90);
+  if (BEL.offerT > 0) { BEL.offerT -= dt; if (BEL.offerT <= 0) { BEL.firstOffer = null; $('cRel').hidden = true; $('card').classList.remove('rel'); } }
+  if (!started || nightOver || ISL.on || blessed() || BEL.reminded === S.night) return;
+  if (gameMin > 20 * 60 + 30 && crew.visible) { BEL.reminded = S.night; crewSay('ยังไม่ได้ไหว้แม่ย่านางเลยนะ ที่หิ้งข้างประตูห้องเครื่อง ไหว้ก่อนเถอะ', 6); }
+}
+// ---------- crew roles (online rooms) ----------
+const ROLES = {
+  none: { name: 'ยังไม่เลือก', icon: '' },
+  captain: { name: 'กัปตัน', icon: '🧭', d: 'ทั้งเรือมีโอกาสหมึกกินเบ็ด +8% (หาจุดจอดดี)' },
+  sonar: { name: 'คนดูโซนาร์', icon: '📡', d: 'เห็นข้อมูลฝูงละเอียด กด C หรือปุ่ม 📢 บอกความลึกให้ทุกคน (คนที่หย่อนเหยื่อตรงความลึกนั้นได้ +15%)' },
+  mech: { name: 'ช่างเครื่อง', icon: '🔧', d: 'เครื่องยนต์/เครื่องปั่นไฟของทั้งเรือพังช้าลง 40% · ตัวเองซ่อมเร็วขึ้น 60%' },
+  fisher: { name: 'มือตก', icon: '🎣', d: 'ตัวเองมีโอกาสหมึกกินเบ็ด +12% · งานด่วนตอนพายุทำเสร็จเร็วกว่า' },
+};
+const ROLE = { me: (() => { try { const r = sessionStorage.getItem('squid-role'); return ROLES[r] ? r : 'none'; } catch (e) { return 'none'; } })(), call: null, callCd: 0 };
+const myRole = () => (NET.code ? ROLE.me : 'none');
+function teamHas(r) { if (!NET.code) return false; if (ROLE.me === r) return true; for (const x of NET.remotes.values()) if (x.ro === r) return true; return false; }
+function setRole(r) { ROLE.me = r; try { sessionStorage.setItem('squid-role', r); } catch (e) {} toast(r === 'none' ? 'ไม่ได้เลือกหน้าที่' : `หน้าที่ของคุณ: ${ROLES[r].icon} ${ROLES[r].name} · ${ROLES[r].d}`, 'good'); $('sonarCall').hidden = myRole() !== 'sonar'; }
+function roleBiteK(depth) {
+  let k = 1; if (!NET.code) return 1;
+  if (teamHas('captain')) k *= 1.08; if (ROLE.me === 'fisher') k *= 1.12;
+  if (ROLE.call && T < ROLE.call.until && Math.abs(depth - ROLE.call.d) < 3.5) k *= 1.15;
+  return k;
+}
+const roleBreakK = () => (teamHas('mech') ? 0.6 : 1);
+const roleRepairK = () => (myRole() === 'mech' ? 1.6 : 1);
+function sonarCall() {
+  if (myRole() !== 'sonar' || !started) return;
+  if (ROLE.callCd > T) { toast(`รออีก ${Math.ceil(ROLE.callCd - T)} วินาทีค่อยบอกใหม่`); return; }
+  const d = Math.round(school.depth); ROLE.callCd = T + 20; ROLE.call = { d, until: T + 90 };
+  netEmit('call', { d }); toast(`📢 คุณบอกทุกคน: ฝูงหมึกอยู่ ${d} เมตร!`, 'good');
+}
+function onSonarCall(m) {
+  const d = m.data && m.data.d; if (typeof d !== 'number' || !isFinite(d) || d < 1 || d > 80) return;
+  ROLE.call = { d, until: T + 90 }; school.target = d; school.depth += (d - school.depth) * 0.6;
+  toast(`📢 ${m.name || 'เพื่อน'}: ฝูงหมึกอยู่ราว ${Math.round(d)} เมตร!`, 'good'); tone(990, 0.12, 0.05, 'square');
+}
+// storm jobs: the host calls them out; anyone on deck can do them; left undone in a room they cost the whole boat
+const SJOBS = {
+  rope: { name: 'เชือกผูกถังหลุด', pos: new V3(0.6, 0, 10.2), what: 'รีบมัดเชือกที่หัวเรือ!', fail: 'rope' },
+  lamp: { name: 'ไฟล่อหมึกแกว่งหลวม', pos: new V3(-1.7, 0, -2.6), what: 'รีบขันน็อตเสาไฟล่อ!', fail: 'lamp' },
+  tarp: { name: 'ลมพัดผ้าใบราวตาก', pos: new V3(-2.6, 0, -6.1), what: 'รีบคลุมผ้าใบราวตากหมึก!', fail: 'tarp' },
+};
+const SJ = { job: null, t: rand(70, 140), ring: null, sz: 0 };
+function sjRing() {
+  if (SJ.ring) return SJ.ring;
+  const r = new THREE.Mesh(new THREE.TorusGeometry(0.55, 0.05, 6, 28), new THREE.MeshBasicMaterial({ color: 0xffa040, transparent: true, opacity: 0.85, depthWrite: false }));
+  r.rotation.x = -Math.PI / 2; r.visible = false; boat.add(r); return (SJ.ring = r);
+}
+function sjStart(j) {
+  if (!SJOBS[j.k] || SJ.job) return;
+  SJ.job = { id: j.id, k: j.k, left: 45 }; const R = sjRing(); R.position.set(SJOBS[j.k].pos.x, 2.08, SJOBS[j.k].pos.z); R.visible = true;
+  sfx('warn'); toast(`⛈️ งานด่วน: ${SJOBS[j.k].name} · ${SJOBS[j.k].what}`, 'bad');
+  if (!NET.code && crew.visible) setTimeout(() => crewSay('มาช่วยพี่หน่อย! ไม่งั้นพี่จัดการเองนะ', 4, true), 1500);
+}
+function sjDone(by, local) {
+  const j = SJ.job; if (!j) return; SJ.job = null; if (SJ.ring) SJ.ring.visible = false;
+  if (local) { netEmit('stDone', { id: j.id }); S.money += 60; relGain(1); save(); toast(`ทำงานด่วนเสร็จ! ${SJOBS[j.k].name} เรียบร้อย · ฿60`, 'good'); sfx('coin'); }
+  else toast(`${by || 'เพื่อน'} จัดการ${SJOBS[j.k].name}เรียบร้อยแล้ว`, 'good');
+  if (j.k === 'tarp') { S.prog.dryCover = true; RACK.dirty = true; }
+}
+function sjFail() {
+  const j = SJ.job; SJ.job = null; if (SJ.ring) SJ.ring.visible = false; if (!j) return;
+  if (!NET.code) { // solo: Chai does it, no penalty
+    if (j.k === 'tarp') { S.prog.dryCover = true; RACK.dirty = true; }
+    if (crew.visible) crewSay(`พี่จัดการ${SJOBS[j.k].name}ให้แล้ว คราวหน้ามาช่วยกันนะ`, 4, true); return;
+  }
+  if (j.k === 'rope') { let n = 0; for (let i = 0; i < 2 && S.tub.length; i++) { S.tub.splice(Math.floor(Math.random() * S.tub.length), 1); n++; } rebuildTub(); save(); toast(`ไม่มีใครมัดเชือก คลื่นซัดถังล้ม หมึกหายไป ${n} ตัว`, 'bad'); }
+  if (j.k === 'lamp') { if (lampsOn) toggleLamps(false); toast('ไม่มีใครขันเสาไฟ ไฟล่อดับไป ต้องเปิดใหม่', 'bad'); }
+  if (j.k === 'tarp') { for (const d of S.prog.dry) d.q = Math.max(0.35, d.q - 0.15); RACK.dirty = true; save(); toast('ไม่มีใครคลุมผ้าใบ หมึกที่ตากอยู่เปียกฝนเสียคุณภาพ', 'bad'); }
+}
+function sjTick(dt) {
+  if (SJ.job) { SJ.job.left -= dt; if (SJ.ring) { SJ.ring.scale.setScalar(1 + 0.15 * Math.sin(T * 6)); } if (SJ.job.left <= 0 || ISL.on || nightOver) sjFail(); return; }
+  if (!started || nightOver || ISL.on || traveling || NIGHT.weather !== 'storm' || !evHost()) return;
+  SJ.t -= dt; if (SJ.t > 0) return; SJ.t = rand(110, 200);
+  const ks = Object.keys(SJOBS).filter((k) => k !== 'tarp' || S.prog.dry.length);
+  const j = { id: Math.random().toString(36).slice(2, 9), k: pickOne(ks) }; sjStart(j); netEmit('stask', j);
+}
+function sjInteract(list) {
+  if (!SJ.job || P.zone !== 'deck') return; const J = SJOBS[SJ.job.k];
+  list.push({ pos: J.pos, r: 1.6, label: `${J.what} (ค้างไว้)`, hold: myRole() === 'fisher' ? 0.6 : 1.2, act: () => sjDone('', true) });
+}
+// ---------- radio between boats ----------
+const RADIO_MSG = ['หมึกเข้าเยอะที่{spot} มาเลย!', 'ที่{spot}เงียบมาก ย้ายดีกว่า', 'ระวังพายุนะทุกคน', 'เจอเหตุการณ์แปลกๆ กลางทะเล', 'ใครอยู่แถว{spot}บ้าง', 'ขอบคุณที่ช่วยนะ', 'ราคาหมึกวันนี้ดีมาก', 'กลับฝั่งแล้ว ฝันดีทุกคน'];
+const NPC_BOATS = ['เรือโชคชัย 3', 'เรือเจริญทรัพย์', 'เรือแม่บุญมี', 'เรือสมหวังนาวา', 'เรือทองประเสริฐ'];
+const RADIO = { on: (() => { try { return localStorage.getItem('squid-radio') !== '0'; } catch (e) { return true; } })(), unsub: null, seen: Date.now() - 600000, msgs: [], sendT: 0, npcT: rand(240, 420), err: '' };
+const radioText = (m, s) => RADIO_MSG[m].replace('{spot}', SPOTS[s] ? SPOTS[s].name : 'แถวนี้');
+function radioAdd(who, text, mine) {
+  RADIO.msgs.push({ who, text, t: Date.now() }); if (RADIO.msgs.length > 12) RADIO.msgs.shift();
+  if (!mine && started) toast(`📻 ${who}: ${text}`, 'say');
+  if (menuOpen && menuTab === 'online') renderMenu();
+}
+function radioSub() {
+  const want = RADIO.on && NET.fbUser && fbDb;
+  if (want && !RADIO.unsub) {
+    try {
+      RADIO.unsub = onValue(ref(fbDb, 'radio'), (snap) => {
+        const v = snap.val() || {}, rows = [];
+        for (const r of Object.values(v)) if (r && typeof r.t === 'number' && typeof r.m === 'number' && RADIO_MSG[r.m] && r.t > RADIO.seen && r.t > Date.now() - 900000) rows.push(r);
+        rows.sort((a, b) => a.t - b.t);
+        for (const r of rows) { RADIO.seen = Math.max(RADIO.seen, r.t); radioAdd(String(r.n || 'ชาวเรือ').slice(0, 20), radioText(r.m, r.s | 0), NET.fbUser && r.u === NET.fbUser.uid); }
+      }, () => { RADIO.err = 'วิทยุใช้ไม่ได้ (ฐานข้อมูลยังไม่เปิดสิทธิ์ให้ตาราง radio)'; });
+    } catch (e) { RADIO.err = 'วิทยุใช้ไม่ได้'; }
+  } else if (!want && RADIO.unsub) { try { RADIO.unsub(); } catch (e) {} RADIO.unsub = null; }
+}
+function radioSend(m) {
+  if (!NET.fbUser || !fbDb || Date.now() < RADIO.sendT) return;
+  RADIO.sendT = Date.now() + 30000; const t = Date.now(), slot = Math.floor(t / 4000) % 12;
+  set(ref(fbDb, `radio/s${slot}`), { n: String(NET.fbUser.displayName || 'ชาวเรือ').slice(0, 20), u: NET.fbUser.uid, m, s: S.spot, t })
+    .then(() => { RADIO.err = ''; }).catch(() => { RADIO.err = 'ส่งวิทยุไม่สำเร็จ (ฐานข้อมูลยังไม่เปิดสิทธิ์ให้ตาราง radio)'; if (menuOpen && menuTab === 'online') renderMenu(); });
+  RADIO.seen = Math.max(RADIO.seen, t); radioAdd('คุณ', radioText(m, S.spot), true);
+}
+function radioNpc(dt) { // other (computer) boats chat now and then, and their tips are true
+  if (!RADIO.on || !started || nightOver || ISL.on || traveling) return;
+  RADIO.npcT -= dt; if (RADIO.npcT > 0) return; RADIO.npcT = rand(300, 600);
+  const who = pickOne(NPC_BOATS), r = Math.random();
+  const text = r < 0.45 ? `ที่${SPOTS[S.spot].name} ฝูงหมึกอยู่ราว ${Math.round(school.depth)} เมตรนะ` : r < 0.65 && NIGHT.weather !== 'clear' ? 'ฟ้าไม่ค่อยดี ระวังกันด้วย' : r < 0.85 ? `ราคา${SP.loligo.name}คืนนี้ ${baht(SP.loligo.price * NIGHT.market.loligo)} ต่อกิโล` : pickOne(['ใครมีน้ำแข็งเหลือบ้าง', 'คืนนี้ทะเลสวยจัง', 'เมื่อกี้เห็นอะไรวิบวับกลางทะเล']);
+  radioAdd(who, text, false);
+}
+function renderRadio(body) {
+  body.appendChild(el('h3', '', '📻 วิทยุชาวเรือ (คุยข้ามเรือ)'));
+  const top = el('div', 'joinrow');
+  top.appendChild(btn(RADIO.on ? 'ปิดวิทยุ' : 'เปิดวิทยุ', () => { RADIO.on = !RADIO.on; try { localStorage.setItem('squid-radio', RADIO.on ? '1' : '0'); } catch (e) {} radioSub(); renderMenu(); }, 'btn'));
+  body.appendChild(top);
+  if (RADIO.err) body.appendChild(el('div', 'hint', RADIO.err));
+  if (!RADIO.on) return;
+  if (NET.fbUser) {
+    const wait = Math.max(0, Math.ceil((RADIO.sendT - Date.now()) / 1000)), g = el('div', 'emotes');
+    RADIO_MSG.forEach((_, i) => g.appendChild(btn(radioText(i, S.spot), () => { radioSend(i); renderMenu(); }, 'btn', wait > 0)));
+    body.appendChild(g);
+    body.appendChild(el('div', 'hint', wait ? `ส่งได้อีกใน ${wait} วินาที` : 'ทุกเรือที่เปิดวิทยุจะได้ยิน · ส่งได้ทุก 30 วินาที · ใช้ข้อความสำเร็จรูปเพื่อความปลอดภัย'));
+  } else body.appendChild(el('div', 'hint', 'เข้าสู่ระบบเพื่อพูดกับเรือของผู้เล่นอื่น (ตอนนี้ฟังได้แค่เรือแถวนี้)'));
+  const ls = el('div', 'lb');
+  for (const m of RADIO.msgs.slice().reverse()) { const r = el('div', 'lbr'); r.appendChild(el('b', '', '📻')); r.appendChild(el('span', '', `${m.who}: ${m.text}`)); ls.appendChild(r); }
+  if (!RADIO.msgs.length) ls.appendChild(el('div', 'hint', 'ยังเงียบอยู่…'));
+  body.appendChild(ls);
+}
+function renderRoles(body) {
+  if (!NET.code) return;
+  body.appendChild(el('h3', '', 'หน้าที่บนเรือ (แบ่งกันทำ ได้โบนัสทั้งทีม)'));
+  const g = el('div', 'grid2');
+  for (const [k, R] of Object.entries(ROLES)) {
+    if (k === 'none') continue;
+    const who = [ROLE.me === k ? 'คุณ' : null].concat([...NET.remotes.values()].filter((x) => x.ro === k).map((x) => x.name || 'เพื่อน')).filter(Boolean);
+    const it = el('div', 'item'), top = el('div', 'top'); top.appendChild(el('b', '', `${R.icon} ${R.name}`)); top.appendChild(el('span', 'lv', who.length ? who.join(', ') : 'ว่าง')); it.appendChild(top); it.appendChild(el('p', '', R.d));
+    it.appendChild(btn(ROLE.me === k ? 'เลิกทำหน้าที่นี้' : 'รับหน้าที่นี้', () => { setRole(ROLE.me === k ? 'none' : k); renderMenu(); }, ROLE.me === k ? 'btn' : 'btn pri'));
+    g.appendChild(it);
+  }
+  body.appendChild(g);
+  body.appendChild(el('div', 'hint', 'ตอนพายุจะมีงานด่วนบนดาดฟ้า (วงสีส้ม) ใครอยู่ใกล้ช่วยกันทำ ถ้าไม่มีใครทำทั้งเรือจะเสียหาย'));
+}
+function renderBeliefs(body) {
+  body.appendChild(el('h3', '', 'ความเชื่อชาวเรือ'));
+  const items = [
+    [blessed() ? '✓' : '·', 'ไหว้แม่ย่านางที่หิ้งข้างประตูห้องเครื่องก่อนออกเรือ', blessed() ? 'คืนนี้ไหว้แล้ว: คำสาปเข้ายากขึ้น หมึกหายากเข้าง่ายขึ้น' : 'ยังไม่ได้ไหว้คืนนี้'],
+    [lucky() ? '✓' : '·', 'ปล่อยหมึกตัวแรกของคืนคืนทะเล', lucky() ? 'คืนนี้ปล่อยแล้ว: หมึกหายากเข้าง่ายขึ้นทั้งคืน' : 'ตัวแรกที่ขึ้นมา จะมีปุ่มให้ปล่อย (คอมกด T)'],
+    ['✕', 'ห้ามผิวปากบนเรือ', 'เชื่อกันว่าเรียกลม ผิวปากแล้วคลื่นลมจะแรงขึ้นสักพัก (คอมกด V)'],
+  ];
+  for (const [m, t, d] of items) { const it = el('div', 'item'), top = el('div', 'top'); top.appendChild(el('b', '', `${m} ${t}`)); it.appendChild(top); it.appendChild(el('p', '', d)); body.appendChild(it); }
+  body.appendChild(btn('ผิวปาก (ลองดูก็ได้…)', () => { closeMenu(); whistle(); }, 'btn'));
+}
+// compile the shaders of things that only appear later (ocean events, storm ring, rack) once at load,
+// so the first event of the night doesn't hitch while the program compiles
+function prewarmShaders() {
+  const tmp = [];
+  for (const k of ['chest', 'distress', 'derelict', 'giant']) { if (!EVQ.props[k]) EVQ.props[k] = evMakeProp(k); tmp.push(EVQ.props[k]); }
+  tmp.push(evBeacon(), sjRing()); if (!EVQ.buoys) EVQ.buoys = evBuildBuoys(); for (const o of EVQ.buoys) tmp.push(o.b);
+  const vis = tmp.map((o) => o.visible), cnt = RACK.inst.count; for (const o of tmp) o.visible = true; RACK.inst.count = Math.max(1, cnt); RACK.tarp.visible = RACK.net.visible = true;
+  try { for (const o of tmp.concat([RACK.g])) renderer.compile(o, camera, scene); } catch (e) { console.warn('prewarm', e); } // only these objects, with the real scene's lights
+  tmp.forEach((o, i) => { o.visible = vis[i]; }); RACK.inst.count = cnt; RACK.dirty = true;
+}
+// ---------- 1 Hz driver ----------
+const LIFE = { acc: 0, gm: -1 };
+function lifeTick(dt) {
+  if (SJ.job && SJ.ring) SJ.ring.material.opacity = 0.55 + 0.35 * Math.sin(T * 6);
+  LIFE.acc += dt; if (LIFE.acc < 1) return; const tk = Math.min(LIFE.acc, 3); LIFE.acc = 0;
+  if (RACK.dirty) rackDraw();
+  if (started && !traveling) { const gm = gameMin; if (LIFE.gm >= 0) { let d = gm - LIFE.gm; if (d < 0 || d > 120) d = 0; if (d > 0) rackMinute(d, ISL.on); } LIFE.gm = gm; }
+  rackCat(tk); beliefTick(tk); sjTick(tk); radioSub(); radioNpc(tk);
+  if (ROLE.call && T > ROLE.call.until) ROLE.call = null;
+  const sc = myRole() !== 'sonar'; if ($('sonarCall').hidden !== sc) $('sonarCall').hidden = sc;
+}
+$('cRel').addEventListener('click', (e) => { e.stopPropagation(); releaseFirst(); });
+$('sonarCall').addEventListener('click', (e) => { e.stopPropagation(); sonarCall(); });
+addEventListener('keydown', (e) => {
+  if (!started || menuOpen || kitchenOpen || (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName))) return;
+  if (e.code === 'KeyT' && BEL.firstOffer) releaseFirst();
+  else if (e.code === 'KeyV' && !e.repeat && inputOn()) whistle();
+  else if (e.code === 'KeyC' && !e.repeat && myRole() === 'sonar') sonarCall();
+});
 let NIGHT = null;
 function moonName(k, waxing) { if (k < 0.12) return 'เดือนมืด'; if (k > 0.9) return 'เดือนเพ็ญ'; return waxing ? 'ข้างขึ้น' : 'ข้างแรม'; }
 function setupNight() {
@@ -3665,7 +4052,8 @@ function drawSonar(dt) {
   sc2.fillStyle = 'rgba(255,255,255,.7)'; sc2.font = '600 20px Sarabun, sans-serif';
   for (const d of [0, 15, 30, 45]) { const y = d / maxD * H; sc2.fillRect(0, y, 14, 2); sc2.fillText(d + 'ม.', 18, Math.max(18, y + (d === 45 ? -6 : 18))); }
   if (st === 'water' || st === 'bite' || st === 'fight') { const y = lure.depth / maxD * H; sc2.strokeStyle = '#ffb347'; sc2.lineWidth = 3; sc2.setLineDash([10, 6]); sc2.beginPath(); sc2.moveTo(0, y); sc2.lineTo(Wd, y); sc2.stroke(); sc2.setLineDash([]); sc2.fillStyle = '#ffb347'; sc2.beginPath(); sc2.arc(Wd - 12, y, 7, 0, 7); sc2.fill(); }
-  $('sonarTxt').textContent = S.up.sonar > 1 ? `ฝูง ~${Math.round(school.depth)} ม. · ${school.dens > 0.6 ? 'หนาแน่น' : school.dens > 0.35 ? 'ปานกลาง' : 'บาง'}` : `ฝูงหมึก ~${Math.round(school.depth)} ม.`;
+  if (ROLE.call) { const y = ROLE.call.d / maxD * H; sc2.strokeStyle = '#7fd3ff'; sc2.lineWidth = 2; sc2.setLineDash([4, 4]); sc2.beginPath(); sc2.moveTo(0, y); sc2.lineTo(Wd, y); sc2.stroke(); sc2.setLineDash([]); }
+  $('sonarTxt').textContent = S.up.sonar > 1 || myRole() === 'sonar' ? `ฝูง ~${Math.round(school.depth)} ม. · ${school.dens > 0.6 ? 'หนาแน่น' : school.dens > 0.35 ? 'ปานกลาง' : 'บาง'}` : `ฝูงหมึก ~${Math.round(school.depth)} ม.`;
 }
 
 // =============== game state ===============
@@ -3702,7 +4090,7 @@ const SWELL = { t: rand(20, 60), v: rand(0.3, 0.6), tgt: rand(0.3, 0.6) };
 function swellName() { return SWELL.v < 0.2 ? 'ทะเลนิ่ง' : SWELL.v < 0.45 ? 'คลื่นลมสงบ' : SWELL.v < 0.75 ? 'คลื่นปกติ' : 'คลื่นเริ่มแรง'; }
 function updateTime(dt) {
   const tgt = ISL.on ? [0.15, 0, 0.3] : WXT[NIGHT.weather], k = Math.min(1, dt * 0.25);
-  WX.cloud += (tgt[0] - WX.cloud) * k; WX.rain += (tgt[1] - WX.rain) * k; WX.amp += (tgt[2] - WX.amp) * k;
+  WX.cloud += (tgt[0] - WX.cloud) * k; WX.rain += (tgt[1] - WX.rain) * k; WX.amp += (tgt[2] + (ISL.on ? 0 : BEL.wind * 0.45) - WX.amp) * k;
   SWELL.t -= dt; if (SWELL.t <= 0) { SWELL.t = rand(70, 170); SWELL.tgt = Math.random() < 0.3 ? rand(0, 0.25) : Math.random() < 0.7 ? rand(0.35, 0.7) : rand(0.8, 1); }
   SWELL.v += (SWELL.tgt - SWELL.v) * Math.min(1, dt * 0.08);
   AMP = WX.amp * lerp(0.4, 1.25, NIGHT.weather === 'storm' ? Math.max(0.6, SWELL.v) : SWELL.v); WU.uAmp.value = AMP;
@@ -4133,6 +4521,8 @@ function interactables() {
   if (BOIL.active) { list.push({ pos: { x: P.x, z: P.z }, r: 1, in: true, label: boilLabel(), act: boilAction3D }); return list; }
   if (P.seated) { const myT = TABLE[mySeatIdx()]; list.push({ pos: { x: P.x, z: P.z }, r: 1, in: true, label: myT && myT.pieces.length ? `กินคำต่อไป (เหลือ ${Math.ceil(myT.pieces.length / myT.per)} คำ) · เดินเพื่อลุก` : 'ลุกขึ้น', act: () => { if (myT && myT.pieces.length) biteNext(); else standUp(); } }); return list; }
   islandInteractions(list);
+  if (!ISL.on && P.zone === 'deck') list.push({ pos: RACK.pos, r: 1.5, label: S.prog.dry.length ? `ราวตากหมึก (${S.prog.dry.length}/${RACK_CAP})` : 'ราวตากหมึกแดดเดียว', act: openRack });
+  sjInteract(list);
   if (gen.broken && !gen.repairing) list.push({ pos: GEN, r: 1.9, label: gen.prog > 0 ? `ซ่อมเครื่องปั่นไฟต่อ (${Math.round(gen.prog * 100)}%)` : 'ซ่อมเครื่องปั่นไฟ', act: startRepair });
   waterInteractions(list); potInteractions(list); fuelInteractions(list); holdInteractions(list); belowDeckInteractions(list);
   if (gull.state === 'approach' || gull.state === 'landed') list.push({ pos: TUB, r: 2.6, label: 'ไล่นกนางนวล', act: shooGull });
@@ -4169,7 +4559,7 @@ function remoteGenBreak() { if (gen.broken) return; gen.broken = true; gen.prog 
 function remoteGenFix() { if (!gen.broken) return; gen.fixedAt = T; gen.broken = false; gen.repairing = false; gen.prog = 0; gen.check = null; if (rep === gen) $('skill').hidden = true; gen.t = rand(320, 620); lampsOn = true; lampText(); }
 function updateGen(dt) {
   if (!started || !lampsOn || night < 0.5 || gen.broken || S.fuel <= 0 || ISL.on) return;
-  gen.t -= dt * (hasCurse('gen') ? 3 : 1) * (DT.on ? 1.5 : 1) * (S.prog.hand === 'mechanic' ? 0.5 : 1); if (gen.t <= 0) { gen.broken = true; gen.prog = 0; lampText(); sfx('sputter'); toast('ไฟดับ! เครื่องปั่นไฟที่กราบซ้ายเสีย', 'bad'); netEmit('gen', {}); setTimeout(() => { if (gen.broken) crewSay('ไปซ่อมเครื่องปั่นไฟหน่อย กด E แล้วกดตอนเข็มเข้าโซนนะ'); }, 2500); }
+  gen.t -= dt * (hasCurse('gen') ? 3 : 1) * (DT.on ? 1.5 : 1) * (S.prog.hand === 'mechanic' ? 0.5 : 1) * roleBreakK(); if (gen.t <= 0) { gen.broken = true; gen.prog = 0; lampText(); sfx('sputter'); toast('ไฟดับ! เครื่องปั่นไฟที่กราบซ้ายเสีย', 'bad'); netEmit('gen', {}); setTimeout(() => { if (gen.broken) crewSay('ไปซ่อมเครื่องปั่นไฟหน่อย กด E แล้วกดตอนเข็มเข้าโซนนะ'); }, 2500); }
 }
 
 // gull
@@ -4267,6 +4657,7 @@ function biteRate(depth, horiz, useJig) {
   r *= lerp(0.8, 1.25, clamp((curWater().clar - 3) / 12, 0, 1));
   if (S.lure === 'glow') r *= 1 + 0.4 * night; if (S.lure === 'big') r *= 0.75;
   if (horiz > 30) r *= 0.5;
+  r *= roleBiteK(depth);
   return r;
 }
 function pickSpecies(depth) {
@@ -4432,6 +4823,7 @@ function awardCatch(sp, kg, obj, fromHolder) {
   const rr = RARITY[sp.rar]; if (rr && rr.star && !sp.strange) toast(`${rr.star} ${sp.name} · ${rr.name}${firstTime ? ' · ชนิดใหม่!' : ''}`, 'good');
   try { progCatch(sp, kg, firstTime); } catch (e) { console.warn('progCatch', e); }
   showCard(sp, kg, val, best && S.total > 1, sp.strange ? 'ของแปลก · ขายได้เฉพาะตลาดมืด' : firstTime ? 'ชนิดใหม่ในสมุดหมึก' : fromHolder ? 'จากคันปัก' : 'จับได้แล้ว');
+  $('cRel').hidden = true; $('card').classList.remove('rel'); try { beliefFirstCatch(sp, kg, obj); } catch (e) { console.warn('belief', e); }
   sfx('catch'); save(); if (!fromHolder) crewReact('catch', sp, kg);
   const local = new V3(TUB.x + rand(-0.28, 0.28), 2.12 + Math.min(S.tub.length, 8) * 0.012, TUB.z + rand(-0.18, 0.18));
   flyers.push({ obj, from: obj.position.clone(), local, t: 0, rot: rand(-0.6, 0.6) });
@@ -4608,7 +5000,7 @@ function renderMenu() {
   } else if (menuTab === 'quest') {
     body.appendChild(el('div', 'hint', `ไต้ก๋งสมชายฝากงานไว้ ทำสำเร็จได้เงินทันที · คืนนี้${WX_NAME[NIGHT.weather]} ${NIGHT.moon}`));
     for (const q of NIGHT.quests) { const it = el('div', 'item'), top = el('div', 'top'); top.appendChild(el('b', '', q.t)); top.appendChild(el('span', 'lv', q.done ? 'สำเร็จแล้ว' : `รางวัล ${baht(q.rew)}`)); it.appendChild(top); it.appendChild(el('p', '', q.done ? 'รับรางวัลแล้ว' : q.k === 'big' ? 'ยังไม่ได้' : `ความคืบหน้า ${q.k === 'kg' ? q.prog.toFixed(1) : q.prog} / ${q.goal}`)); body.appendChild(it); }
-    renderCoop(body); renderWeekStory(body);
+    renderCoop(body); renderWeekStory(body); renderBeliefs(body);
     body.appendChild(el('h3', '', 'เคล็ดลับ'));
     body.appendChild(el('div', 'hint', 'คืนเดือนมืดหมึกเข้าไฟดีกว่าคืนเดือนเพ็ญ ฝนตกหมึกก็กินดี หมึกสายต้องหย่อนเหยื่อให้ถึงพื้นที่กองหิน'));
     const qr = el('div', 'joinrow'); qr.appendChild(btn('ให้พี่ชัยสอนตกอีกครั้ง', () => { tut.on = true; tut.step = 0; closeMenu(); renderTut(); }));
@@ -4647,7 +5039,7 @@ function renderMenu() {
       g.appendChild(c);
     }
     body.appendChild(g);
-  } else if (menuTab === 'online') { renderOnlineTab(body); renderBoard(body); }
+  } else if (menuTab === 'online') { renderOnlineTab(body); renderRoles(body); renderRadio(body); renderBoard(body); }
   else if (menuTab === 'settings') {
     body.appendChild(el('h3', '', 'เสียง'));
     body.appendChild(el('div', 'hint', 'เลื่อนเพื่อปรับความดัง กด M ระหว่างเล่นเพื่อปิดหรือเปิดเสียงทั้งหมด'));
@@ -4954,7 +5346,7 @@ function onBoatPeers(all, myUid) {
   for (const [uid, pr] of Object.entries(all)) {
     if (uid === myUid || typeof pr.x !== 'number') continue;
     const r = NET.remotes.get(uid) || addRemote(uid, pr);
-    r.name = pr.name || r.name; if (pr.col) r.col = pr.col; r.ti = typeof pr.ti === 'string' && titlesAll.has(pr.ti) ? pr.ti : ''; r.aw = pr.aw === 1;
+    r.name = pr.name || r.name; if (pr.col) r.col = pr.col; r.ti = typeof pr.ti === 'string' && titlesAll.has(pr.ti) ? pr.ti : ''; r.aw = pr.aw === 1; r.ro = ROLES[pr.ro] ? pr.ro : 'none';
     r.tx = num(pr.x, -4, 4, 0); r.tz = num(pr.z, -12, 12, -6); r.ty = num(pr.y, -1, 6, 2); r.tyaw = num(pr.yaw, -1e4, 1e4, 0);
     r.s = ['idle', 'charge', 'flying', 'water', 'bite', 'fight', 'landing'].includes(pr.s) ? pr.s : 'idle';
     r.lx = num(pr.lx, -200, 200, 0); r.lz = num(pr.lz, -200, 200, 0); r.ld = num(pr.ld, 0, 50, 0); r.c = num(pr.c, 0, 999, 0);
@@ -5015,6 +5407,10 @@ function onNetEvent(m) {
   else if (m.type === 'genFix') { remoteGenFix(); toast('ซ่อมเครื่องปั่นไฟเรียบร้อยแล้ว ไฟกลับมาแล้ว', 'good', m.name); }
   else if (m.type === 'fuel') { const amt = num(m.data && m.data.amt, 1, 100, 0); if (amt > 0) { S.fuel = Math.min(100, S.fuel + amt); fuelWarned = false; save(); lampText(); toast(`${m.name} เติมน้ำมันเครื่องปั่นไฟแล้ว ตอนนี้ ${Math.ceil(S.fuel)}%`, 'good'); } }
   else if (m.type === 'oev' || m.type === 'oevDone') evNet(m);
+  else if (m.type === 'call') onSonarCall(m);
+  else if (m.type === 'whistle') whistle(m.name || 'เพื่อน');
+  else if (m.type === 'stask') { if (m.data && SJOBS[m.data.k] && typeof m.data.id === 'string') sjStart(m.data); }
+  else if (m.type === 'stDone') { if (SJ.job && m.data && m.data.id === SJ.job.id) sjDone(m.name, false); }
   else if (m.type === 'island') { islandSync(!!(m.data && m.data.on), m.name); }
   else if (m.type === 'nap') { const mins = num(m.data && m.data.mins, 1, 30, 0); if (mins > 0 && !nightOver) { gameMin += mins; toast(`${m.name} งีบหลับไป ${Math.round(mins)} นาที เวลาเดินไปด้วย`, 'good'); } }
   else if (m.type === 'gull') { remoteGull(); toast('นกนางนวลบินมาที่ถังหมึกแล้ว! ไปไล่มันเร็ว', 'bad', m.name); }
@@ -5041,7 +5437,7 @@ function islandSync(on, who) {
 function renderPlayers() {
   const box = $('pList'); if (!box) return; box.textContent = '';
   const me = el('div', 'p'); const d0 = el('i', 'dot'); d0.style.background = 'var(--hull)'; me.appendChild(d0); me.appendChild(el('span', '', 'คุณ')); me.appendChild(el('span', '', `${NIGHT ? NIGHT.stats.count : 0} ตัว`)); box.appendChild(me);
-  for (const r of NET.remotes.values()) { const p = el('div', 'p'), d = el('i', 'dot'); d.style.background = r.col; p.appendChild(d); p.appendChild(el('span', '', r.name || 'เพื่อนร่วมเรือ')); p.appendChild(el('span', '', `${r.aw ? '💤 ' : ''}${r.c} ตัว`)); box.appendChild(p); }
+  for (const r of NET.remotes.values()) { const p = el('div', 'p'), d = el('i', 'dot'); d.style.background = r.col; p.appendChild(d); p.appendChild(el('span', '', r.name || 'เพื่อนร่วมเรือ')); p.appendChild(el('span', '', `${r.aw ? '💤 ' : ''}${r.ro && r.ro !== 'none' ? ROLES[r.ro].icon + ' ' : ''}${r.c} ตัว`)); box.appendChild(p); }
 }
 function renderOnlineTab(body) {
   if (!NET.fbUser) { body.appendChild(el('div', 'hint', 'เข้าสู่ระบบด้วย Google ก่อนเพื่อเล่นกับเพื่อน')); body.appendChild(btn('เข้าสู่ระบบด้วย Google', googleSignIn, 'btn pri')); return; }
@@ -5085,7 +5481,7 @@ function updateNet(dt) {
     const dishOf = (t) => (t && t.owner === 'local') ? { k: t.k, id: t.id, kg: +t.kg.toFixed(2), q: +t.q.toFixed(2), f: +(t.f || 1).toFixed(2) } : null;
     const potsOut = S.pots.map((q) => ({ wx: +q.wx.toFixed(2), wz: +q.wz.toFixed(2), t: Math.round(q.t), bait: !!q.bait }));
     // only what changed since the last send goes out (an idle player used to resend ~25 fields 6-7 times a second)
-    const full = { x: +P.x.toFixed(2), z: +P.z.toFixed(2), y: +P.y.toFixed(2), yaw: +P.yaw.toFixed(3), s: st, lx: +lure.x.toFixed(2), lz: +lure.z.toFixed(2), ld: +lure.depth.toFixed(1), c: NIGHT.stats.count, gm: Math.round(gameMin), ti: myTitle(), seat: sIdx, p0: dishOf(TABLE[0]), p1: dishOf(TABLE[1]), cr: P.carry || null, isl: ISL.on, pt: potsOut, fl: +S.fuel.toFixed(1), gb: gen.broken, eb: eng.broken, fd: +FLOOD.lvl.toFixed(2), ck: CONTEST.on ? +CONTEST.kg.toFixed(2) : null };
+    const full = { x: +P.x.toFixed(2), z: +P.z.toFixed(2), y: +P.y.toFixed(2), yaw: +P.yaw.toFixed(3), s: st, lx: +lure.x.toFixed(2), lz: +lure.z.toFixed(2), ld: +lure.depth.toFixed(1), c: NIGHT.stats.count, gm: Math.round(gameMin), ti: myTitle(), ro: myRole(), seat: sIdx, p0: dishOf(TABLE[0]), p1: dishOf(TABLE[1]), cr: P.carry || null, isl: ISL.on, pt: potsOut, fl: +S.fuel.toFixed(1), gb: gen.broken, eb: eng.broken, fd: +FLOOD.lvl.toFixed(2), ck: CONTEST.on ? +CONTEST.kg.toFixed(2) : null };
     const L = NET.last || (NET.last = {}), diff = {}; let n = 0;
     for (const k in full) { const v = full[k] === undefined ? null : full[k], js = JSON.stringify(v); if (L[k] !== js) { diff[k] = v; L[k] = js; n++; } }
     NET.beat = (NET.beat || 0) - 0.15; if (NET.beat <= 0) { NET.beat = 10; diff.t = Date.now(); n++; }
@@ -5232,13 +5628,14 @@ const CURSES = { gen: ['เครื่องปั่นไฟรวน', 'ไ�
 const hasCurse = (k) => S.curses.includes(k);
 function renderCurses() { $('curseRow').hidden = !S.curses.length; $('hCurse').textContent = 'คำสาป: ' + S.curses.map((k) => CURSES[k][0]).join(' · '); }
 function addCurse(why) {
+  if (blessed() && Math.random() < 0.5) { toast(`${why} · แต่แม่ย่านางคุ้มครอง คำสาปไม่ติดตัว 🙏`, 'good'); return; }
   const free = Object.keys(CURSES).filter((k) => !hasCurse(k)); if (!free.length) return;
   const k = free[Math.floor(Math.random() * free.length)]; S.curses.push(k); save(); renderCurses();
   tone(110, 1.4, S.calm ? 0.05 : 0.12, 'sawtooth', 0, null, 70);
   toast(`${why} · คำสาป: ${CURSES[k][0]} (${CURSES[k][1]})`, 'bad'); setTimeout(() => crewReact('curse'), 2500);
 }
 function clearCurses() {
-  if (!S.curses.length) { tone(880, 0.8, 0.06); toast('ไหว้แม่ย่านางแล้ว ขอให้คืนนี้ปลอดภัย', 'good'); return; }
+  if (!S.curses.length) { bless(); return; }
   if (S.money < SHRINE_COST) { toast(`ต้องมีเงิน ${baht(SHRINE_COST)} สำหรับพวงมาลัยและของถวาย`, 'bad'); return; }
   S.money -= SHRINE_COST; S.curses = []; save(); renderCurses(); tone(880, 1.2, 0.1); tone(1320, 1.4, 0.06, 'sine', 0.2);
   toast('ถวายพวงมาลัยแม่ย่านางแล้ว คำสาปหายไปหมด', 'good');
@@ -5692,7 +6089,7 @@ function updateRepair(dt) {
     const c = rep.check; c.t += dt;
     if (c.t / c.dur * 360 > c.z0 + c.w + 4) skillFail();
   } else {
-    rep.prog += dt / (easy ? 8 : 11);
+    rep.prog += dt / (easy ? 8 : 11) * roleRepairK();
     if (Math.random() < dt * 5) burst({ freq: rand(600, 1500), q: 4, dur: 0.05, vol: 0.07 });
     rep.next -= dt;
     if (rep.next <= 0 && rep.warn <= 0) { rep.warn = 0.55; sfx('warn'); }
@@ -5755,7 +6152,7 @@ function openKitchen() {
 function closeKitchen() {
   if (K.view === 'pot') { confirmPot(); return; }
   if (K.view === 'boil' && K.boil && K.boil.done) { finishKitchen(S.dishes.length < DISH_CAP ? 'pack' : 'eat'); return; }
-  if (K.view === 'box' || K.view === 'shop' || K.view === 'cold') { kitchenOpen = false; $('kitchen').hidden = true; K.view = 'list'; requestLock(); return; }
+  if (K.view === 'box' || K.view === 'shop' || K.view === 'cold' || K.view === 'mkt' || K.view === 'rack') { kitchenOpen = false; $('kitchen').hidden = true; K.view = 'list'; requestLock(); return; }
   if (K.view === 'boil') { boilStop(); }
   _kitchenReset();
   if (K.item) { K.src.push(K.item); rebuildTub(); rebuildCrate(); save(); }
@@ -5764,8 +6161,10 @@ function closeKitchen() {
 $('kClose').addEventListener('click', closeKitchen);
 function renderKitchen() {
   const body = $('kBody'); body.textContent = '';
-  $('kTitle').textContent = K.view === 'cold' ? 'ห้องเย็นใต้ท้องเรือ' : K.view === 'box' ? 'กล่องหมึกของพี่ชัย' : K.view === 'pot' ? 'ปูในลอบ' : K.view === 'shop' ? 'ร้านป้าแดง · ซีฟู้ดเกาะลอยใจ' : K.view === 'boil' ? 'ครัวบนเรือ · ต้มปู' : 'ครัวบนเรือ · ซาชิมิหมึก';
+  $('kTitle').textContent = K.view === 'cold' ? 'ห้องเย็นใต้ท้องเรือ' : K.view === 'box' ? 'กล่องหมึกของพี่ชัย' : K.view === 'pot' ? 'ปูในลอบ' : K.view === 'shop' ? 'ร้านป้าแดง · ซีฟู้ดเกาะลอยใจ' : K.view === 'mkt' ? VENDORS[K.vendor].name : K.view === 'rack' ? 'ราวตากหมึกแดดเดียว' : K.view === 'boil' ? 'ครัวบนเรือ · ต้มปู' : 'ครัวบนเรือ · ซาชิมิหมึก';
   if (K.view === 'shop') { renderShop(body); return; }
+  if (K.view === 'mkt') { renderVendor(body); return; }
+  if (K.view === 'rack') { renderRack(body); return; }
   if (K.view === 'cold') { renderCold(body); return; }
   if (K.view === 'boil') { renderBoil(body); return; }
   if (K.view === 'pot') { renderPotView(body); return; }
@@ -6600,6 +6999,7 @@ function renderShop(body) {
   body.appendChild(el('h3', '', 'ของสด · ป้าให้ราคาตลาด +10%'));
   for (const [arr, name] of raw) { const v = arr.reduce((b, it) => b + rawVal(it), 0), n = arr.filter((it) => rawVal(it) > 0).length; if (!n) continue; const row = el('div', 'kitem'), dv = el('div'); dv.appendChild(el('b', '', `${name} ${n} ตัว`)); dv.appendChild(el('p', '', `ราว ${baht(v)}`)); row.appendChild(dv); row.appendChild(btn('ขายทั้งหมด', () => { const keep = arr.filter((it) => rawVal(it) <= 0); S.money += v; arr.length = 0; arr.push(...keep); rebuildTub(); rebuildCrate(); save(); sfx('coin'); renderKitchen(); }, 'btn')); body.appendChild(row); }
   if (!total) body.appendChild(el('div', 'hint', 'ไม่มีของสดเหลือแล้ว'));
+  renderDriedShop(body);
   body.appendChild(el('h3', '', 'ซื้อของจากร้าน'));
   const buy = el('div', 'joinrow');
   buy.appendChild(btn('ข้าวผัดกะเพราทะเล ฿60', () => { S.money -= 60; S.needs.food = Math.min(100, S.needs.food + 55); save(); sfx('eat'); toast('ข้าวกะเพราทะเลจานใหญ่ อร่อยมาก อาหาร +55', 'good'); renderKitchen(); }, 'btn', S.money < 60));
@@ -6680,6 +7080,7 @@ let shopOwner = null;
 function islandInteractions(list) {
   if (!ISL.on) return;
   list.push({ pos: { x: 42.1, z: 9 }, r: 2.2, lvl: 2, label: 'คุยกับป้าแดง · ขายของ ซื้อของ', act: openShop });
+  for (const [id, V] of Object.entries(VENDORS)) list.push({ pos: { x: V.pos.x + 0.2, z: V.pos.z }, r: 1.9, label: `คุยกับ${V.name.split(' · ')[0]} · ต่อราคาขายของ`, act: () => openVendor(id) });
   list.push({ pos: { x: 2.4, z: 0.1 }, r: 1.4, label: 'ออกเรือคืนต่อไป', act: leaveIsland });
 }
 function dockIsland() {
@@ -6862,7 +7263,7 @@ function fixEngine(remote) {
 function updateEngine(dt) {
   if (eng.broken && P.zone === 'hold' && Math.random() < dt * 5) { const s = new THREE.Sprite(smokeMat); s.position.set(rand(-0.2, 0.2), HOLD.floor + 1.35, -7.4 + rand(-0.4, 0.4)); s.scale.setScalar(0.3); s.userData.t = 0; boat.add(s); smokes.push(s); }
   if (!started || ISL.on || traveling || nightOver || eng.broken) return;
-  eng.t -= dt * (1 + 1.5 * FLOOD.lvl) * (NIGHT.weather === 'storm' ? 1.6 : 1) * (S.prog.hand === 'mechanic' ? 0.5 : 1);
+  eng.t -= dt * (1 + 1.5 * FLOOD.lvl) * (NIGHT.weather === 'storm' ? 1.6 : 1) * (S.prog.hand === 'mechanic' ? 0.5 : 1) * roleBreakK();
   if (eng.t <= 0) breakEngine(true);
 }
 
@@ -7227,7 +7628,7 @@ function resetBelowDeck() {
 function updateBelowDeck(dt) { updateEngine(dt); updateFlood(dt); updateRats(dt); updateCat(dt); updateContest(dt); }
 
 // =============== boot & loop ===============
-checkAch(true); try { applyPaint(); applyDecor(); handPlace(); } catch (e) { console.warn('boat custom', e); } setupNight(); resetSchool(); renderQuests(); buildHolders(); lampText();
+checkAch(true); try { applyPaint(); applyDecor(); handPlace(); buildStalls(); rackDraw(); prewarmShaders(); } catch (e) { console.warn('boat custom', e); } setupNight(); resetSchool(); renderQuests(); buildHolders(); lampText();
 if (S.up.sonar) { $('sonarBox').hidden = false; document.body.classList.add('hasSonar'); }
 rebuildTub(); renderWater(); renderCurses(); rebuildCrate(); rebuildPotStack(); rebuildBuoys();
 const clock = new THREE.Clock(); let T = 0;
@@ -7269,7 +7670,7 @@ function frame() {
   safe('updateCrew', () => updateCrew(dt)); safe('updateVisuals', () => updateVisuals(dt)); safe('updateRepair', () => updateRepair(dt)); safe('updateSparks', () => updateSparks(dt));
   safe('updateNeeds', () => updateNeeds(dt)); safe('updateWater', () => updateWater(dt)); safe('updateEat', () => { updateEat(dt); updateBoil3D(dt); }); safe('updateCrate', () => { updateCrate(dt); updateStations(dt); updatePots(dt); updateFuel(dt); }); safe('updateBelowDeck', () => updateBelowDeck(dt));
   if (started) { safe('updateHUD', () => updateHUD(dt, ts)); HUDC.acc += dt; if (HUDC.acc >= 0.05) { const a = HUDC.acc; HUDC.acc = 0; safe('drawRadar', () => drawRadar(a)); safe('drawSonar', () => drawSonar(a)); } }
-  safe('exp', () => { expTick(dt); relTick(dt); handTick(dt); lbTick(dt); coopTick(dt); }); safe('lights', lightSlots); safe('anchor', updateAnchorLine); safe('ambience', () => ambience(dt));
+  safe('exp', () => { expTick(dt); relTick(dt); handTick(dt); lbTick(dt); coopTick(dt); lifeTick(dt); }); safe('lights', lightSlots); safe('anchor', updateAnchorLine); safe('ambience', () => ambience(dt));
   HUDC.n++; renderer.shadowMap.needsUpdate = sunL.intensity > 0.02 && (qName !== 'low' || HUDC.n % 2 === 0);
   safe('render', () => { if (composer && !ERRS.has('composer')) { try { composer.render(); } catch (e) { ERRS.add('composer'); console.error(e); renderer.render(scene, camera); } } else renderer.render(scene, camera); });
 }
