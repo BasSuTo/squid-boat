@@ -957,8 +957,36 @@ let qUserSet = false, qName = hwGuess();
 try { const q = localStorage.getItem('squid-q'); if (q && QUAL[q]) { qName = q; qUserSet = true; } } catch (e) {}
 let Q = QUAL[qName];
 const FPS = { acc: 0, n: 0, t: 8, warned: false };
+// phones: dynamic resolution inside the chosen quality level - as sharp as the frame rate allows
+const DRS_R = { high: [1.4, 2], medium: [1.1, 1.6], low: [0.9, 1.5], min: [0.7, 1.05] };
+const DRS = { cur: 0, t0: 0, n: 0, low: false };
+function drsRange() { const r = DRS_R[qName] || [1, 1.5], dpr = window.devicePixelRatio || 1; return [Math.min(r[0], dpr), Math.min(r[1], dpr)]; }
+function drsApply(v) { const [a, b] = drsRange(); DRS.cur = clamp(v, a, b); renderer.setPixelRatio(DRS.cur); renderer.setSize(innerWidth, innerHeight); if (composer) { composer.setPixelRatio(DRS.cur); composer.setSize(innerWidth, innerHeight); } }
+function drsTick() {
+  if (!TOUCH || !started || paused) { DRS.n = 0; DRS.t0 = 0; return; }
+  const now = performance.now(); if (!DRS.t0) { DRS.t0 = now; DRS.n = 0; return; }
+  DRS.n++; if (now - DRS.t0 < 4000) return;
+  const fps = DRS.n * 1000 / (now - DRS.t0); DRS.t0 = now; DRS.n = 0;
+  const [a, b] = drsRange();
+  if (fps < 40 && DRS.cur > a + 0.01) drsApply(DRS.cur - (fps < 30 ? 0.2 : 0.1));
+  else if (fps > 56 && DRS.cur < b - 0.01) drsApply(DRS.cur + 0.1);
+  DRS.low = fps < 38 && DRS.cur <= a + 0.01; // only then may the quality level itself step down
+}
+const LBL = { list: [], t: 0, cam: new THREE.Vector3(), p: new THREE.Vector3() };
+function labelTick() { // name labels keep a readable size on screen when far away
+  if ((LBL.t -= 1) <= 0) { LBL.t = 120; LBL.list.length = 0; scene.traverse((o) => { if (o.isSprite && o.material.map && o.material.map.userData.lbl) LBL.list.push(o); }); }
+  camera.getWorldPosition(LBL.cam);
+  for (const sp of LBL.list) {
+    const u = sp.userData; if (!u.lb) { u.lb = sp.scale.clone(); u.lk = 1; }
+    else if (Math.abs(sp.scale.x - u.lb.x * u.lk) > 1e-5) u.lb.copy(sp.scale); // something else resized it this frame
+    if (!sp.visible) continue;
+    sp.getWorldPosition(LBL.p); const k = clamp(LBL.cam.distanceTo(LBL.p) / 3.6, 1, 2.3);
+    if (Math.abs(k - u.lk) > 0.01) { sp.scale.copy(u.lb).multiplyScalar(k); u.lk = k; }
+  }
+}
 function autoAdjustQuality(dt) {
   if (qUserSet) return;
+  if (TOUCH && !DRS.low) { FPS.acc = 0; FPS.n = 0; FPS.t = 8; return; }
   FPS.t -= dt; if (dt > 0) { FPS.acc += 1 / dt; FPS.n++; }
   if (FPS.t > 0) return;
   const avg = FPS.n ? FPS.acc / FPS.n : 60; FPS.acc = 0; FPS.n = 0; FPS.t = 8;
@@ -968,7 +996,7 @@ function autoAdjustQuality(dt) {
 
 // =============== renderer ===============
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, Q.pr));
+renderer.setPixelRatio(TOUCH ? (DRS.cur = (drsRange()[0] + drsRange()[1]) / 2) : Math.min(window.devicePixelRatio || 1, Q.pr));
 renderer.setSize(innerWidth, innerHeight);
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.5;
 renderer.shadowMap.enabled = true; renderer.shadowMap.type = qName === 'low' ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap; renderer.shadowMap.autoUpdate = false; // updated by hand: not at night (sun off), half rate on low
@@ -1009,7 +1037,7 @@ function setupComposer() {
   composer.setPixelRatio(renderer.getPixelRatio()); composer.setSize(innerWidth, innerHeight);
 }
 setupComposer();
-if (!qUserSet) { try { const gl = renderer.getContext(), ext = gl.getExtension('WEBGL_debug_renderer_info'), gpu = ext ? String(gl.getParameter(ext.UNMASKED_RENDERER_WEBGL)) : ''; if (/swiftshader|llvmpipe|software|mali-[4t]|adreno[^0-9]*[1-5]\d\d\b|powervr sgx|intel.*hd graphics [2-5]\d{3}/i.test(gpu) || !renderer.capabilities.isWebGL2) { if (qName !== 'min') { qName = 'low'; Q = QUAL.low; } renderer.setPixelRatio(Math.min(1, Q.pr)); renderer.shadowMap.type = THREE.PCFShadowMap; setupComposer(); } } catch (e) {} }
+if (!qUserSet) { try { const gl = renderer.getContext(), ext = gl.getExtension('WEBGL_debug_renderer_info'), gpu = ext ? String(gl.getParameter(ext.UNMASKED_RENDERER_WEBGL)) : ''; if (/swiftshader|llvmpipe|software|mali-[4t]|adreno[^0-9]*[1-5]\d\d\b|powervr sgx|intel.*hd graphics [2-5]\d{3}/i.test(gpu) || !renderer.capabilities.isWebGL2) { if (qName !== 'min') { qName = 'low'; Q = QUAL.low; } if (TOUCH) DRS.cur = Math.min(1, Q.pr); renderer.setPixelRatio(Math.min(1, Q.pr)); renderer.shadowMap.type = THREE.PCFShadowMap; setupComposer(); } } catch (e) {} }
 
 // =============== sky ===============
 function makeSky() { const s = new Sky(); s.scale.setScalar(3000); const u = s.material.uniforms; u.turbidity.value = 6; u.rayleigh.value = 2; u.mieCoefficient.value = 0.006; u.mieDirectionalG.value = 0.86; return s; }
@@ -1151,7 +1179,7 @@ function labelTex(text, color) {
   x.font = '600 46px Kanit, Sarabun, sans-serif'; const w = Math.min(500, x.measureText(text).width + 50);
   x.fillStyle = 'rgba(6,13,19,.72)'; x.beginPath(); x.roundRect((512 - w) / 2, 18, w, 76, 38); x.fill();
   x.fillStyle = color || '#fff'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(text, 256, 58);
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; t.userData.lbl = true; return t;
 }
 
 // =============== boat ===============
@@ -4124,7 +4152,7 @@ function updateTime(dt) {
   hemi.intensity = lerp(0.55, 0.17, night) * (1 - 0.3 * WX.cloud) + WX.flash * 2.5; hemi.color.copy(HEMI_DAY).lerp(HEMI_NIGHT, night);
   fogC.copy(FOG_GOLD).lerp(FOG_DAY, smooth(3, 25, elev)).multiplyScalar(1 - 0.4 * WX.cloud).lerp(FOG_NIGHT, night).lerp(FOG_DARK, DT.k * 0.9); scene.fog.color.copy(fogC);
   WX.fog += ((NIGHT.fog ? 1 : 0) - WX.fog) * Math.min(1, dt * 0.05);
-  scene.fog.density = 0.0026 + WX.cloud * 0.002 + WX.rain * 0.0035 + DT.k * 0.0045 + WX.fog * 0.0075;
+  scene.fog.density = 0.002 + WX.cloud * 0.0026 + WX.rain * 0.0035 + DT.k * 0.0045 + WX.fog * 0.0075;
   renderer.toneMappingExposure = lerp(0.5, 0.9, night) * (composer ? 1 : 1 - 0.55 * DT.k); // no grade pass: darken with exposure instead
   starMat.opacity = night * 0.9 * (1 - WX.cloud) * (1 - DT.k); moonMat.opacity = smooth(0.1, 0.7, night) * moonVis; moonGlow.material.opacity = night * 0.8 * moonVis;
   if (lampAuto && started && !lampsOn && night > 0.25 && powerOn()) { toggleLamps(false); S.deck = true; lampText(); crewSay('ฟ้ามืดแล้ว เปิดไฟล่อหมึกเลย'); }
@@ -7249,7 +7277,7 @@ function applyViewDist() {
 }
 function setQuality(name, manual) {
   qName = name; Q = QUAL[name]; if (manual) { qUserSet = true; try { localStorage.setItem('squid-q', name); } catch (e) {} }
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, Q.pr)); renderer.setSize(innerWidth, innerHeight);
+  renderer.setPixelRatio(TOUCH ? (DRS.cur = (drsRange()[0] + drsRange()[1]) / 2) : Math.min(window.devicePixelRatio || 1, Q.pr)); renderer.setSize(innerWidth, innerHeight);
   sunL.shadow.mapSize.set(Q.shadow, Q.shadow); if (sunL.shadow.map) { sunL.shadow.map.dispose(); sunL.shadow.map = null; }
   const stype = name === 'low' ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
   if (renderer.shadowMap.type !== stype) { renderer.shadowMap.type = stype; scene.traverse((o) => { if (o.material) for (const m of [].concat(o.material)) m.needsUpdate = true; }); }
@@ -7689,7 +7717,8 @@ const HUDC = { acc: 0, n: 0 };
 function frame() {
   requestAnimationFrame(frame);
   const dt = Math.min(clock.getDelta(), 0.05); T += dt; WU.uTime.value = T;
-  safe('autoQ', () => autoAdjustQuality(dt));
+  safe('labels', labelTick);
+  safe('autoQ', () => { drsTick(); autoAdjustQuality(dt); });
   safe('time', () => { if (started && !paused && !nightOver && !traveling && !ISL.on) { if (gameMin >= 1740 && !announced) { announced = true; crewSay('ใกล้เช้าแล้ว เก็บของได้เลย เดี๋ยวพี่พาเรือเข้าเกาะลอยใจ เอาของไปขายร้านป้าแดงกัน', 7); } const dm = dt * TIME_RATE; gameMin += dm; updateFreshness(dm); if (gameMin >= 1770) endNight(); } });
   const ts = safe('updateTime', () => updateTime(dt)) || '';
   safe('updateBoat', () => updateBoat(dt));
