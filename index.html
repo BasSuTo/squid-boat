@@ -297,17 +297,64 @@ body.touch .need span{font-size:10.5px}
 #bAnchor span:first-child{font-size:30px;line-height:1}
 #bMenu{right:calc(16px + env(safe-area-inset-right,0px));top:calc(14px + env(safe-area-inset-top,0px));width:52px;height:52px;border-radius:14px;font-size:12px}
 #bMusic{right:calc(16px + env(safe-area-inset-right,0px));top:calc(74px + env(safe-area-inset-top,0px));width:52px;height:52px;border-radius:14px;font-size:11px}
+/* ===== mobile HUD (touch): compact top chips, status sheet, bottom bar, collapsible boxes, hide-all ===== */
+#mTop,#mBar{display:none}
+body.touch #mTop{display:flex;position:absolute;left:calc(10px + env(safe-area-inset-left,0px));top:calc(8px + env(safe-area-inset-top,0px));gap:5px;align-items:center;padding:5px 8px;border-radius:14px;background:rgba(6,13,19,.55);border:1px solid rgba(255,255,255,.14);color:var(--ink);font:600 13px var(--body);pointer-events:auto;min-height:44px;max-width:calc(100% - 150px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px));overflow:hidden;text-shadow:none}
+body.touch #mTop .mc{display:inline-flex;align-items:center;gap:3px;padding:3px 7px;border-radius:9px;background:rgba(255,255,255,.07);white-space:nowrap;font-variant-numeric:tabular-nums}
+body.touch #mTop .mc.warn{background:rgba(255,120,90,.3)}
+body.touch #mTop .mneed{background:#ff6b57;color:#fff;font-weight:800;min-width:22px;justify-content:center}
+body.touch #mTop .mcar{opacity:.7;font-size:12px;padding-left:2px}
+body.touch #hudTL{display:none;top:calc(58px + env(safe-area-inset-top,0px));left:calc(10px + env(safe-area-inset-left,0px));padding:10px 12px;border-radius:14px;background:rgba(6,13,19,.82);border:1px solid rgba(255,255,255,.14);max-height:calc(100% - 140px);overflow:auto;pointer-events:auto;text-shadow:none}
+body.touch.statOpen #hudTL{display:flex;flex-flow:row wrap;gap:6px 16px;width:min(480px,calc(100% - 130px));max-height:calc(100% - 210px)}
+body.touch.statOpen #hudTL .row{min-width:200px}
+body.touch.statOpen #hudTR{display:none}
+body.touch.statOpen #mTop .mcar{transform:rotate(180deg)}
+body.touch #mBar{display:flex;position:absolute;left:50%;transform:translateX(-50%);bottom:calc(8px + env(safe-area-inset-bottom,0px));gap:4px;padding:4px;border-radius:16px;background:rgba(6,13,19,.55);border:1px solid rgba(255,255,255,.14);pointer-events:auto}
+body.touch #mBar button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-width:52px;min-height:48px;padding:3px 6px;border:0;border-radius:12px;background:transparent;color:var(--ink);font:600 11px var(--body);touch-action:manipulation}
+body.touch #mBar button span{font-size:17px;line-height:1}
+body.touch #mBar button em{font-style:normal}
+body.touch #mBar button:active,body.touch #mBar button[aria-pressed="true"]{background:rgba(255,255,255,.14)}
+body.touch #bMenu,body.touch #bMusic{display:none}
+body.touch #radarWrap{left:auto;bottom:auto;right:calc(10px + env(safe-area-inset-right,0px));top:calc(8px + env(safe-area-inset-top,0px));width:84px;height:84px}
+body.touch #hudTR{right:auto;left:calc(10px + env(safe-area-inset-left,0px));top:calc(60px + env(safe-area-inset-top,0px));width:150px;align-items:flex-start}
+body.touch #sonar{height:64px}
+body.touch.hasSonar #radarWrap{display:block}
+body.touch #sonarBox{padding:6px 9px;pointer-events:auto}
+body.touch #sonarBox h4{margin:0;font-size:12px;cursor:pointer}
+body.touch #sonarBox h4::after{content:"▾";margin-left:6px;opacity:.7}
+body.touch #sonarBox.collapsed h4::after{content:"▸"}
+body.touch #sonarBox.collapsed canvas{display:none}
+body.touch #sonarBox canvas{margin-top:4px}
+body.touch #bottom{bottom:calc(66px + env(safe-area-inset-bottom,0px));width:min(330px,calc(100% - 480px));min-width:200px}
+body.touch #card{top:auto;bottom:calc(120px + env(safe-area-inset-bottom,0px));min-width:0;width:min(300px,calc(100% - 40px));padding:10px 14px;transform:translateX(-50%) scale(.9)}
+body.touch #helmHud{bottom:auto;top:calc(8px + env(safe-area-inset-top,0px));width:min(280px,calc(100% - 560px))}
+body.touch #toasts{top:calc(60px + env(safe-area-inset-top,0px));width:min(420px,calc(100% - 200px))}
+body.touch #alerts{top:calc(60px + env(safe-area-inset-top,0px))}
+/* hide-all: only the controls, prompts and messages stay */
+body.touch.hudMin #mTop,body.touch.hudMin #hudTL,body.touch.hudMin #hudTR,body.touch.hudMin #radarWrap,body.touch.hudMin #lineInfo,body.touch.hudMin #alerts{display:none!important}
+body.touch.hudMin #mBar button:not(#mbHud){display:none}
+/* portrait phones: bar along the bottom edge, controls lifted above it */
+@media (orientation:portrait){
+  body.touch #mBar{left:calc(8px + env(safe-area-inset-left,0px));right:calc(8px + env(safe-area-inset-right,0px));transform:none;justify-content:space-around}
+  body.touch #joy{bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+  body.touch #bCast,body.touch #bAnchor{bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+  body.touch #bUse{right:calc(16px + env(safe-area-inset-right,0px));bottom:calc(206px + env(safe-area-inset-bottom,0px))}
+  body.touch #bLamp{right:calc(110px + env(safe-area-inset-right,0px));bottom:calc(206px + env(safe-area-inset-bottom,0px))}
+  body.touch #bReel{right:calc(176px + env(safe-area-inset-right,0px));bottom:calc(206px + env(safe-area-inset-bottom,0px))}
+  body.touch #bottom{bottom:calc(300px + env(safe-area-inset-bottom,0px));width:calc(100% - 32px);min-width:0}
+  body.touch #card{bottom:calc(340px + env(safe-area-inset-bottom,0px))}
+  body.touch #toasts{width:calc(100% - 24px);top:calc(104px + env(safe-area-inset-top,0px))}
+  body.touch #helmHud{top:calc(104px + env(safe-area-inset-top,0px));width:calc(100% - 24px);min-width:0}
+  body.touch #mTop{max-width:calc(100% - 110px)}
+  body.touch #mTop .mc:nth-child(4){display:none}
+}
 body.touch #ctrl,body.touch #cross,body.touch #hudTR #questBox,body.touch #players{display:none}
-body.touch #hudTR{right:calc(80px + env(safe-area-inset-right,0px));width:150px}
 body.touch #sonar{height:78px}
-body.touch #radarWrap{left:auto;bottom:auto;right:calc(80px + env(safe-area-inset-right,0px));top:calc(14px + env(safe-area-inset-top,0px));width:96px;height:96px}
-body.touch.hasSonar #radarWrap{display:none}
 body.touch #kn{display:none}
 body.touch .row{font-size:13.5px;gap:8px}
 body.touch .row svg{width:21px;height:21px}
 body.touch .row small{display:none}
 body.touch #hudTL{gap:4px}
-body.touch #bottom{bottom:calc(150px + env(safe-area-inset-bottom,0px));width:min(380px,calc(100% - 32px))}
 body.touch #prompt{font-size:14px}
 body.touch #alerts{top:calc(56px + env(safe-area-inset-top,0px))}
 
@@ -410,6 +457,9 @@ body.touch #alerts{top:calc(56px + env(safe-area-inset-top,0px))}
 <div id="view"></div>
 
 <div id="hud" hidden>
+  <button id="mTop" type="button" aria-expanded="false" aria-controls="hudTL" aria-label="สถานะ แตะเพื่อดูทั้งหมด">
+    <span class="mc"><b id="mTime">18:20</b></span><span class="mc"><b id="mMoney">฿0</b></span><span class="mc" id="mFuelC">⛽<b id="mFuel">60%</b></span><span class="mc">🪣<b id="mTub">0/15</b></span><span class="mc mneed" id="mNeed" hidden>!</span><span class="mcar" aria-hidden="true">▾</span>
+  </button>
   <div id="hudTL">
     <div class="row">
       <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.7" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="1.5"></rect><path d="M3 9.5h18M8 3v4M16 3v4M7 13h2M11 13h2M15 13h2M7 17h2M11 17h2"></path></svg>
@@ -520,6 +570,13 @@ body.touch #alerts{top:calc(56px + env(safe-area-inset-top,0px))}
   </button>
   <button class="tbtn" id="bAnchor" type="button" hidden aria-label="ทิ้งหรือถอนสมอ"><span aria-hidden="true">⚓</span><span id="bAnchorLbl">ถอนสมอ</span></button>
   <button class="tbtn" id="bMenu" type="button">เมนู</button>
+  <nav id="mBar" aria-label="เมนูลัด">
+    <button type="button" id="mbMenu"><span aria-hidden="true">☰</span>เมนู</button>
+    <button type="button" id="mbQuest"><span aria-hidden="true">✓</span>ภารกิจ</button>
+    <button type="button" id="mbMusic"><span aria-hidden="true">♪</span>เพลง</button>
+    <button type="button" id="mbStat"><span aria-hidden="true">ⓘ</span>สถานะ</button>
+    <button type="button" id="mbHud" aria-pressed="false"><span aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg></span><em id="mbHudL">ซ่อน</em></button>
+  </nav>
   <button class="tbtn" id="bMusic" type="button" aria-label="เปิดเครื่องเล่นเพลง">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l11-2v13"></path><circle cx="6" cy="18" r="3"></circle><circle cx="17" cy="16" r="3"></circle></svg>
   </button>
@@ -1429,7 +1486,7 @@ function noiseNormalTex(N, waves, amp) {
   x.putImageData(img, 0, 0); const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; return t;
 }
 const FAB_N = noiseNormalTex(128, 14, 1.4);
-function skinTex(hex, stubble) {
+function skinTex(hex, stubble, aged) {
   const W = 512, H = 256, c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d'), base = new THREE.Color(hex);
   x.fillStyle = '#' + base.getHexString(); x.fillRect(0, 0, W, H);
   for (let i = 0; i < 2200; i++) { const r = rand(0.5, 2.4); x.fillStyle = Math.random() < 0.5 ? `rgba(90,40,20,${rand(0.015, 0.05)})` : `rgba(255,220,190,${rand(0.015, 0.045)})`; x.beginPath(); x.arc(rand(0, W), rand(0, H), r, 0, 7); x.fill(); }
@@ -1444,6 +1501,15 @@ function skinTex(hex, stubble) {
       if (d > 1 || mouth < 1 || Math.random() > (1 - d) * 1.25) continue;
       x.fillStyle = `rgba(28,20,16,${rand(0.1, 0.3) * (1 - d * 0.6)})`; x.fillRect(px, py, 1.1, 1.1);
     }
+  }
+  if (aged) { // weathered, friendly face: crow's feet, smile lines, a couple of forehead creases, sun-darkened cheeks
+    const ln = (pts, a, w) => { x.strokeStyle = `rgba(70,35,22,${a})`; x.lineWidth = w; x.lineCap = 'round'; x.beginPath(); x.moveTo(pts[0], pts[1]); x.quadraticCurveTo(pts[2], pts[3], pts[4], pts[5]); x.stroke(); };
+    for (const sd of [-1, 1]) {
+      for (let k = 0; k < 3; k++) ln([384 + sd * 50, 100 + k * 6, 384 + sd * 60, 98 + k * 8, 384 + sd * 68, 94 + k * 11], 0.16, 1.4); // crow's feet
+      ln([384 + sd * 14, 136, 384 + sd * 26, 150, 384 + sd * 25, 170], 0.2, 2.2); // smile lines
+      blob(384 + sd * 46, 132, 30, 'rgba(150,60,40,.12)'); // sun on the cheeks
+    }
+    for (const yy of [64, 74]) ln([340, yy + 2, 384, yy - 3, 428, yy + 2], 0.1, 1.3); // forehead
   }
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t;
 }
@@ -1505,6 +1571,19 @@ function jacketTex(hex, kind) {
     }
     x.fillStyle = '#1f3552'; x.fillRect(U(0.43) - 14, Y(0.43), 28, 14); x.fillStyle = '#e8eef2'; x.fillRect(U(0.43) - 10, Y(0.43) + 6, 20, 2); // chest patch
     x.fillStyle = 'rgba(0,0,0,.18)'; x.fillRect(0, Y(0.0), W, Y(-0.045) - Y(0.0)); // hem band
+  } else if (kind === 'work') { // Uncle Chai's faded cotton work shirt: sun-bleached shoulders, chest pocket, buttons
+    const g = x.createLinearGradient(0, 0, 0, H); g.addColorStop(0, 'rgba(255,250,235,.22)'); g.addColorStop(0.45, 'rgba(255,250,235,0)'); g.addColorStop(1, 'rgba(80,50,10,.12)'); x.fillStyle = g; x.fillRect(0, 0, W, H);
+    for (let i = 0; i < 2600; i++) { x.fillStyle = Math.random() < 0.5 ? 'rgba(0,0,0,.035)' : 'rgba(255,255,255,.04)'; x.fillRect(rand(0, W), rand(0, H), 1, rand(2, 5)); } // weave
+    for (let i = 0; i < 6; i++) { const px = rand(0, W), py = rand(H * 0.3, H); const gg = x.createRadialGradient(px, py, 0, px, py, rand(12, 30)); gg.addColorStop(0, 'rgba(90,60,20,.10)'); gg.addColorStop(1, 'rgba(90,60,20,0)'); x.fillStyle = gg; x.fillRect(px - 30, py - 30, 60, 60); } // work stains
+    line(U(0.5) - 8, Y(0.6), U(0.5) - 8, Y(-0.045), dark, 1.6); line(U(0.5) + 8, Y(0.6), U(0.5) + 8, Y(-0.045), 'rgba(0,0,0,.18)', 1);
+    for (let y = 0.54; y > 0; y -= 0.11) { x.fillStyle = '#efe6d2'; x.beginPath(); x.arc(U(0.5), Y(y), 4.2, 0, 7); x.fill(); x.fillStyle = 'rgba(0,0,0,.35)'; x.fillRect(U(0.5) - 1.5, Y(y) - 1.5, 1.2, 1.2); x.fillRect(U(0.5) + 0.5, Y(y) + 0.5, 1.2, 1.2); }
+    const pc = U(0.585), pw = U(0.06), py0 = Y(0.47), py1 = Y(0.36); // chest pocket with a pen
+    x.fillStyle = 'rgba(0,0,0,.06)'; x.fillRect(pc - pw / 2, py0, pw, py1 - py0); x.strokeStyle = dark; x.lineWidth = 1.4; x.strokeRect(pc - pw / 2, py0, pw, py1 - py0);
+    x.fillStyle = 'rgba(0,0,0,.12)'; x.fillRect(pc - pw / 2, py0, pw, 8); x.fillStyle = '#2a4a8a'; x.fillRect(pc - pw / 2 + 5, py0 - 10, 3, 16);
+    line(0, Y(0.52), W, Y(0.52), 'rgba(0,0,0,.14)', 1.5, [3, 3]); // shoulder seam stitching
+  } else if (kind === 'le') { // กางเกงเล: indigo fisherman trousers, faded along the folds
+    for (let i = 0; i < 40; i++) { const px = rand(0, W); const gg = x.createLinearGradient(px - 10, 0, px + 10, 0); gg.addColorStop(0, 'rgba(255,255,255,0)'); gg.addColorStop(0.5, 'rgba(170,190,230,.10)'); gg.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = gg; x.fillRect(px - 10, 0, 20, H); }
+    for (let i = 0; i < 2000; i++) { x.fillStyle = Math.random() < 0.5 ? 'rgba(0,0,0,.05)' : 'rgba(200,215,255,.05)'; x.fillRect(rand(0, W), rand(0, H), rand(2, 5), 1); }
   } else { // cotton blouse: small floral print, button placket
     for (let i = 0; i < 260; i++) { const px = rand(0, W), py = rand(0, H); x.fillStyle = Math.random() < 0.5 ? 'rgba(255,240,230,.55)' : 'rgba(250,200,90,.5)'; for (let k = 0; k < 5; k++) { const a = k / 5 * 6.28; x.beginPath(); x.arc(px + Math.cos(a) * 3, py + Math.sin(a) * 3, 2, 0, 7); x.fill(); } x.fillStyle = 'rgba(120,40,30,.6)'; x.beginPath(); x.arc(px, py, 1.4, 0, 7); x.fill(); }
     if (kind === 'shirt') line(U(0.5) - 7, Y(0.6), U(0.5) - 7, Y(-0.045), dark, 1.5);
@@ -1522,16 +1601,18 @@ function sarongTex() {
 }
 function makeAvatar(col, withRod = true, opts = {}) {
   const g = new THREE.Group(); g.rotation.order = 'YXZ';
-  const female = !!opts.female, crewBand = !!opts.band;
+  const female = !!opts.female, crewBand = !!opts.band, chai = !!opts.chai;
   const skinHex = opts.skin || 0xc98e66;
-  const skin = new THREE.MeshPhysicalMaterial({ map: skinTex(skinHex, crewBand), roughness: 0.55, sheen: 0.35, sheenRoughness: 0.6, sheenColor: new THREE.Color(0xffc4a8) });
+  const skin = new THREE.MeshPhysicalMaterial({ map: skinTex(skinHex, crewBand, chai), roughness: 0.55, sheen: 0.35, sheenRoughness: 0.6, sheenColor: new THREE.Color(0xffc4a8) });
   const bare = new THREE.MeshStandardMaterial({ color: skinHex, roughness: 0.6 }); // hands/feet, no face texture
-  const rain = !female;
+  const rain = !female && !chai;
   const fabric = { roughness: rain ? 0.38 : 0.78, clearcoat: rain ? 0.5 : 0, clearcoatRoughness: 0.3, normalMap: FAB_N, normalScale: new THREE.Vector2(rain ? 0.35 : 0.6, rain ? 0.35 : 0.6) };
-  const jacket = new THREE.MeshPhysicalMaterial(Object.assign({ map: jacketTex(col, rain ? 'rain' : 'shirt') }, fabric));
+  const jacket = new THREE.MeshPhysicalMaterial(Object.assign({ map: jacketTex(col, rain ? 'rain' : chai ? 'work' : 'shirt') }, fabric));
   const sleeve = new THREE.MeshPhysicalMaterial(Object.assign({ color: col }, fabric));
-  if (!rain) sleeve.map = jacketTex(col, 'print'); // same print on the sleeves, without the button placket
-  const pants = new THREE.MeshStandardMaterial({ color: 0x27324a, roughness: 0.92, normalMap: FAB_N, normalScale: new THREE.Vector2(0.9, 0.9) });
+  if (!rain && !chai) sleeve.map = jacketTex(col, 'print'); // same print on the sleeves, without the button placket
+  if (chai) { fabric.roughness = 0.86; sleeve.roughness = 0.86; jacket.roughness = 0.86; }
+  const pants = chai ? new THREE.MeshStandardMaterial({ color: 0x34477a, map: jacketTex(0x34477a, 'le'), roughness: 0.95, normalMap: FAB_N, normalScale: new THREE.Vector2(1, 1) })
+    : new THREE.MeshStandardMaterial({ color: 0x27324a, roughness: 0.92, normalMap: FAB_N, normalScale: new THREE.Vector2(0.9, 0.9) });
   const boot = new THREE.MeshPhysicalMaterial({ color: 0xeeeae0, roughness: 0.32, clearcoat: 0.6 });
   const glove = female ? bare : new THREE.MeshStandardMaterial({ color: opts.glove || 0xe0731c, roughness: 0.48 });
   const dark = std(0x111316, 0.5, 0), sole = std(0x2a2a2a, 0.9, 0);
@@ -1547,10 +1628,10 @@ function makeAvatar(col, withRod = true, opts = {}) {
   }
   for (const s of [-1, 1]) {
     const hip = new THREE.Group(); hip.position.set(s * 0.095, 0.9, 0); g.add(hip);
-    const thigh = new THREE.Mesh(new THREE.CapsuleGeometry(0.077, 0.3, 6, 14), pants); thigh.position.y = -0.21; thigh.scale.z = 0.95; hip.add(thigh);
+    const thigh = new THREE.Mesh(new THREE.CapsuleGeometry(chai ? 0.088 : 0.077, 0.3, 6, 14), pants); thigh.position.y = -0.21; thigh.scale.z = 0.95; hip.add(thigh);
     const knee = new THREE.Group(); knee.position.y = -0.44; hip.add(knee);
     knee.add(new THREE.Mesh(new THREE.SphereGeometry(0.066, 12, 10), pants));
-    const shin = new THREE.Mesh(new THREE.CapsuleGeometry(0.062, 0.12, 6, 12), female ? bare : pants); shin.position.y = -0.07; knee.add(shin);
+    const shin = new THREE.Mesh(new THREE.CapsuleGeometry(chai ? 0.074 : 0.062, 0.12, 6, 12), female ? bare : pants); shin.position.y = -0.07; knee.add(shin);
     if (female) { // bare ankles and simple sandals under the sarong
       const ank = new THREE.Mesh(new THREE.CapsuleGeometry(0.04, 0.26, 4, 10), bare); ank.position.y = -0.25; knee.add(ank);
       const foot = new THREE.Mesh(new THREE.CapsuleGeometry(0.04, 0.12, 4, 10), bare); foot.rotation.x = Math.PI / 2; foot.scale.set(1.1, 1, 0.6); foot.position.set(0, -0.425, -0.05); knee.add(foot);
@@ -1569,6 +1650,12 @@ function makeAvatar(col, withRod = true, opts = {}) {
   const torso = new THREE.Mesh(new THREE.LatheGeometry(TORSO_P.map(([a, b]) => new THREE.Vector2(a, b)), 40), jacket); torso.scale.z = 0.68; body.add(torso);
   const hem = new THREE.Mesh(new THREE.TorusGeometry(0.174, 0.012, 6, 32), sleeve); hem.rotation.x = Math.PI / 2; hem.scale.y = 0.68; hem.position.y = -0.045; body.add(hem);
   const neck = new THREE.Mesh(new THREE.CapsuleGeometry(0.046, 0.05, 4, 12), skin); neck.position.y = 0.685; body.add(neck);
+  if (chai) {
+    const sash = new THREE.Mesh(new THREE.TorusGeometry(0.172, 0.016, 6, 32), pants); sash.rotation.x = Math.PI / 2; sash.scale.y = 0.7; sash.position.y = -0.03; body.add(sash); // tied waist of the กางเกงเล
+    const kn = new THREE.Mesh(new THREE.SphereGeometry(0.026, 10, 8), pants); kn.scale.set(1.3, 1, 0.7); kn.position.set(0.03, -0.035, -0.122); body.add(kn);
+    for (const sd of [-1, 1]) { const tl = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.11, 0.01), pants); tl.position.set(0.03 + sd * 0.012, -0.1, -0.124); tl.rotation.z = sd * 0.16; body.add(tl); }
+    for (const sd of [-1, 1]) { const cl = new THREE.Mesh(new THREE.BoxGeometry(0.062, 0.012, 0.05), jacket); cl.position.set(sd * 0.045, 0.628, -0.06); cl.rotation.set(-0.5, sd * 0.45, sd * 0.35); body.add(cl); } // folded shirt collar
+  }
   if (crewBand) {
     const towel = new THREE.MeshStandardMaterial({ map: HB_TEX, roughness: 0.9 });
     const t1 = new THREE.Mesh(new THREE.TorusGeometry(0.07, 0.022, 8, 24), towel); t1.rotation.x = Math.PI / 2 - 0.15; t1.position.y = 0.655; body.add(t1);
@@ -1580,7 +1667,7 @@ function makeAvatar(col, withRod = true, opts = {}) {
   const head = new THREE.Group(); head.position.set(0, 0.787, -0.015); body.add(head);
   head.add(new THREE.Mesh(HEAD_GEO, skin));
   const lids = [];
-  const white = std(0xf4f1ea, 0.2, 0), iris = std(opts.eye || 0x3b2618, 0.25, 0), brow = std(0x1b1410, 0.85, 0);
+  const white = std(0xf4f1ea, 0.2, 0), iris = std(opts.eye || 0x3b2618, 0.25, 0), brow = std(0x1b1410, 0.85, 0), greyBrow = std(0x4a4440, 0.9, 0);
   const lipU = std(female ? 0x9c463e : 0x8a5546, 0.5, 0), lipD = std(female ? 0xb4564a : 0x94604f, 0.5, 0), shine = new THREE.MeshBasicMaterial({ color: 0xffffff });
   const ER = 0.0142;
   for (const s of [-1, 1]) {
@@ -1593,7 +1680,7 @@ function makeAvatar(col, withRod = true, opts = {}) {
     // upper lid + lash line; open = rests just over the top of the iris, blink = sweeps down over the whole eye
     const lid = face(new THREE.Mesh(new THREE.SphereGeometry(ER * 1.08, 16, 8, 0, Math.PI * 2, 0, Math.PI * 0.42), skin)); lid.position.set(ex, ey + 0.0005, ez); lid.rotation.x = 0.24; lid.userData.keep = 1; head.add(lid); lids.push(lid);
     const lash = face(new THREE.Mesh(new THREE.TorusGeometry(ER * 1.08 * Math.sin(Math.PI * 0.42), female ? 0.0014 : 0.0011, 4, 16, Math.PI), dark)); lash.rotation.x = -Math.PI / 2; lash.position.y = ER * 1.08 * Math.cos(Math.PI * 0.42); lid.add(lash);
-    const br = face(new THREE.Mesh(new THREE.CapsuleGeometry(female ? 0.0035 : 0.0055, 0.03, 3, 8), brow)); br.rotation.set(0, s * 0.3, Math.PI / 2 - s * (female ? 0.1 : 0.05)); br.position.set(s * 0.036, 0.046, -0.0985); head.add(br);
+    const br = face(new THREE.Mesh(new THREE.CapsuleGeometry(female ? 0.0035 : chai ? 0.0068 : 0.0055, 0.03, 3, 8), chai ? greyBrow : brow)); br.rotation.set(0, s * 0.3, Math.PI / 2 - s * (female ? 0.1 : chai ? 0.2 : 0.05)); br.position.set(s * 0.036, chai ? 0.05 : 0.046, -0.0985); head.add(br);
     const ear = new THREE.Mesh(new THREE.TorusGeometry(0.017, 0.007, 6, 12, Math.PI * 1.4), skin); ear.position.set(s * 0.093, 0.005, 0.008); ear.rotation.set(0, s * Math.PI / 2, -Math.PI / 2 - 0.4); ear.scale.set(0.8, 1.25, 1); head.add(ear);
     const lobe = new THREE.Mesh(new THREE.SphereGeometry(0.012, 8, 6), skin); lobe.scale.set(0.5, 1.2, 0.9); lobe.position.set(s * 0.094, 0.0, 0.008); head.add(lobe);
     const wing = new THREE.Mesh(new THREE.SphereGeometry(0.0062, 8, 6), skin); wing.scale.set(1, 0.7, 0.85); wing.position.set(s * 0.0098, -0.0238, -0.1028); head.add(wing);
@@ -1604,12 +1691,27 @@ function makeAvatar(col, withRod = true, opts = {}) {
   // lips sit flush with the face (the old ones stuck out like two pills)
   const upper = face(new THREE.Mesh(new THREE.CapsuleGeometry(0.0031, 0.027, 3, 8), lipU)); upper.rotation.z = Math.PI / 2; upper.scale.z = 0.55; upper.position.set(0, -0.0478, -0.0962); head.add(upper);
   const lipL = face(new THREE.Mesh(new THREE.CapsuleGeometry(0.0037, 0.02, 3, 8), lipD)); lipL.rotation.z = Math.PI / 2; lipL.scale.z = 0.55; lipL.position.set(0, -0.0542, -0.0948); lipL.userData.keep = 1; head.add(lipL);
-  const hairM = new THREE.MeshStandardMaterial({ map: hairTex(female ? 0x221a16 : 0x1a1512, female ? 0.22 : 0), roughness: 0.8, normalMap: FAB_N, normalScale: new THREE.Vector2(1, 1) });
+  if (chai) for (const s of [-1, 1]) { const cr = face(new THREE.Mesh(new THREE.CapsuleGeometry(0.0024, 0.011, 3, 6), lipU)); cr.position.set(s * 0.0185, -0.0468, -0.0946); cr.rotation.z = Math.PI / 2 + s * 0.6; head.add(cr); } // smile corners
+  const hairM = new THREE.MeshStandardMaterial({ map: hairTex(female ? 0x221a16 : chai ? 0x2a2420 : 0x1a1512, female ? 0.22 : chai ? 0.38 : 0), roughness: 0.8, normalMap: FAB_N, normalScale: new THREE.Vector2(1, 1) });
   if (crewBand) {
     const hair = new THREE.Mesh(new THREE.SphereGeometry(0.113, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2.25), hairM); hair.position.set(0, 0.016, 0.004); hair.rotation.x = 0.3; hair.scale.set(0.9, 1.12, 1.04); head.add(hair); // tilted back: hairline up under the band, nape lower
-    const band = new THREE.Mesh(new THREE.TorusGeometry(0.1, 0.016, 8, 32), new THREE.MeshStandardMaterial({ map: HB_TEX, roughness: 0.9 })); band.rotation.x = Math.PI / 2; band.position.y = 0.076; band.scale.set(0.9, 1.04, 1); head.add(band);
+    const bandM = new THREE.MeshStandardMaterial({ map: HB_TEX, roughness: 0.9 });
+    if (chai) { // faded cloth bucket hat, the checked ผ้าขาวม้า tied round it (his trademark headband, now on the hat)
+      const hatM = new THREE.MeshStandardMaterial({ map: jacketTex(0xcfc29a, 'work'), color: 0xffffff, roughness: 0.95, normalMap: FAB_N, normalScale: new THREE.Vector2(1.1, 1.1) });
+      const crownP = [[0.0005, 0.118], [0.05, 0.115], [0.085, 0.104], [0.103, 0.075], [0.11, 0.03], [0.112, 0.0]].map(([a, b]) => new THREE.Vector2(a, b));
+      const hat = new THREE.Group(); hat.position.set(0, 0.07, 0.012); hat.rotation.x = 0.16; head.add(hat);
+      const crown = new THREE.Mesh(new THREE.LatheGeometry(crownP, 26), hatM); crown.scale.set(0.98, 1, 1.06); hat.add(crown);
+      const brimP = [[0.108, 0.002], [0.13, -0.004], [0.16, -0.02], [0.178, -0.04], [0.181, -0.046], [0.176, -0.044], [0.155, -0.024], [0.125, -0.008], [0.107, -0.004]].map(([a, b]) => new THREE.Vector2(a, b));
+      const brim = new THREE.Mesh(new THREE.LatheGeometry(brimP, 30), hatM); brim.scale.set(0.98, 1, 1.06); hat.add(brim);
+      const hb = new THREE.Mesh(new THREE.CylinderGeometry(0.1135, 0.1125, 0.03, 30, 1, true), bandM); hb.position.y = 0.017; hb.scale.set(0.98, 1, 1.06); hat.add(hb);
+      const knot = new THREE.Mesh(new THREE.SphereGeometry(0.017, 8, 6), bandM); knot.position.set(0.06, 0.017, 0.098); hat.add(knot);
+      for (const s of [-1, 1]) { const tl = new THREE.Mesh(new THREE.BoxGeometry(0.024, 0.07, 0.006), bandM); tl.position.set(0.06 + s * 0.012, -0.02, 0.112); tl.rotation.set(0.3, 0, s * 0.3); hat.add(tl); }
+      for (const s of [-1, 1]) { const sb = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.03, 0.02), hairM); sb.position.set(s * 0.09, 0.03, -0.006); head.add(sb); } // grey sideburns
+    } else {
+    const band = new THREE.Mesh(new THREE.TorusGeometry(0.1, 0.016, 8, 32), bandM); band.rotation.x = Math.PI / 2; band.position.y = 0.076; band.scale.set(0.9, 1.04, 1); head.add(band);
     const knot = new THREE.Mesh(new THREE.SphereGeometry(0.022, 8, 6), band.material); knot.position.set(0.02, 0.076, 0.102); head.add(knot);
     for (const s of [-1, 1]) { const tl = new THREE.Mesh(new THREE.BoxGeometry(0.028, 0.08, 0.008), band.material); tl.position.set(0.02 + s * 0.015, 0.036, 0.112); tl.rotation.z = s * 0.3; head.add(tl); }
+    }
     // drooping moustache that follows the lip line
     const mus = face(new THREE.Mesh(new THREE.TorusGeometry(0.02, 0.0042, 5, 14, Math.PI * 0.8), brow)); mus.rotation.z = Math.PI * 0.1; mus.scale.y = 0.62; mus.position.set(0, -0.053, -0.0985); head.add(mus);
   } else if (female) {
@@ -1632,7 +1734,8 @@ function makeAvatar(col, withRod = true, opts = {}) {
     const up = new THREE.Mesh(new THREE.CapsuleGeometry(female ? 0.05 : 0.056, 0.19, 6, 14), sleeve); up.position.y = -0.145; sh.add(up);
     const elb = new THREE.Group(); elb.position.y = -0.29; sh.add(elb);
     elb.add(new THREE.Mesh(new THREE.SphereGeometry(female ? 0.047 : 0.052, 12, 10), female ? bare : sleeve));
-    const fa = new THREE.Mesh(new THREE.CapsuleGeometry(female ? 0.042 : 0.05, 0.17, 6, 14), female ? bare : sleeve); fa.position.y = -0.125; elb.add(fa);
+    const fa = new THREE.Mesh(new THREE.CapsuleGeometry(female ? 0.042 : chai ? 0.044 : 0.05, 0.17, 6, 14), female || chai ? bare : sleeve); fa.position.y = -0.125; elb.add(fa);
+    if (chai) { const roll = new THREE.Mesh(new THREE.TorusGeometry(0.052, 0.017, 8, 16), sleeve); roll.rotation.x = Math.PI / 2; roll.position.y = -0.03; elb.add(roll); }
     if (!female) { const cuffA = new THREE.Mesh(new THREE.TorusGeometry(0.046, 0.012, 6, 14), glove); cuffA.rotation.x = Math.PI / 2; cuffA.position.y = -0.232; elb.add(cuffA); }
     if (female) { const sl = new THREE.Mesh(new THREE.CylinderGeometry(0.057, 0.06, 0.05, 14, 1, true), sleeve); sl.position.y = -0.255; sh.add(sl); } // sleeve opening at the elbow
     const hand = makeHand(glove, s); hand.position.y = -0.245; elb.add(hand);
@@ -1648,7 +1751,7 @@ function makeAvatar(col, withRod = true, opts = {}) {
   // small facial parts don't need to cast or receive shadows (they only cost shadow-map draws)
   g.traverse((o) => { if (o.isMesh) { const f = !!o.userData.face; o.castShadow = !f; o.receiveShadow = !f; } });
   try { mergeRig(g); } catch (e) { console.warn('mergeRig', e); }
-  g.userData = { rod, tip: tipO, arms, head, mouth: lipL, mouthY: lipL.position.y, legs, knees, body, talkT: 0, ph: Math.random() * 10, wph: 0, blinkT: rand(2, 5), lids, lidOpen: 0.24, lidShut: -0.95 };
+  g.userData = { rod, tip: tipO, arms, head, mouth: lipL, mouthY: lipL.position.y, legs, knees, body, talkT: 0, ph: Math.random() * 10, wph: 0, blinkT: rand(2, 5), lids, lidOpen: chai ? -0.22 : 0.24, lidShut: -0.95, gest: 0 };
   return g;
 }
 function animPerson(av, dt, o = {}) {
@@ -1661,9 +1764,14 @@ function animPerson(av, dt, o = {}) {
   u.body.position.y = 0.9 - Math.abs(Math.cos(u.wph)) * 0.02 * w - 0.008;
   const lean = o.arms === 'hold' || !o.arms ? 0.07 : o.arms === 'work' ? 0.35 : 0.03; u.body.rotation.x += (lean - u.body.rotation.x) * Math.min(1, dt * 4);
   u.body.rotation.y = Math.sin(u.wph) * 0.05 * w;
-  const k = Math.min(1, dt * 4);
-  u.head.rotation.y += (clamp(o.lookYaw || 0, -1.1, 1.1) - u.head.rotation.y) * k;
-  u.head.rotation.x += (clamp((o.lookPitch || 0) - u.body.rotation.x * 0.7, -0.4, 0.4) - u.head.rotation.x) * k;
+  const k = Math.min(1, dt * 4), idle = 1 - w, talking = u.talkT > 0;
+  // standing still is never quite still: weight shifts from foot to foot, the head wanders when nobody is near
+  u.body.rotation.z = Math.sin(u.ph * 0.55) * 0.022 * idle; u.body.position.x = Math.sin(u.ph * 0.55) * 0.008 * idle;
+  const wander = o.lookYaw ? 0 : (Math.sin(u.ph * 0.31) * 0.28 + Math.sin(u.ph * 0.83 + 1) * 0.1) * idle;
+  u.head.rotation.y += (clamp((o.lookYaw || 0) + wander, -1.1, 1.1) - u.head.rotation.y) * k;
+  const nod = talking ? Math.sin(u.ph * 6.5) * 0.045 + Math.sin(u.ph * 2.1) * 0.03 : 0;
+  u.head.rotation.x += (clamp((o.lookPitch || 0) - u.body.rotation.x * 0.7 + nod, -0.4, 0.4) - u.head.rotation.x) * k;
+  u.head.rotation.z = talking ? Math.sin(u.ph * 1.7) * 0.05 : Math.sin(u.ph * 0.4) * 0.02 * idle;
   if (u.talkT > 0) { u.talkT -= dt; u.mouth.position.y = u.mouthY - Math.abs(Math.sin(u.ph * 17)) * 0.009; } else u.mouth.position.y = u.mouthY;
   u.blinkT -= dt; const bl = u.blinkT < 0.12 ? 1 : 0; if (u.blinkT < 0) u.blinkT = rand(2.5, 6); for (const l of u.lids) l.rotation.x = bl ? u.lidShut : u.lidOpen;
   const A0 = u.arms[0], A1 = u.arms[1], ease = (obj, key, v) => { obj[key] += (v - obj[key]) * Math.min(1, dt * 8); };
@@ -1672,6 +1780,12 @@ function animPerson(av, dt, o = {}) {
   else if (o.arms === 'wave') { set(A0, 0.4, 0.12, 1.1); set(A1, 2.6, 0.35 + Math.sin(u.ph * 10) * 0.3, 0.4); }
   else if (o.arms === 'swing') u.arms.forEach((a, i) => set(a, Math.sin(u.wph + i * Math.PI) * 0.4 * w, (i ? -1 : 1) * 0.08, 0.25 + Math.max(0, Math.sin(u.wph + i * Math.PI)) * 0.3));
   else u.arms.forEach((a, i) => set(a, 0.42, (i ? -1 : 1) * 0.2, 1.12));
+  // talking: the free (left) hand explains, now and then a broader gesture with both
+  if (talking && (o.arms === 'hold' || !o.arms)) {
+    u.gest += dt; const big = Math.sin(u.gest * 0.9) > 0.55 && !o.rod;
+    set(A0, 0.85 + Math.sin(u.ph * 3.1) * 0.22, 0.32 + Math.sin(u.ph * 2.3) * 0.12, 1.5 + Math.sin(u.ph * 4.4) * 0.28);
+    if (big) set(A1, 0.8 + Math.sin(u.ph * 2.7 + 1) * 0.2, -0.35, 1.3);
+  } else u.gest = 0;
 }
 function makeLine(color = 0xe6f4fa, opacity = 0.8) {
   const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(30 * 3), 3));
@@ -1683,7 +1797,7 @@ function setLine(line, a, b, sag) {
   line.geometry.attributes.position.needsUpdate = true;
 }
 // crew
-const crew = makeAvatar(0xf2b33d, true, { band: true, skin: 0xb07a52 }); crew.position.set(-2.7, 2.0, -10.35); crew.rotation.y = Math.PI / 2 + 0.25; boat.add(crew);
+const crew = makeAvatar(0xe9b24a, true, { band: true, chai: true, skin: 0xa9734d }); crew.position.set(-2.7, 2.0, -10.35); crew.rotation.y = Math.PI / 2 + 0.25; boat.add(crew);
 const crewLine = makeLine(0xe6f4fa, 0.6), crewWater = new V3(-9.5, 0, -11.5);
 const crewLabel = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTex('พี่ชัย · ลูกเรือ', '#ffd27a'), transparent: true, depthWrite: false })); crewLabel.scale.set(1.1, 0.24, 1); crewLabel.position.set(0, 2.12, 0); crew.add(crewLabel);
 const crewBubble = new THREE.Sprite(new THREE.SpriteMaterial({ transparent: true, depthWrite: false, depthTest: false })); crewBubble.renderOrder = 10; crewBubble.visible = false; crew.add(crewBubble);
@@ -3300,6 +3414,18 @@ try { if (localStorage.getItem('squid-ctrl') === '1') $('ctrl').classList.add('m
   const uEnd = () => { useHeld = false; }; bu.addEventListener('pointerup', uEnd); bu.addEventListener('pointercancel', uEnd);
   $('bLamp').addEventListener('click', () => toggleLamps());
   $('bMenu').addEventListener('click', () => openMenu());
+  // mobile bar + status sheet + hide-all (state remembered per device)
+  const mstate = (() => { try { return JSON.parse(localStorage.getItem('squid-mui') || '{}'); } catch (e) { return {}; } })(), msave = () => { try { localStorage.setItem('squid-mui', JSON.stringify(mstate)); } catch (e) {} };
+  const setStat = (on) => { document.body.classList.toggle('statOpen', on); $('mTop').setAttribute('aria-expanded', String(on)); };
+  const setHudMin = (on) => { document.body.classList.toggle('hudMin', on); $('mbHud').setAttribute('aria-pressed', String(on)); $('mbHudL').textContent = on ? 'แสดง' : 'ซ่อน'; if (on) setStat(false); mstate.min = on; msave(); };
+  $('mTop').addEventListener('click', () => setStat(!document.body.classList.contains('statOpen')));
+  $('mbStat').addEventListener('click', () => { if (document.body.classList.contains('hudMin')) setHudMin(false); setStat(!document.body.classList.contains('statOpen')); });
+  $('mbMenu').addEventListener('click', () => openMenu());
+  $('mbQuest').addEventListener('click', () => openMenu('quest'));
+  $('mbMusic').addEventListener('click', () => { if (musicOpen) closeMusic(); else openMusic(); });
+  $('mbHud').addEventListener('click', () => setHudMin(!document.body.classList.contains('hudMin')));
+  $('sonarBox').querySelector('h4').addEventListener('click', () => { const c = !$('sonarBox').classList.contains('collapsed'); $('sonarBox').classList.toggle('collapsed', c); mstate.sonar = c; msave(); });
+  if (mstate.min) setHudMin(true); if (mstate.sonar) $('sonarBox').classList.add('collapsed');
   $('bMusic').addEventListener('click', () => { if (musicOpen) closeMusic(); else openMusic(); });
   $('bReel').addEventListener('click', () => reelInNow());
 })();
@@ -3381,7 +3507,7 @@ function updateCrew(dt) {
   let lookYaw = 0; if (dist < 6 || CREW.talking) { const want = Math.atan2(-dx, -dz); lookYaw = Math.atan2(Math.sin(want - CREW.yaw), Math.cos(want - CREW.yaw)); }
   const walking = CREW.path.length > 0, working = !!CREW.task && CREW.task !== 'home' && !walking;
   if (CREW.waveT > 0) CREW.waveT -= dt;
-  animPerson(crew, dt, { walk: walking ? 1 : 0, lookYaw, lookPitch: 0.08, arms: working ? 'work' : walking ? 'swing' : CREW.waveT > 0 ? 'wave' : 'hold' });
+  animPerson(crew, dt, { walk: walking ? 1 : 0, lookYaw, lookPitch: 0.08, arms: working ? 'work' : walking ? 'swing' : CREW.waveT > 0 ? 'wave' : 'hold', rod: CREW.fishing });
   const rod = crew.userData.rod; rod.visible = CREW.fishing; crewLine.visible = crew.visible && CREW.fishing;
   if (CREW.fishing && crew.visible) {
     rod.rotation.x = 0.55 + Math.sin(T * 0.7) * 0.05; crew.updateMatrixWorld(true);
@@ -5912,6 +6038,12 @@ function updateHUD(dt, timeStr) {
   $('hTime').textContent = timeStr;
   $('hSea').textContent = `${WX_NAME[NIGHT.weather]} · ${swellName()} · ${NIGHT.moon} · ${SPOTS[S.spot].name}`;
   $('hMoney').textContent = baht(S.money); renderFuelHud();
+  if (TOUCH) {
+    const st2 = (id, v) => { const e = $(id); if (e.textContent !== v) e.textContent = v; };
+    st2('mTime', timeStr.slice(-5)); st2('mMoney', baht(S.money)); st2('mFuel', gen.broken ? 'เสีย' : Math.ceil(S.fuel) + '%'); st2('mTub', S.tub.length + '/' + TUB_CAP[S.up.tub]);
+    $('mFuelC').classList.toggle('warn', S.fuel < 15 || gen.broken);
+    const low = S.needs.food < 22 || S.needs.water < 22 || S.needs.energy < 22; $('mNeed').hidden = !low;
+  }
   const fresh = S.tub.length ? Math.round(S.tub.reduce((a, b) => a + b.f, 0) / S.tub.length * 100) : 100;
   $('hTub').textContent = `ถัง ${S.tub.length} / ${TUB_CAP[S.up.tub]} · ${S.tub.reduce((a, b) => a + b.kg, 0).toFixed(1)} กก.`;
   $('hFresh').textContent = `ความสด ${fresh}%${NIGHT.ice ? ' · มีน้ำแข็ง' : ''} · ตู้แช่ ${S.freezer.length}/${FREEZE_CAP[S.up.freezer]} · อาหารกล่อง ${S.dishes.length} · น้ำจืด ${S.fresh.toFixed(1)} ล.`;
@@ -6075,37 +6207,90 @@ const ratG = new THREE.Group(); ratG.visible = false; holdGroup.add(ratG);
 }
 // เจ้าส้ม: a standing cat (faces -Z) with legs, tail and head on their own joints so it can walk, sit and loaf
 const catG = new THREE.Group(); catG.position.set(2.42, HOLD.floor + 0.66, -0.3); catG.visible = false; boat.add(catG);
-const CATR = {};
-{
-  const orange = std(0xd9822b, 0.85, 0), cream = std(0xf3dcb4, 0.85, 0), stripe = std(0xa85a1a, 0.85, 0), pink = std(0xe39a9a, 0.7, 0);
-  const body = new THREE.Group(); catG.add(body); CATR.body = body;
-  const torso = new THREE.Mesh(new THREE.SphereGeometry(0.1, 16, 12), orange); torso.scale.set(0.85, 0.8, 2.0); torso.position.y = 0.2; body.add(torso);
-  const chest = new THREE.Mesh(new THREE.SphereGeometry(0.085, 14, 10), cream); chest.scale.set(0.9, 1, 0.8); chest.position.set(0, 0.19, -0.14); body.add(chest);
-  for (let i = 0; i < 3; i++) { const s2 = new THREE.Mesh(new THREE.TorusGeometry(0.083, 0.012, 4, 14, Math.PI), stripe); s2.rotation.y = Math.PI / 2; s2.scale.set(1, 1, 0.85); s2.position.set(0, 0.2, -0.03 + i * 0.07); body.add(s2); }
-  const head = new THREE.Group(); head.position.set(0, 0.31, -0.22); body.add(head); CATR.head = head;
-  const hd = new THREE.Mesh(new THREE.SphereGeometry(0.082, 16, 12), orange); hd.scale.set(1.08, 0.94, 0.95); head.add(hd);
-  const mz = new THREE.Mesh(new THREE.SphereGeometry(0.038, 10, 8), cream); mz.scale.set(1.3, 0.8, 0.8); mz.position.set(0, -0.028, -0.066); head.add(mz);
-  const nose = new THREE.Mesh(new THREE.SphereGeometry(0.009, 8, 6), pink); nose.position.set(0, -0.012, -0.096); head.add(nose);
-  const eyeM = std(0x8fbf3a, 0.2, 0), slit = std(0x0c0c0c, 0.3, 0);
-  for (const s of [-1, 1]) {
-    const ear = new THREE.Mesh(new THREE.ConeGeometry(0.032, 0.065, 4), orange); ear.position.set(s * 0.045, 0.072, 0.005); ear.rotation.set(-0.15, 0, -s * 0.28); head.add(ear);
-    const inn = new THREE.Mesh(new THREE.ConeGeometry(0.018, 0.04, 4), pink); inn.position.set(s * 0.045, 0.068, -0.006); inn.rotation.set(-0.15, 0, -s * 0.28); head.add(inn);
-    const e = new THREE.Mesh(new THREE.SphereGeometry(0.0145, 10, 8), eyeM); e.position.set(s * 0.034, 0.012, -0.072); head.add(e);
-    const p = new THREE.Mesh(new THREE.SphereGeometry(0.007, 6, 6), slit); p.scale.set(0.45, 1.5, 0.6); p.position.set(s * 0.034, 0.012, -0.0855); head.add(p);
+// เจ้าส้ม, orange tabby with a cream chest and paws (same colours as before). Rig, facing -Z, origin on the floor:
+// body (torso centre) -> head (ears, eyelids), 4 legs (each: upper + paw), 5-segment tail. Poses are blended targets.
+const CATR = { lids: [], ears: [] };
+function catFurTex() {
+  const W = 256, H = 128, c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d');
+  x.fillStyle = '#d9822b'; x.fillRect(0, 0, W, H);
+  for (let i = 0; i < 1400; i++) { x.fillStyle = Math.random() < 0.5 ? 'rgba(255,200,120,.08)' : 'rgba(120,50,10,.08)'; x.fillRect(rand(0, W), rand(0, H), 1, rand(2, 6)); } // fur grain
+  for (let k = 0; k < 9; k++) { // tabby stripes running round the body, wavy, thinning toward the belly
+    const v = 10 + k * 13 + rand(-2, 2); x.fillStyle = 'rgba(150,72,18,.75)'; x.beginPath();
+    for (let u = 0; u <= W; u += 4) { const w = 4.5 * (0.35 + 0.65 * Math.abs(Math.cos(u / W * Math.PI))); x.lineTo(u, v + Math.sin(u * 0.08 + k) * 2 - w); }
+    for (let u = W; u >= 0; u -= 4) { const w = 4.5 * (0.35 + 0.65 * Math.abs(Math.cos(u / W * Math.PI))); x.lineTo(u, v + Math.sin(u * 0.08 + k) * 2 + w); }
+    x.fill();
   }
+  const g = x.createLinearGradient(W * 0.32, 0, W * 0.5, 0); g.addColorStop(0, 'rgba(243,220,180,0)'); g.addColorStop(1, 'rgba(243,220,180,1)');
+  x.fillStyle = g; x.fillRect(W * 0.32, 0, W * 0.36, H); const g2 = x.createLinearGradient(W * 0.5, 0, W * 0.68, 0); g2.addColorStop(0, 'rgba(243,220,180,1)'); g2.addColorStop(1, 'rgba(243,220,180,0)'); x.fillStyle = g2; x.fillRect(W * 0.5, 0, W * 0.18, H); // cream belly (u = .5 points down)
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+}
+{
+  const fur = std(0xffffff, 0.92, 0, { map: catFurTex() }), orange = std(0xd9822b, 0.9, 0), cream = std(0xf3dcb4, 0.9, 0), stripe = std(0xa85a1a, 0.9, 0);
+  const pink = std(0xe39a9a, 0.6, 0), nose = std(0xd77b7b, 0.4, 0), dark = std(0x111111, 0.4, 0);
+  const eyeM = (() => { // sphere UV: u = 0.5 faces -X before the rotation above, so the face of the eye is painted at u .5
+    const c = document.createElement('canvas'); c.width = 128; c.height = 64; const x = c.getContext('2d');
+    const g = x.createRadialGradient(64, 32, 2, 64, 32, 30); g.addColorStop(0, '#d8e86a'); g.addColorStop(0.55, '#9bc43a'); g.addColorStop(1, '#4f7a1c'); x.fillStyle = '#5a7d22'; x.fillRect(0, 0, 128, 64); x.fillStyle = g; x.beginPath(); x.ellipse(64, 32, 30, 30, 0, 0, 7); x.fill();
+    x.fillStyle = '#0b0b0b'; x.beginPath(); x.ellipse(64, 32, 4.5, 22, 0, 0, 7); x.fill();
+    x.fillStyle = 'rgba(255,255,255,.95)'; x.beginPath(); x.arc(56, 22, 4.5, 0, 7); x.fill(); x.beginPath(); x.arc(70, 40, 2, 0, 7); x.fill();
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+    return new THREE.MeshStandardMaterial({ map: t, roughness: 0.12, emissive: 0x1a2408, emissiveIntensity: 0.4 });
+  })();
+  // body pieces whose long axis is Z use a sphere rotated so its UV "v" runs nose-to-tail (stripes go round the body)
+  const furBall = (r, sx, sy, sz) => { const g = new THREE.SphereGeometry(r, 18, 14); g.rotateX(Math.PI / 2); g.rotateZ(Math.PI); const m = new THREE.Mesh(g, fur); m.scale.set(sx, sy, sz); return m; };
+  const body = new THREE.Group(); body.position.set(0, 0.19, 0); catG.add(body); CATR.body = body;
+  const chest = furBall(0.078, 0.95, 1, 1.05); chest.position.set(0, 0.005, -0.08); body.add(chest);
+  const mid = furBall(0.074, 0.92, 0.95, 1.25); mid.position.set(0, 0.004, 0.01); body.add(mid);
+  const hips = furBall(0.08, 1, 1, 1.05); hips.position.set(0, 0.008, 0.095); body.add(hips);
+  const bib = new THREE.Mesh(new THREE.SphereGeometry(0.058, 14, 10), cream); bib.scale.set(0.9, 1.05, 0.7); bib.position.set(0, -0.01, -0.13); body.add(bib); // white chest
+  const neck = new THREE.Mesh(new THREE.SphereGeometry(0.052, 12, 10), orange); neck.position.set(0, 0.045, -0.13); body.add(neck);
+  // head
+  const head = new THREE.Group(); head.position.set(0, 0.095, -0.17); body.add(head); CATR.head = head;
+  const skull = new THREE.Mesh(new THREE.SphereGeometry(0.068, 20, 16), orange); skull.scale.set(1.1, 0.95, 0.95); head.add(skull);
+  for (const s of [-1, 1]) { const ch = new THREE.Mesh(new THREE.SphereGeometry(0.04, 12, 10), orange); ch.scale.set(1, 0.85, 0.9); ch.position.set(s * 0.042, -0.022, -0.02); head.add(ch); } // fluffy cheeks
+  for (let k = 0; k < 3; k++) { const st = new THREE.Mesh(new THREE.CapsuleGeometry(0.004, 0.03, 2, 6), stripe); st.rotation.x = Math.PI / 2; st.position.set((k - 1) * 0.014, 0.055 - Math.abs(k - 1) * 0.004, -0.012); head.add(st); } // forehead "M"
+  const muzzle = new THREE.Group(); muzzle.position.set(0, -0.025, -0.058); head.add(muzzle);
+  for (const s of [-1, 1]) { const pad = new THREE.Mesh(new THREE.SphereGeometry(0.019, 12, 10), cream); pad.position.set(s * 0.014, 0, 0); muzzle.add(pad); }
+  const chin = new THREE.Mesh(new THREE.SphereGeometry(0.014, 10, 8), cream); chin.position.set(0, -0.016, 0.004); muzzle.add(chin);
+  const nz = new THREE.Mesh(new THREE.ConeGeometry(0.009, 0.011, 3), nose); nz.rotation.set(-Math.PI / 2, 0, Math.PI); nz.position.set(0, 0.014, -0.013); nz.scale.set(1.3, 1, 0.8); muzzle.add(nz);
+  // whiskers: one line object, 3 per side
+  { const pts = []; for (const s of [-1, 1]) for (let k = 0; k < 3; k++) { pts.push(s * 0.026, -0.002 - k * 0.005, -0.004, s * 0.1, 0.012 - k * 0.016, 0.02); } const wg = new THREE.BufferGeometry(); wg.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3)); const wl = new THREE.LineSegments(wg, new THREE.LineBasicMaterial({ color: 0xf6f0e4, transparent: true, opacity: 0.8 })); wl.userData.keep = 1; muzzle.add(wl); }
+  for (const s of [-1, 1]) {
+    // big almond eyes: green-gold iris, slit pupil, catch-light, an eyelid that closes for blinks and naps
+    const eye = new THREE.Group(); eye.position.set(s * 0.029, 0.012, -0.056); eye.rotation.y = s * 0.28; head.add(eye);
+    const ball = new THREE.Mesh(new THREE.SphereGeometry(0.0155, 14, 10), eyeM); ball.rotation.y = Math.PI / 2; ball.scale.set(0.75, 1, 1.15); ball.castShadow = false; eye.add(ball);
+    const lid = new THREE.Mesh(new THREE.SphereGeometry(0.0175, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), orange); lid.scale.set(1.15, 0.12, 0.8); lid.position.y = 0.0005; lid.userData.keep = 1; eye.add(lid); CATR.lids.push(lid);
+    // ears: a group so they can twitch
+    const ear = new THREE.Group(); ear.position.set(s * 0.04, 0.05, 0.004); ear.rotation.set(-0.1, 0, -s * 0.32); head.add(ear);
+    const outer = new THREE.Mesh(new THREE.ConeGeometry(0.03, 0.055, 4), orange); outer.position.y = 0.024; outer.rotation.y = Math.PI / 4; outer.scale.set(1, 1, 0.55); ear.add(outer);
+    const inner = new THREE.Mesh(new THREE.ConeGeometry(0.019, 0.04, 4), pink); inner.position.set(0, 0.02, -0.007); inner.rotation.y = Math.PI / 4; inner.scale.set(1, 1, 0.4); ear.add(inner);
+    CATR.ears.push(ear);
+  }
+  // legs: pivot at the shoulder/hip, leg hangs down 0.17 to the paw
   CATR.legs = [];
-  for (const [x, z] of [[-0.05, -0.13], [0.05, -0.13], [-0.05, 0.13], [0.05, 0.13]]) {
-    const L = new THREE.Group(); L.position.set(x, 0.17, z); body.add(L);
-    const leg = new THREE.Mesh(new THREE.CapsuleGeometry(0.025, 0.11, 4, 8), orange); leg.position.y = -0.075; L.add(leg);
-    const paw = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 6), cream); paw.scale.set(1, 0.6, 1.3); paw.position.set(0, -0.155, -0.01); L.add(paw);
+  for (const [x, z, front] of [[-0.042, -0.1, 1], [0.042, -0.1, 1], [-0.045, 0.1, 0], [0.045, 0.1, 0]]) {
+    const L = new THREE.Group(); L.position.set(x, -0.02, z); body.add(L);
+    const up = new THREE.Mesh(new THREE.CapsuleGeometry(front ? 0.021 : 0.027, 0.09, 4, 10), orange); up.position.y = -0.06; if (!front) up.scale.set(1, 1, 1.2); L.add(up);
+    const low = new THREE.Mesh(new THREE.CapsuleGeometry(0.018, 0.06, 4, 8), front ? cream : orange); low.position.y = -0.125; L.add(low);
+    const paw = new THREE.Mesh(new THREE.SphereGeometry(0.022, 10, 8), cream); paw.scale.set(1, 0.6, 1.25); paw.position.set(0, -0.164, -0.008); L.add(paw);
     CATR.legs.push(L);
   }
-  const tail = new THREE.Group(); tail.position.set(0, 0.24, 0.19); body.add(tail); CATR.tail = [];
-  let par = tail;
-  for (let i = 0; i < 4; i++) { const seg = new THREE.Group(); if (i) seg.position.y = 0.07; par.add(seg); const c = new THREE.Mesh(new THREE.CapsuleGeometry(0.019 - i * 0.002, 0.05, 3, 8), i === 3 ? stripe : orange); c.position.y = 0.035; seg.add(c); CATR.tail.push(seg); par = seg; }
-  catG.traverse((o) => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+  // tail: 5 segments, striped
+  const tail = new THREE.Group(); tail.position.set(0, 0.03, 0.17); body.add(tail); CATR.tail = []; let par = tail;
+  for (let i = 0; i < 5; i++) { const seg = new THREE.Group(); if (i) seg.position.y = 0.055; par.add(seg); const c = new THREE.Mesh(new THREE.CapsuleGeometry(0.016 - i * 0.0015, 0.04, 3, 8), i % 2 ? stripe : orange); c.position.y = 0.028; seg.add(c); CATR.tail.push(seg); par = seg; }
+  // only the big shapes cast a shadow (body + head); eyes, ears, legs and tail would just add shadow-pass draws
+  for (const m of [chest, mid, hips, skull]) m.castShadow = true; catG.traverse((o) => { if (o.isMesh) o.receiveShadow = true; });
   try { mergeRig(catG); } catch (e) {}
 }
+// poses (target values blended each frame): body height/pitch/roll, leg angles + lengths, head pitch, tail shape
+const CAT_POSES = {
+  walk: { y: 0.19, pitch: 0, roll: 0, lf: 0, lh: 0, sf: 1, sh: 1, hx: 0.08, tx: -0.3, tz: 0, lid: 0 },
+  stand: { y: 0.19, pitch: 0, roll: 0, lf: 0, lh: 0, sf: 1, sh: 1, hx: 0.05, tx: -0.9, tz: 0, lid: 0 },
+  sit: { y: 0.135, pitch: 0.62, roll: 0, lf: -0.62, lh: 0.34, sf: 1.02, sh: 0.62, hx: -0.5, tx: -1.5, tz: 0.9, lid: 0.15 },
+  loaf: { y: 0.085, pitch: 0, roll: 0, lf: -1.45, lh: -1.6, sf: 0.55, sh: 0.55, hx: 0.05, tx: -1.5, tz: 1.0, lid: 0.35 },
+  sleep: { y: 0.075, pitch: 0, roll: 1.15, lf: -0.4, lh: 0.35, sf: 0.85, sh: 0.85, hx: 0.35, tx: -1.45, tz: 1.3, lid: 1 },
+  stretch: { y: 0.15, pitch: -0.32, roll: 0, lf: 1.3, lh: 0.32, sf: 1.05, sh: 1.05, hx: -0.15, tx: -0.2, tz: 0, lid: 0.6 },
+};
+const CATP = Object.assign({}, CAT_POSES.sleep);
 let petT = 0;
 function petCat() { if (T < petT) { toast('เจ้าส้มหลับปุ๋ยไปแล้ว'); return; } petT = T + 60; tone(rand(700, 900), 0.35, 0.05, 'sine'); toast('เมี้ยว~ เจ้าส้มคลอเคลียมือ หายเหนื่อยไปนิดนึง', 'good'); S.needs.energy = Math.min(100, S.needs.energy + 4); CAT.moveT = Math.max(CAT.moveT, 20); }
 // Roaming: wanders all over the main deck, pops into the cabin, and goes down the ladder to nap on its bunk.
@@ -6113,7 +6298,7 @@ function petCat() { if (T < petT) { toast('เจ้าส้มหลับป�
 const CAT_HOLD_SPOT = new V3(2.42, HOLD.floor + 0.66, -0.3);
 const LADDER_DECK = new V3(0, 0, -1.45), CAT_DOOR_OUT = { x: 1.09, z: 3.3 }, CAT_DOOR_IN = { x: 1.09, z: 4.6 };
 const CAT_DY = 2.0, CAT_HY = HOLD.floor;
-const CAT = { zone: 'hold', path: [], moveT: rand(30, 80), ph: 0, pose: 0, onBunk: true, fetching: null, fetchT: 0 };
+const CAT = { zone: 'hold', path: [], moveT: rand(30, 80), ph: 0, pose: 0, onBunk: true, fetching: null, fetchT: 0, rest: 'sleep', restT: 0, stretchT: 0 };
 const catInCabin = (x, z) => z > 4.02 && Math.abs(x) < 2.2;
 const catCabinOk = (x, z) => inR(x, z, [-1.7, 1.7, 4.55, 9.1]) && !hitAny(x, z, CABIN_OBS, 0.25);
 function catSeg(a, b, ok) { const L = Math.hypot(b.x - a.x, b.z - a.z), n = Math.ceil(L / 0.15); for (let i = 1; i <= n; i++) { const t = i / n; if (t * L < 0.12) continue; if (!ok(a.x + (b.x - a.x) * t, a.z + (b.z - a.z) * t)) return false; } return true; }
@@ -6209,18 +6394,36 @@ function updateCat(dt) {
     } else if (CAT.fetching != null) {
       const hd = holders[CAT.fetching]; if (hd) { const want = Math.atan2(-(hd.def.pos.x - catG.position.x), -(hd.def.pos.z - catG.position.z)); catG.rotation.y += Math.atan2(Math.sin(want - catG.rotation.y), Math.cos(want - catG.rotation.y)) * Math.min(1, dt * 6); }
       CAT.fetchT -= dt; if (CAT.fetchT <= 0) catFetchDone();
-    } else { CAT.moveT -= dt; if (CAT.moveT <= 0) catPlanTrip(); }
+    } else if (CAT.stretchT > 0) { CAT.stretchT -= dt; if (CAT.stretchT <= 0) catPlanTrip(); }
+    else { CAT.moveT -= dt; if (CAT.moveT <= 0) { if ((CAT.rest === 'sleep' || CAT.rest === 'loaf') && CAT.restT > 8) { CAT.stretchT = 1.9; CAT.restT = 0; } else catPlanTrip(); } }
   }
-  // pose: 1 = walking/standing, 0 = loaf (legs tucked, body low)
-  CAT.pose += ((moving ? 1 : 0) - CAT.pose) * Math.min(1, dt * 4);
+  // pose: walking while moving; at rest it sits, loafs or naps (always naps on its bunk), and stretches before setting off
+  if (moving) { CAT.rest = 'walk'; CAT.restT = 0; }
+  else if (CAT.rest === 'walk' || !CAT.rest) { CAT.rest = CAT.onBunk ? 'sleep' : CAT.fetching != null ? 'sit' : pickOne(['sit', 'sit', 'sit', 'loaf', 'loaf', 'sleep']); CAT.restT = 0; }
+  if (!moving) CAT.restT += dt;
+  const pose = CAT.stretchT > 0 ? 'stretch' : moving ? 'walk' : CAT.rest;
+  const tg = CAT_POSES[pose], kk = Math.min(1, dt * (moving ? 6 : 2.5));
+  for (const k in tg) CATP[k] += (tg[k] - CATP[k]) * kk;
   if (moving) CAT.ph += dt * 11;
-  const sw = Math.sin(CAT.ph) * 0.55 * CAT.pose;
-  CATR.legs.forEach((L, i) => { L.rotation.x = (i === 0 || i === 3 ? sw : -sw); L.scale.y = 0.35 + 0.65 * CAT.pose; });
-  CATR.body.position.y = -0.105 * (1 - CAT.pose) + Math.abs(Math.sin(CAT.ph)) * 0.012 * CAT.pose;
-  CATR.head.rotation.y = moving ? 0 : Math.sin(T * 0.4) * 0.5; CATR.head.rotation.x = moving ? 0.1 : 0;
-  CATR.tail.forEach((s, i) => { s.rotation.x = (moving ? -0.35 : -1.25 + i * 0.05) + (i ? 0.25 : 0); s.rotation.z = Math.sin(T * (moving ? 3 : 1.3) - i * 0.6) * (0.25 + i * 0.08); });
+  const B = CATR.body, sw = moving ? Math.sin(CAT.ph) * 0.5 : 0, breathe = Math.sin(T * (pose === 'sleep' ? 1.6 : 2.4)) * (pose === 'sleep' ? 0.012 : 0.006);
+  B.position.y = CATP.y + (moving ? Math.abs(Math.sin(CAT.ph)) * 0.01 : 0); B.rotation.x = CATP.pitch; B.rotation.z = CATP.roll; B.scale.set(1 + breathe, 1 + breathe, 1);
+  CATR.legs.forEach((L, i) => { const front = i < 2; L.rotation.x = (front ? CATP.lf : CATP.lh) + (i === 0 || i === 3 ? sw : -sw); L.scale.y = front ? CATP.sf : CATP.sh; L.rotation.z = pose === 'sleep' ? (i % 2 ? -0.3 : 0.3) : 0; });
+  if (CAT.fetching != null && !moving) CATR.legs[1].rotation.x = -1.1 + Math.sin(T * 9) * 0.45; // pawing at the rod
+  // head: looks around while sitting, tucked when asleep; follows the player when they're close
+  const H = CATR.head; let look = moving ? 0 : Math.sin(T * 0.37) * 0.5 + Math.sin(T * 1.13) * 0.12;
+  if (!moving && pose !== 'sleep') { const lp = catG.position, d = Math.hypot(P.x - lp.x, P.z - lp.z); if (d < 2.2 && P.zone === CAT.zone) { const want = Math.atan2(-(P.x - lp.x), -(P.z - lp.z)); look = clamp(Math.atan2(Math.sin(want - catG.rotation.y), Math.cos(want - catG.rotation.y)), -1, 1); } }
+  H.rotation.y += (look - H.rotation.y) * Math.min(1, dt * 3); H.rotation.x = CATP.hx + (moving ? Math.sin(CAT.ph * 2) * 0.03 : 0); H.rotation.z = pose === 'sleep' ? -0.5 : 0;
+  // blinking (slow, sleepy blinks when relaxed) and eyes shut when napping
+  CAT.blinkT = (CAT.blinkT || 3) - dt; if (CAT.blinkT < -0.14) CAT.blinkT = rand(2.5, 6.5);
+  const lidK = Math.max(CATP.lid, CAT.blinkT < 0 ? 1 : 0); for (const l of CATR.lids) l.scale.y = 0.12 + 0.95 * lidK;
+  // ears: a quick twitch now and then; flatter while asleep
+  CAT.earT = (CAT.earT || 2) - dt; if (CAT.earT < -0.25) { CAT.earT = rand(2, 7); CAT.earSide = Math.random() < 0.5 ? 0 : 1; }
+  CATR.ears.forEach((e, i) => { const s = i ? 1 : -1, tw = CAT.earT < 0 && CAT.earSide === i ? Math.sin(-CAT.earT * 40) * 0.35 : 0; e.rotation.z = -s * (0.32 + (pose === 'sleep' ? 0.25 : 0)) + tw; e.rotation.x = -0.1 + tw * 0.5; });
+  // tail: up with a curled tip when walking, wrapped round the paws when sitting/lying, the tip keeps flicking
+  CATR.tail.forEach((s, i) => { const flick = Math.sin(T * (moving ? 3 : 1.4) - i * 0.7) * (moving ? 0.2 + i * 0.05 : pose === 'sleep' ? 0.04 : 0.08 + (i > 2 ? 0.18 : 0)); s.rotation.x = (i ? (moving ? 0.22 : 0.1) : CATP.tx); s.rotation.z = (i ? CATP.tz * 0.28 : CATP.tz * 0.6) + flick; });
   catG.visible = CAT.zone === 'deck' ? true : holdGroup.visible;
 }
+
 function remoteRatAppear() { if (RAT.on) return; RAT.on = true; RAT.eatT = 50; ratG.visible = true; tone(2800, 0.06, 0.04, 'square'); }
 function chaseRat() { if (!RAT.on) return; RAT.on = false; ratG.visible = false; RAT.t = rand(300, 520); tone(2600, 0.08, 0.05, 'square'); toast('ไล่หนูหนีไปแล้ว', 'good'); }
 function updateRats(dt) {
@@ -6312,6 +6515,17 @@ function safe(name, fn) {
     const box = $('errBox'); if (box) { box.hidden = false; const li = document.createElement('div'); li.textContent = msg; box.appendChild(li); }
   }
 }
+// little sea sounds on the ambience bus: water slapping the hull, the hull creaking, gulls by day, a fish jumping at night.
+// A handful of one-shot nodes every few seconds - nothing runs per frame.
+const AMBT = { slap: 3, creak: 12, gull: 20, fish: 30 };
+function ambience(dt) {
+  if (!A.ctx || !A.amb || !started || ISL.on || A.muted) return;
+  const sea = clamp(WX.amp, 0.4, 1.6);
+  if ((AMBT.slap -= dt) <= 0) { AMBT.slap = rand(2.2, 5.5) / sea; burst({ freq: rand(260, 520), q: 1.1, dur: rand(0.25, 0.45), vol: 0.035 * sea, dest: A.amb }); if (Math.random() < 0.5) burst({ freq: rand(900, 1500), q: 0.8, dur: 0.18, vol: 0.012 * sea, delay: 0.06, dest: A.amb }); }
+  if ((AMBT.creak -= dt) <= 0) { AMBT.creak = rand(9, 24) / sea; const f = rand(120, 170); tone(f, rand(0.45, 0.8), 0.01 * sea, 'sawtooth', 0, A.amb, f * 0.7); burst({ freq: rand(700, 1100), q: 9, dur: 0.35, vol: 0.008 * sea, dest: A.amb }); }
+  if (night < 0.4 && (AMBT.gull -= dt) <= 0) { AMBT.gull = rand(14, 38); const f = rand(1500, 1900); tone(f, 0.22, 0.012, 'sine', 0, A.amb, f * 0.72); tone(f * 1.05, 0.2, 0.01, 'sine', 0.3, A.amb, f * 0.75); }
+  if (night > 0.5 && (AMBT.fish -= dt) <= 0) { AMBT.fish = rand(20, 55); burst({ freq: rand(1200, 2200), q: 0.6, dur: 0.22, vol: 0.016, dest: A.amb }); }
+}
 const HUDC = { acc: 0, n: 0 };
 function frame() {
   requestAnimationFrame(frame);
@@ -6331,7 +6545,7 @@ function frame() {
   safe('updateCrew', () => updateCrew(dt)); safe('updateVisuals', () => updateVisuals(dt)); safe('updateRepair', () => updateRepair(dt)); safe('updateSparks', () => updateSparks(dt));
   safe('updateNeeds', () => updateNeeds(dt)); safe('updateWater', () => updateWater(dt)); safe('updateEat', () => { updateEat(dt); updateBoil3D(dt); }); safe('updateCrate', () => { updateCrate(dt); updateStations(dt); updatePots(dt); updateFuel(dt); }); safe('updateBelowDeck', () => updateBelowDeck(dt));
   if (started) { safe('updateHUD', () => updateHUD(dt, ts)); HUDC.acc += dt; if (HUDC.acc >= 0.05) { const a = HUDC.acc; HUDC.acc = 0; safe('drawRadar', () => drawRadar(a)); safe('drawSonar', () => drawSonar(a)); } }
-  safe('lights', lightSlots); safe('anchor', updateAnchorLine);
+  safe('lights', lightSlots); safe('anchor', updateAnchorLine); safe('ambience', () => ambience(dt));
   HUDC.n++; renderer.shadowMap.needsUpdate = sunL.intensity > 0.02 && (qName !== 'low' || HUDC.n % 2 === 0);
   safe('render', () => { if (composer && !ERRS.has('composer')) { try { composer.render(); } catch (e) { ERRS.add('composer'); console.error(e); renderer.render(scene, camera); } } else renderer.render(scene, camera); });
 }
