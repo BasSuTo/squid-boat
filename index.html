@@ -443,6 +443,8 @@ body.touch #alerts{top:calc(56px + env(safe-area-inset-top,0px))}
 .jcard i{font-size:12.5px;color:var(--mute)}
 .jcard span{font-size:13px;color:var(--mute)}
 .jcard.lock{opacity:.5}
+.lb{display:flex;flex-direction:column;gap:4px;margin-top:6px}.lbr{display:flex;gap:8px;align-items:baseline;padding:6px 10px;border-radius:8px;background:rgba(255,255,255,.04)}.lbr.me{background:rgba(127,224,166,.12)}.lbr b{width:22px;flex:none;color:var(--lamp)}.lbr span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.lbr em{font-style:normal;color:var(--mute);font-size:12.5px;flex:none}
+.swatch{width:26px;height:18px;border-radius:5px;border:1px solid rgba(255,255,255,.35);flex:none;margin-right:8px}
 .pstats{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin:6px 0 4px}
 .pstats div{padding:8px 10px;border-radius:9px;background:rgba(255,255,255,.05);border:1px solid var(--line);display:flex;flex-direction:column;gap:2px}
 .pstats span{font-size:12px;color:var(--mute)}.pstats b{font:600 15px var(--display)}
@@ -884,6 +886,7 @@ const UPG = {
   pump: { name: 'ปั๊มน้ำท้องเรือไฟฟ้า', desc: 'ช่วยสูบน้ำที่เข้าท้องเรือตอนฝนตกหรือพายุให้เองช้าๆ (ใช้ไฟจากเครื่องปั่นไฟ)', price: [1800] },
   cat: { name: 'แมวประจำเรือ (เจ้าส้ม)', desc: 'นอนเฝ้าห้องเย็นใต้ท้องเรือ หนูไม่กล้ามาขโมยหมึก ลูบหัวได้ด้วย', price: [1500] },
 };
+UPG.engine = { name: 'เครื่องยนต์เรือ', desc: 'ขับเรือเร็วขึ้น ความเร็วสูงสุด 13.6 → 16.5 → 19.4 นอต', price: [2500, 6000] };
 const LURES = {
   basic: { name: 'โยกุ้ง 3.0', desc: 'ใช้ได้ทุกสถานการณ์', price: 0, col: 0xff8a2a, em: 0xff6a00 },
   glow: { name: 'โยกุ้งเรืองแสง', desc: 'กลางคืนหมึกกินบ่อยขึ้น 40%', price: 600, col: 0x9dffb8, em: 0x3cff8a },
@@ -1207,23 +1210,24 @@ function rowPt(r, z) {
   if (y < 0) { let s = 0; if (z > 5) s = 0.75 * Math.min(1, ((z - 5) / 7) ** 2); if (z < -9) s = Math.max(s, 0.35 * ((-9 - z) / 3)); y *= 1 - s; }
   return [hullHalfW(z) * ROWS[r].f, y];
 }
+const HULLV = { geo: null, band: [] }; // hull vertex colours by band, so the paint can be changed later
 (function buildHull() {
   const NZ = 60, zs = []; for (let i = 0; i <= NZ; i++) zs.push(-12 + 24 * i / NZ);
   const pos = [], col = [], idx = []; let base = 0; const C = (h) => new THREE.Color(h);
   const bandC = [C(0x13253b), C(0xe0731c), C(0x13253b), C(0x0f1b2a), C(0x6a1d1d), C(0x6a1d1d), C(0x5e1a1a)];
   for (let b = 0; b < ROWS.length - 1; b++) for (const side of [-1, 1]) {
-    for (const z of zs) for (const r of [b, b + 1]) { const [x, y] = rowPt(r, z); pos.push(side * x, y, z); col.push(bandC[b].r, bandC[b].g, bandC[b].b); }
+    for (const z of zs) for (const r of [b, b + 1]) { const [x, y] = rowPt(r, z); pos.push(side * x, y, z); col.push(bandC[b].r, bandC[b].g, bandC[b].b); HULLV.band.push(b); }
     for (let i = 0; i < NZ; i++) { const a = base + i * 2, bb = a + 1, c = a + 2, d = a + 3; if (side > 0) idx.push(a, c, bb, bb, c, d); else idx.push(a, bb, c, bb, d, c); }
     base += zs.length * 2;
   }
   for (const z of [-12, 12]) {
     const ring = []; for (let r = 0; r < ROWS.length; r++) ring.push(rowPt(r, z));
     const poly = ring.concat(ring.slice().reverse().map(([x, y]) => [-x, y])); const cy = poly.reduce((s, p) => s + p[1], 0) / poly.length, c0 = base;
-    pos.push(0, cy, z); col.push(0.07, 0.14, 0.23); base++;
-    for (const [x, y] of poly) { pos.push(x, y, z); col.push(0.07, 0.14, 0.23); base++; }
+    pos.push(0, cy, z); col.push(0.07, 0.14, 0.23); base++; HULLV.band.push(9);
+    for (const [x, y] of poly) { pos.push(x, y, z); col.push(0.07, 0.14, 0.23); base++; HULLV.band.push(9); }
     for (let i = 0; i < poly.length - 1; i++) idx.push(c0, c0 + 1 + i, c0 + 2 + i);
   }
-  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.setIndex(idx); g.computeVertexNormals();
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); g.setIndex(idx); g.computeVertexNormals(); HULLV.geo = g;
   boat.add(new THREE.Mesh(g, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.55, metalness: 0.25, side: THREE.DoubleSide })));
 })();
 const deckMat = new THREE.MeshStandardMaterial({ map: deckTex(), roughness: 0.82, metalness: 0 });
@@ -3019,6 +3023,7 @@ const ACH = [
 function checkAch(quiet) {
   for (const a of ACH) if (!S.prog.ach[a.id] && a.t()) {
     S.prog.ach[a.id] = S.night;
+    if (a.decor && !quiet) try { applyDecor(); } catch (e) {}
     if (!quiet) { sfx('coin'); toast(`🏅 ความสำเร็จ: ${a.name}${a.title ? ` · ได้ฉายา "${a.title}"` : ''}${a.decor ? ' · ปลดล็อกของแต่งเรือ' : ''}`, 'good'); }
   }
 }
@@ -3261,6 +3266,323 @@ addEventListener('keydown', (e) => {
 });
 $('evYes').addEventListener('click', (e) => { e.stopPropagation(); evAccept(true); });
 $('evNo').addEventListener('click', (e) => { e.stopPropagation(); evAccept(false); });
+// ---- weekly quests (same set for everyone in a calendar week), Chai's story chapters, relationship -----------
+const WQ_POOL = [
+  (r) => { const n = 50 + Math.floor(r() * 5) * 10; return { k: 'n', goal: n, t: `จับหมึก/ปลารวม ${n} ตัว`, rew: n * 18, med: 1 }; },
+  (r) => { const kg = 25 + Math.floor(r() * 4) * 5; return { k: 'kg', goal: kg, t: `น้ำหนักรวมทั้งสัปดาห์ ${kg} กก.`, rew: kg * 45, med: 1 }; },
+  () => ({ k: 'rare', goal: 2, t: 'จับสัตว์ระดับหายากขึ้นไป 2 ตัว', rew: 1500, med: 2 }),
+  () => ({ k: 'help', goal: 2, t: 'ช่วยเรือที่ขอความช่วยเหลือ 2 ครั้ง', rew: 1400, med: 2 }),
+  () => ({ k: 'chest', goal: 3, t: 'เก็บกล่องลอยน้ำ/กล่องสมบัติ 3 ใบ', rew: 1300, med: 1 }),
+  () => ({ k: 'fish', goal: 8, t: 'ตกปลาให้ได้ 8 ตัว', rew: 1200, med: 1 }),
+  (r) => { const id = ['kingfish', 'snapper', 'grouper'][Math.floor(r() * 3)], w = { kingfish: 4, snapper: 2.5, grouper: 5 }[id]; return { k: 'w:' + id, goal: w, t: `จับ${SP[id].name}หนักเกิน ${w} กก.`, rew: 1800, med: 2 }; },
+  (r) => { const id = ['flying', 'glass', 'diamond'][Math.floor(r() * 3)]; return { k: 'sp:' + id, goal: 1, t: `จับ${SP[id].name}ให้ได้ 1 ตัว`, rew: 1600, med: 2 }; },
+  () => ({ k: 'event', goal: 4, t: 'ไปดูเหตุการณ์กลางทะเลให้ครบ 4 ครั้ง', rew: 1500, med: 1 }),
+];
+function weekQuests() {
+  const id = weekId(); let w = S.prog.week;
+  if (!w || w.id !== id || !Array.isArray(w.q)) {
+    const r = rng(id * 7907 + 3), q = [], used = new Set();
+    while (q.length < 3) { const i = Math.floor(r() * WQ_POOL.length); if (used.has(i)) continue; used.add(i); const x = WQ_POOL[i](r); x.prog = 0; x.done = false; q.push(x); }
+    w = S.prog.week = { id, q }; save();
+  }
+  return w.q;
+}
+// Chai's story: one chapter at a time, each unlocked by closeness and finished by a task out at sea
+const STORY = [
+  { need: 0, t: 'ไปให้ถึงซากเรือประมงเก่า', k: 'found:wreck0', tell: ['ซากนั้นคือเรือของพ่อพี่เอง… ชื่อเรือ "ชัยมงคล"', 'คืนนั้นพายุเข้า พ่อพาลูกเรือรอดมาได้ทุกคน แต่เรือไม่รอด', 'พี่เลยสัญญากับตัวเองว่าจะออกทะเลทุกคืนแทนพ่อ'] },
+  { need: 15, t: 'จับปลากะพงแดงให้พี่ชัย 1 ตัว', k: 'sp:snapper', tell: ['กะพงแดงเป็นปลาที่แม่ชอบที่สุด', 'เดี๋ยวพี่เอาไปทำบุญให้แม่ที่วัดบนเกาะ', 'ขอบใจมากนะ ไม่ได้ทำแบบนี้มาหลายปีแล้ว'] },
+  { need: 30, t: 'ช่วยเรือที่ขอความช่วยเหลือ 1 ครั้ง', k: 'help', tell: ['สมัยหนุ่มๆ พี่เคยเครื่องดับกลางทะเลสองวันสองคืน', 'คนที่มาช่วยพี่ตอนนั้นคือไต้ก๋งสมชาย', 'ตั้งแต่นั้นพี่ก็ทำงานบนเรือลำนี้มาตลอด'] },
+  { need: 45, t: 'พาพี่ชัยไปเขตน้ำลึกทางเหนือ', k: 'found:abyss', tell: ['ที่นี่แหละ… น้ำดำจนมองไม่เห็นอะไร', 'พ่อเคยเล่าว่าเห็นหมึกยักษ์ตัวแดงเท่าเรือเล็ก', 'พี่ว่าพ่อไม่ได้โม้หรอก'] },
+  { need: 60, t: 'จับหมึกยักษ์แดงให้ได้', k: 'sp:redgiant', tell: ['ตัวแดงจริงๆ ด้วย! พ่อไม่ได้โม้!', 'ขอบใจนะน้อง ที่ทำให้พี่ได้เห็นด้วยตาตัวเอง', 'จากนี้ไป น้องคือคนในครอบครัวพี่แล้ว'] },
+];
+function storyNow() { const c = S.prog.story.ch; return c < STORY.length ? STORY[c] : null; }
+function storyCheck(kind, d) {
+  const ch = storyNow(); if (!ch || S.prog.rel < ch.need) return;
+  const [a, b] = ch.k.split(':');
+  const hit = (a === 'found' && kind === 'found' && d.id === b) || (a === 'found' && S.prog.found[b] && kind !== 'story') || (a === 'sp' && kind === 'catch' && d.sp && d.sp.id === b) || (a === 'help' && kind === 'event' && d.k === 'distress');
+  if (!hit) return;
+  S.prog.story.ch++; S.prog.rel = Math.min(100, S.prog.rel + 10); const m = 1500 + S.prog.story.ch * 500; S.money += m; save();
+  toast(`📖 เรื่องเล่าของพี่ชัย ตอนที่ ${S.prog.story.ch} · ได้ ${baht(m)} · ความสนิท +10`, 'good');
+  ch.tell.forEach((line, i) => setTimeout(() => crewSay(line, 5, i > 0), 1500 + i * 5200));
+  checkAch();
+}
+function relGain(n, why) {
+  const before = S.prog.rel; S.prog.rel = Math.min(100, S.prog.rel + n);
+  for (const th of [30, 60, 80]) if (before < th && S.prog.rel >= th) toast(`🤝 พี่ชัยสนิทกับคุณมากขึ้น (${th}) · ${RELPERK[th]}`, 'good');
+}
+const RELPERK = { 30: 'พี่ชัยจะบอกความลึกฝูงหมึกให้เป็นระยะ', 60: 'พี่ชัยมาช่วยเก็บหมึกจากคันปักเร็วขึ้น', 80: 'รางวัลจากเหตุการณ์กลางทะเลเพิ่ม 20%' };
+const REL = { tipT: 120, catchN: 0 };
+PROG_HOOKS.push((kind, d) => {
+  // weekly
+  const q = weekQuests(); let ch = false;
+  for (const x of q) {
+    if (x.done) continue; const p0 = x.prog;
+    if (kind === 'catch') {
+      const sp = d.sp, real = !sp.junk && !sp.strange && !sp.treasure;
+      if (x.k === 'n' && real) x.prog++;
+      if (x.k === 'kg' && real) x.prog = +(x.prog + d.kg).toFixed(2);
+      if (x.k === 'rare' && (sp.rar === 'rare' || sp.rar === 'legend')) x.prog++;
+      if (x.k === 'fish' && sp.fishy) x.prog++;
+      if (x.k === 'chest' && sp.treasure) x.prog++;
+      if (x.k === 'sp:' + sp.id) x.prog++;
+      if (x.k === 'w:' + sp.id && d.kg >= x.goal) x.prog = x.goal;
+    }
+    if (kind === 'event') { if (x.k === 'event') x.prog++; if (x.k === 'help' && d.k === 'distress') x.prog++; if (x.k === 'chest' && d.k === 'chest') x.prog++; }
+    if (x.prog !== p0) ch = true;
+    if (x.prog >= x.goal) { x.done = true; S.money += x.rew; S.prog.medals += x.med; sfx('coin'); toast(`🗓️ ภารกิจประจำสัปดาห์สำเร็จ: ${x.t} · ${baht(x.rew)} · เหรียญตรา +${x.med}`, 'good'); }
+  }
+  if (ch) save();
+  // closeness with Chai: a little from fishing together (capped per night), more from helping others
+  if (kind === 'catch' && ++REL.catchN % 12 === 0 && S.prog.relNight < 4) { S.prog.relNight++; relGain(1); }
+  if (kind === 'night') { S.prog.relNight = 0; relGain(1); }
+  storyCheck(kind, d);
+});
+// perk at 30: Chai calls out the school depth now and then (4 Hz check is enough; this is cheap)
+function relTick(dt) {
+  if (!started || nightOver || ISL.on || S.prog.rel < 30 || !crew.visible) return;
+  REL.tipT -= dt; if (REL.tipT > 0) return; REL.tipT = rand(150, 260);
+  if (night > 0.3 && lampsLive()) crewSay(`ฝูงหมึกตอนนี้อยู่ราว ${Math.round(school.depth)} เมตร หย่อนเหยื่อไปแถวนั้นนะ`, 5, true);
+}
+function renderWeekStory(body) {
+  const q = weekQuests(), left = Math.ceil(((weekId() + 1) * WEEK_MS + WEEK0 - Date.now()) / 86400000);
+  body.appendChild(el('h3', '', `ภารกิจประจำสัปดาห์ · เหลืออีก ${left} วัน · เหรียญตรา ${S.prog.medals}`));
+  body.appendChild(el('div', 'hint', `ทุกคนได้ภารกิจชุดเดียวกันทั้งสัปดาห์ · อีเวนต์: ${NIGHT.week.name} — ${NIGHT.week.desc}`));
+  for (const x of q) {
+    const it = el('div', 'item'), top = el('div', 'top'); top.appendChild(el('b', '', x.t)); top.appendChild(el('span', 'lv', x.done ? 'สำเร็จแล้ว' : `${baht(x.rew)} · 🎖️${x.med}`)); it.appendChild(top);
+    const pr = x.k.startsWith('w:') ? (x.done ? 'สำเร็จ' : 'ยังไม่ได้') : `${x.k === 'kg' ? x.prog.toFixed(1) : x.prog} / ${x.goal}`;
+    const bar = el('div', 'track'), f = el('div', 'fill'); f.style.width = Math.min(100, (x.done ? 1 : x.k.startsWith('w:') ? 0 : x.prog / x.goal) * 100) + '%'; bar.appendChild(f); it.appendChild(bar); it.appendChild(el('p', '', pr));
+    body.appendChild(it);
+  }
+  const ch = storyNow(), rel = Math.round(S.prog.rel);
+  body.appendChild(el('h3', '', `เรื่องเล่าของพี่ชัย · ความสนิท ${rel} / 100`));
+  const rb = el('div', 'track'), rf = el('div', 'fill'); rf.style.width = rel + '%'; rb.appendChild(rf); body.appendChild(rb);
+  const perks = Object.entries(RELPERK).map(([k, v]) => `${rel >= +k ? '✓' : '·'} ${k}: ${v}`).join('  ');
+  body.appendChild(el('div', 'hint', perks));
+  const it = el('div', 'item'), top = el('div', 'top');
+  if (!ch) { top.appendChild(el('b', '', 'ฟังเรื่องของพี่ชัยครบทุกตอนแล้ว')); it.appendChild(top); }
+  else {
+    top.appendChild(el('b', '', `ตอนที่ ${S.prog.story.ch + 1}: ${ch.t}`)); top.appendChild(el('span', 'lv', rel >= ch.need ? 'ทำได้เลย' : `ต้องสนิท ${ch.need}`)); it.appendChild(top);
+    it.appendChild(el('p', '', rel >= ch.need ? 'ทำสำเร็จแล้วพี่ชัยจะเล่าเรื่องให้ฟัง ได้เงินและความสนิท' : 'ตกหมึกด้วยกันทุกคืนและช่วยคนอื่นกลางทะเล ความสนิทจะเพิ่มขึ้นเอง'));
+  }
+  body.appendChild(it);
+  if (S.prog.story.ch) { const rr = el('div', 'emotes'); for (let i = 0; i < S.prog.story.ch; i++) rr.appendChild(btn(`ฟังตอน ${i + 1} อีกครั้ง`, () => { closeMenu(); STORY[i].tell.forEach((l, j) => setTimeout(() => crewSay(l, 5, j > 0), 300 + j * 5200)); })); body.appendChild(rr); }
+}
+// ---- boat customisation: hull paint, decorations, engine; hired deckhand -----------------------------------
+// Everything here is cosmetic or a modest bonus; nothing is required to play, so new players aren't behind.
+// Cosmetics are local (each player sees the boat the way they painted it) - no extra network traffic.
+const PAINTS = [
+  { name: 'น้ำเงินคาดส้ม (เดิม)', c: [0x13253b, 0xe0731c, 0x13253b], price: 0 },
+  { name: 'ขาวคาดฟ้า', c: [0xdfe6ea, 0x2a7fc4, 0xc9d3d9], price: 2500 },
+  { name: 'แดงคาดขาว', c: [0x8e1f1f, 0xf2f2ee, 0x7a1a1a], price: 3000 },
+  { name: 'เขียวคาดเหลือง', c: [0x1f3d2c, 0xe8c547, 0x1a3325], price: 3500 },
+  { name: 'ดำคาดทอง (ปลดล็อกจากตำนาน)', c: [0x17181a, 0xd9a520, 0x121314], price: 0, ach: 'legend1' },
+  { name: 'ฟ้าคาดชมพู (ปลดล็อกจากน้ำใจ)', c: [0x2c6a8e, 0xf08aa8, 0x245a78], price: 0, ach: 'help3' },
+];
+const DECOR = [
+  { id: 'flags', name: 'ธงราวสีสด', d: 'ธงสามเหลี่ยมขึงจากหัวเรือถึงห้องบังคับ' },
+  { id: 'lanterns', name: 'โคมกระดาษ', d: 'โคมสีส้มแขวนรอบห้องบังคับ สว่างตอนกลางคืน' },
+  { id: 'garland', name: 'พวงมาลัยหัวเรือ', d: 'พวงมาลัยดาวเรืองผูกหัวเรือ ขอให้โชคดี' },
+];
+const HANDS = {
+  fisher: { name: 'ลูกเรือตกหมึก', wage: 400, d: 'ช่วยตกหมึกเองตอนไฟล่อเปิด ได้หมึกเข้าถังเป็นระยะ', col: 0x3f7fb5 },
+  mechanic: { name: 'ช่างเครื่อง', wage: 350, d: 'ดูแลเครื่องยนต์และเครื่องปั่นไฟ พังช้าลงครึ่งหนึ่ง', col: 0x5e6b3a },
+  cook: { name: 'แม่ครัว', wage: 250, d: 'ทำกับข้าวให้ ความหิวและความกระหายลดช้าลง 40%', col: 0xc0587a, female: true },
+};
+if (typeof S.up.engine !== 'number') S.up.engine = 0;
+if (!S.prog.boat.paints || typeof S.prog.boat.paints !== 'object') S.prog.boat.paints = { 0: 1 };
+if (!PAINTS[S.prog.boat.hull]) S.prog.boat.hull = 0;
+const VMAXS = [7, 8.5, 10];
+const vmax = () => VMAXS[clamp(S.up.engine | 0, 0, 2)];
+const paintOwned = (i) => !!S.prog.boat.paints[i] || PAINTS[i].price === 0 && (!PAINTS[i].ach || !!S.prog.ach[PAINTS[i].ach]);
+function applyPaint() {
+  const H = HULLV; if (!H.geo) return;
+  const c = PAINTS[S.prog.boat.hull].c.map((h) => new THREE.Color(h)), col = H.geo.attributes.color;
+  for (let i = 0; i < H.band.length; i++) { const b = H.band[i]; if (b > 2) continue; const k = c[b]; col.setXYZ(i, k.r, k.g, k.b); }
+  col.needsUpdate = true;
+}
+// decorations are built once when first shown and only toggled afterwards
+const DEC = {};
+const decorOn = (id) => decorOwned(id) && S.prog.boat.decor[id] !== false;
+function buildDecor(id) {
+  const g = new THREE.Group();
+  if (id === 'flags') {
+    // "dressed overall": one string from the bow up to the mast head, one from the mast head down to the stern
+    const segs = [[new V3(0, 3.1, 12.0), new V3(0, 8.3, 7.0), 10], [new V3(0, 8.3, 7.0), new V3(0, 3.2, -11.6), 22]];
+    const pos = [], col = [], cols = [0xe63946, 0xffd166, 0x2a9d8f, 0x4cc9f0, 0xf4a261, 0xb5179e], rope = []; let k = 0;
+    const at = (a, b, t) => { const p = a.clone().lerp(b, t); p.y -= Math.sin(t * Math.PI) * 0.45; return p; };
+    for (const [a, b, n] of segs) {
+      for (let i = 0; i <= 16; i++) rope.push(at(a, b, i / 16));
+      for (let i = 0; i < n; i++) {
+        const t0 = (i + 0.2) / n, t1 = (i + 0.8) / n, p = at(a, b, t0), q = at(a, b, t1), cc = new THREE.Color(cols[k++ % cols.length]);
+        for (const v of [p, q, p.clone().lerp(q, 0.5).add(new V3(0, -0.55, 0))]) { pos.push(v.x, v.y, v.z); col.push(cc.r, cc.g, cc.b); }
+      }
+    }
+    const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); geo.computeVertexNormals();
+    g.add(new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.8, side: THREE.DoubleSide })));
+    g.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(rope), new THREE.LineBasicMaterial({ color: 0x3b2f22 })));
+  } else if (id === 'lanterns') {
+    const m = new THREE.MeshBasicMaterial({ color: 0xff9a3c }), geo = new THREE.SphereGeometry(0.16, 10, 8); geo.scale(1, 1.25, 1);
+    const spots = []; for (const z of [5.4, 7.0, 8.6]) { const x = Math.min(hullHalfW(z) - 0.1, 2.25); spots.push([-x, 4.7, z], [x, 4.7, z]); }
+    const inst = new THREE.InstancedMesh(geo, m, spots.length), mm = new THREE.Matrix4();
+    spots.forEach(([x, y, z], i) => { mm.makeTranslation(x, y, z); inst.setMatrixAt(i, mm); }); g.add(inst);
+    const glow = new THREE.SpriteMaterial({ map: lampGlowTex, color: 0xffa040, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: 0 });
+    for (const [x, y, z] of spots) { const s = new THREE.Sprite(glow); s.position.set(x, y, z); s.scale.setScalar(1.3); g.add(s); }
+    g.userData.glow = glow;
+  } else if (id === 'garland') {
+    const geo = new THREE.TorusGeometry(0.42, 0.11, 6, 22), colA = [], cA = new THREE.Color(0xffa31a), cB = new THREE.Color(0xfff1c4);
+    for (let i = 0; i < geo.attributes.position.count; i++) { const k = Math.floor(i / 7) % 3 === 0 ? cB : cA; colA.push(k.r, k.g, k.b); }
+    geo.setAttribute('color', new THREE.Float32BufferAttribute(colA, 3));
+    const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9 })); m.position.set(0, 3.15, 11.95); m.rotation.x = 0.35; g.add(m);
+    const tail = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.7, 5), new THREE.MeshStandardMaterial({ color: 0xc81d4a, roughness: 0.8 })); tail.position.set(0, 2.72, 12.05); g.add(tail);
+  }
+  boat.add(g); return g;
+}
+function applyDecor() {
+  for (const d of DECOR) { const on = decorOn(d.id); if (on && !DEC[d.id]) DEC[d.id] = buildDecor(d.id); if (DEC[d.id]) DEC[d.id].visible = on; }
+}
+// hired deckhand: one at a time, paid each morning, can be let go any time
+const HAND = { av: null, role: null, catchT: 140 };
+function handPlace() {
+  const r = S.prog.hand;
+  if (!r) { if (HAND.av) HAND.av.visible = false; HAND.role = null; return; }
+  if (!HAND.av || HAND.role !== r) {
+    if (HAND.av) { boat.remove(HAND.av); freeObj(HAND.av); }
+    const H = HANDS[r]; HAND.av = makeAvatar(H.col, r === 'fisher', { female: !!H.female, skin: 0xb07a52 }); boat.add(HAND.av); HAND.role = r;
+    HAND.av.traverse((o) => { if (o.isMesh) o.castShadow = false; }); // optional extra person: skip the shadow pass
+    const at = { fisher: [2.35, 2.0, -4.2, -Math.PI / 2], mechanic: [-1.6, 2.0, 0.6, 0.6], cook: [0.75, 2.0, 8.1, Math.PI] }[r];
+    HAND.av.position.set(at[0], at[1], at[2]); HAND.av.rotation.y = at[3];
+    const lbl = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTex(H.name, '#cfe8ff'), transparent: true, depthWrite: false })); lbl.scale.set(1.1, 0.24, 1); lbl.position.y = 2.15; HAND.av.add(lbl);
+  }
+  HAND.av.visible = !ISL.on;
+}
+function handTick(dt) {
+  if (DEC.lanterns && DEC.lanterns.visible) DEC.lanterns.userData.glow.opacity = night * 0.75;
+  if (!S.prog.hand || !HAND.av) return;
+  HAND.av.visible = !ISL.on && P.zone !== 'hold'; // not drawn while you're below deck
+  if (HAND.av.visible) animPerson(HAND.av, dt, { arms: HAND.role === 'fisher' ? 'hold' : 'work' });
+  if (HAND.role !== 'fisher' || !started || nightOver || ISL.on || traveling || !lampsLive() || night < 0.5) return;
+  HAND.catchT -= dt; if (HAND.catchT > 0) return; HAND.catchT = rand(120, 200);
+  if (S.tub.length >= TUB_CAP[S.up.tub]) return;
+  let sp = pickSpecies(school.depth); for (let i = 0; i < 4 && (sp.junk || sp.strange || sp.treasure || sp.rar === 'legend'); i++) sp = pickSpecies(school.depth);
+  if (sp.junk || sp.strange || sp.treasure) return;
+  const kg = +rand(sp.kg[0], Math.min(sp.kg[1], sp.kg[0] + (sp.kg[1] - sp.kg[0]) * 0.6)).toFixed(2);
+  S.tub.push({ id: sp.id, kg, f: 1 }); S.total++; NIGHT.stats.count++; NIGHT.stats.kg += kg;
+  const j = S.journal[sp.id] || (S.journal[sp.id] = { n: 0, max: 0 }); j.n++; j.max = Math.max(j.max, kg);
+  rebuildTub(); save(); toast(`${HANDS.fisher.name}ตกได้${sp.name} ${kg.toFixed(2)} กก. ใส่ถังให้แล้ว`);
+}
+function handWage() {
+  const r = S.prog.hand; if (!r) return '';
+  const w = HANDS[r].wage;
+  if (S.money < w) { S.prog.hand = null; handPlace(); save(); return ` · เงินไม่พอจ่ายค่าแรง ${HANDS[r].name}ขอลาออก`; }
+  S.money -= w; save(); return ` · จ่ายค่าแรง${HANDS[r].name} ${baht(w)}`;
+}
+function renderCustom(body) {
+  body.appendChild(el('h3', '', 'สีเรือ (เห็นบนเรือของคุณ)'));
+  const g = el('div', 'grid2');
+  PAINTS.forEach((p, i) => {
+    const it = el('div', 'item'), top = el('div', 'top'), sw = el('span', 'swatch');
+    sw.style.background = `linear-gradient(180deg,#${p.c[0].toString(16).padStart(6, '0')} 0 40%,#${p.c[1].toString(16).padStart(6, '0')} 40% 60%,#${p.c[2].toString(16).padStart(6, '0')} 60%)`;
+    top.appendChild(sw); top.appendChild(el('b', '', p.name)); it.appendChild(top);
+    const own = paintOwned(i), cur = S.prog.boat.hull === i;
+    if (cur) it.appendChild(el('span', 'lv', 'ใช้อยู่'));
+    else if (own) it.appendChild(btn('ทาสีนี้', () => { S.prog.boat.hull = i; applyPaint(); save(); renderMenu(); }, 'btn'));
+    else if (p.ach) it.appendChild(el('span', 'lv', `ปลดล็อกจากความสำเร็จ "${ACH.find((a) => a.id === p.ach).name}"`));
+    else it.appendChild(btn(`ซื้อสี ${baht(p.price)}`, () => { S.money -= p.price; S.prog.boat.paints[i] = 1; S.prog.boat.hull = i; applyPaint(); save(); sfx('coin'); renderMenu(); }, 'btn pri', S.money < p.price));
+    g.appendChild(it);
+  });
+  body.appendChild(g);
+  body.appendChild(el('h3', '', 'ของแต่งเรือ (ปลดล็อกจากความสำเร็จ)'));
+  const d2 = el('div', 'grid2');
+  for (const d of DECOR) {
+    const it = el('div', 'item'), top = el('div', 'top'); top.appendChild(el('b', '', d.name)); const own = decorOwned(d.id); top.appendChild(el('span', 'lv', own ? (decorOn(d.id) ? 'แสดงอยู่' : 'ซ่อนอยู่') : 'ยังไม่ปลดล็อก')); it.appendChild(top);
+    const a = ACH.find((x) => x.decor === d.id && (!own || S.prog.ach[x.id]));
+    it.appendChild(el('p', '', d.d + (own ? '' : ` · ทำความสำเร็จ "${a ? a.name : '?'}"`)));
+    if (own) it.appendChild(btn(decorOn(d.id) ? 'ซ่อน' : 'แสดง', () => { S.prog.boat.decor[d.id] = !decorOn(d.id); applyDecor(); save(); renderMenu(); }, 'btn'));
+    d2.appendChild(it);
+  }
+  body.appendChild(d2);
+  body.appendChild(el('h3', '', 'จ้างลูกเรือเพิ่ม (จ่ายค่าแรงทุกเช้า)'));
+  const h = el('div', 'grid2');
+  for (const [k, H] of Object.entries(HANDS)) {
+    const it = el('div', 'item'), top = el('div', 'top'); top.appendChild(el('b', '', H.name)); top.appendChild(el('span', 'lv', `${baht(H.wage)} / คืน`)); it.appendChild(top); it.appendChild(el('p', '', H.d));
+    if (S.prog.hand === k) it.appendChild(btn('เลิกจ้าง', () => { S.prog.hand = null; handPlace(); save(); renderMenu(); }, 'btn'));
+    else it.appendChild(btn(S.prog.hand ? 'เปลี่ยนมาจ้างคนนี้' : 'จ้าง', () => { S.prog.hand = k; HAND.catchT = rand(60, 120); handPlace(); save(); toast(`จ้าง${H.name}แล้ว · ${H.d}`, 'good'); renderMenu(); }, 'btn pri', S.money < H.wage));
+    h.appendChild(it);
+  }
+  body.appendChild(h);
+  body.appendChild(el('div', 'hint', 'จ้างได้ทีละคน ค่าแรงหักตอนจบคืน ถ้าเงินไม่พอลูกเรือจะลาออกเอง'));
+}
+// ---- weekly leaderboard, co-op room goal, away flag --------------------------------------------------------
+// Leaderboard: each signed-in player writes ONE small record lb/w<week>/<uid> at most once a minute, and only
+// when something changed; the table is read on demand (when the tab is opened), never subscribed to.
+{ const w = S.prog.wk; if (w && (typeof w !== 'object' || ![w.id, w.n, w.kg, w.big, w.rare, w.help].every((v) => typeof v === 'number' && isFinite(v)))) S.prog.wk = null;
+  const q = S.prog.week; if (q && (typeof q !== 'object' || !Array.isArray(q.q) || q.q.some((x) => !x || typeof x.prog !== 'number' || typeof x.goal !== 'number' || typeof x.k !== 'string'))) S.prog.week = null; }
+const LB = { t: 0, rows: null, err: '', loading: false, wk: null };
+function wkStats() {
+  const id = weekId(); let w = S.prog.wk;
+  if (!w || w.id !== id) w = S.prog.wk = { id, n: 0, kg: 0, big: 0, rare: 0, help: 0 };
+  return w;
+}
+PROG_HOOKS.push((kind, d) => {
+  const w = wkStats();
+  if (kind === 'catch') { const sp = d.sp; if (!sp.junk && !sp.strange && !sp.treasure) { w.n++; w.kg = +(w.kg + d.kg).toFixed(2); w.big = Math.max(w.big, d.kg); } if (sp.rar === 'rare' || sp.rar === 'legend') w.rare++; }
+  if (kind === 'event' && d.k === 'distress') w.help++;
+});
+function lbTick(dt) {
+  LB.t -= dt; if (LB.t > 0) return; LB.t = 60;
+  if (!lbDirty || !NET.fbUser || !fbDb || !NET.conn && NET.code) return;
+  lbDirty = false; const w = wkStats();
+  const rec = { name: String(NET.fbUser.displayName || 'ผู้เล่น').slice(0, 24), n: w.n | 0, kg: +w.kg.toFixed(1), big: +w.big.toFixed(2), rare: w.rare | 0, help: w.help | 0, ti: myTitle(), t: Date.now() };
+  set(ref(fbDb, `lb/w${w.id}/${NET.fbUser.uid}`), rec).then(() => { LB.err = ''; }).catch((e) => { LB.err = 'บันทึกอันดับไม่สำเร็จ (ฐานข้อมูลยังไม่เปิดสิทธิ์ให้เขียนตาราง lb)'; });
+}
+async function lbLoad() {
+  if (!NET.fbUser || !fbDb || LB.loading) return;
+  LB.loading = true; LB.err = ''; const id = weekId();
+  try {
+    lbDirty = true; LB.t = 0; lbTick(0);
+    const snap = await get(ref(fbDb, `lb/w${id}`)); const all = snap.val() || {}, rows = [];
+    for (const [uid, r] of Object.entries(all)) { if (!r || typeof r !== 'object') continue; const n = (v, a, b) => (typeof v === 'number' && isFinite(v) ? clamp(v, a, b) : 0); rows.push({ uid, name: String(r.name || 'ผู้เล่น').slice(0, 24), n: n(r.n, 0, 1e5), kg: n(r.kg, 0, 1e6), big: n(r.big, 0, 100), rare: n(r.rare, 0, 1e4), help: n(r.help, 0, 1e4), ti: titlesAll.has(r.ti) ? r.ti : '' }); }
+    rows.sort((a, b) => b.kg - a.kg || b.n - a.n); LB.rows = rows.slice(0, 20); LB.wk = id;
+  } catch (e) { LB.err = 'โหลดอันดับไม่สำเร็จ (ฐานข้อมูลยังไม่เปิดสิทธิ์ให้อ่านตาราง lb)'; LB.rows = null; }
+  LB.loading = false; if (menuOpen && menuTab === 'online') renderMenu();
+}
+function renderBoard(body) {
+  const w = wkStats();
+  body.appendChild(el('h3', '', 'สถิติสัปดาห์นี้ของคุณ'));
+  const sg = el('div', 'pstats');
+  for (const [k, v] of [['จับได้', `${w.n} ตัว`], ['น้ำหนักรวม', `${w.kg.toFixed(1)} กก.`], ['ตัวใหญ่สุด', `${w.big.toFixed(2)} กก.`], ['หายากขึ้นไป', `${w.rare}`], ['ช่วยเรือ', `${w.help}`]]) { const c = el('div'); c.appendChild(el('span', '', k)); c.appendChild(el('b', '', v)); sg.appendChild(c); }
+  body.appendChild(sg);
+  body.appendChild(el('h3', '', 'อันดับประจำสัปดาห์ (น้ำหนักรวม)'));
+  if (!NET.fbUser) { body.appendChild(el('div', 'hint', 'เข้าสู่ระบบด้วย Google เพื่อขึ้นตารางอันดับ')); return; }
+  body.appendChild(btn(LB.loading ? 'กำลังโหลด…' : LB.rows ? 'โหลดอันดับใหม่' : 'ดูอันดับ', () => lbLoad(), 'btn', LB.loading));
+  if (LB.err) body.appendChild(el('div', 'hint', LB.err));
+  if (LB.rows) {
+    const t = el('div', 'lb');
+    if (!LB.rows.length) t.appendChild(el('div', 'hint', 'ยังไม่มีใครขึ้นตารางสัปดาห์นี้'));
+    LB.rows.forEach((r, i) => { const row = el('div', 'lbr' + (r.uid === NET.fbUser.uid ? ' me' : '')); row.appendChild(el('b', '', `${i + 1}`)); row.appendChild(el('span', '', r.name + (r.ti ? ` 「${r.ti}」` : ''))); row.appendChild(el('em', '', `${r.kg.toFixed(1)} กก. · ${r.n} ตัว · ใหญ่สุด ${r.big.toFixed(2)}`)); t.appendChild(row); });
+    body.appendChild(t);
+  }
+}
+// co-op: everybody on the boat chips in toward one goal for the night (uses the per-player count we already sync)
+function coopGoal() { const n = NET.code ? NET.remotes.size + 1 : 1; return n < 2 ? 0 : 10 + n * 10; }
+function coopProg() { let c = NIGHT.stats.count; for (const r of NET.remotes.values()) c += r.c | 0; return c; }
+const COOP = { t: 0 };
+function coopTick(dt) {
+  COOP.t -= dt; if (COOP.t > 0) return; COOP.t = 1;
+  const g = coopGoal(); if (!g || !started || S.prog.coopNight === S.night) return;
+  if (coopProg() >= g) { S.prog.coopNight = S.night; S.prog.coop++; const m = 400 + 150 * (NET.remotes.size + 1); S.money += m; S.prog.medals++; save(); sfx('coin'); toast(`🤝 ภารกิจร่วมทั้งเรือสำเร็จ! ช่วยกันจับครบ ${g} ตัว · ได้ ${baht(m)} · เหรียญตรา +1`, 'good'); }
+}
+function renderCoop(body) {
+  const g = coopGoal(); if (!g) return;
+  const p = Math.min(g, coopProg()), done = S.prog.coopNight === S.night;
+  body.appendChild(el('h3', '', 'ภารกิจร่วมทั้งเรือ'));
+  const it = el('div', 'item'), top = el('div', 'top'); top.appendChild(el('b', '', `ช่วยกันจับให้ครบ ${g} ตัวคืนนี้`)); top.appendChild(el('span', 'lv', done ? 'สำเร็จแล้ว' : `${p} / ${g}`)); it.appendChild(top);
+  const bar = el('div', 'track'), f = el('div', 'fill'); f.style.width = (done ? 100 : p / g * 100) + '%'; bar.appendChild(f); it.appendChild(bar);
+  it.appendChild(el('p', '', 'นับรวมของทุกคนบนเรือ ทุกคนได้รางวัลเมื่อครบ'));
+  body.appendChild(it);
+}
+// away flag: rAF stops in a background tab, so tell the room right away
+document.addEventListener('visibilitychange', () => { if (NET.myRef) update(NET.myRef, { aw: document.hidden ? 1 : 0, t: Date.now() }).catch(() => {}); });
 let NIGHT = null;
 function moonName(k, waxing) { if (k < 0.12) return 'เดือนมืด'; if (k > 0.9) return 'เดือนเพ็ญ'; return waxing ? 'ข้างขึ้น' : 'ข้างแรม'; }
 function setupNight() {
@@ -3509,10 +3831,10 @@ function helmPhysics(dt) {
   let v = BW.v; const sg = Math.sign(v);
   if (BW.anchor) v -= sg * Math.min(Math.abs(v), 2.5 * dt);
   else if (brake) v -= sg * Math.min(Math.abs(v), 3 * dt);
-  else if (thr > 0.05) v += (v < -0.05 ? 2.2 : 0.9 * (1 - Math.max(0, v) / VMAX)) * thr * dt;
+  else if (thr > 0.05) v += (v < -0.05 ? 2.2 : 0.9 * (1 - Math.max(0, v) / vmax())) * thr * dt;
   else if (thr < -0.05) v += (v > 0.05 ? -2.2 : -0.6 * (1 + Math.min(0, v) / VREV)) * -thr * dt;
   else v -= sg * Math.min(Math.abs(v), (0.16 + 0.045 * Math.abs(v)) * dt); // coasting: slows down by itself
-  BW.v = clamp(v, -VREV, VMAX);
+  BW.v = clamp(v, -VREV, vmax());
   const turnK = clamp(Math.abs(BW.v) / 3, 0, 1) * (BW.v < 0 ? -1 : 1);
   BW.w += (HELM.rud * 0.16 * turnK - BW.w) * Math.min(1, dt * 0.9); // the hull answers the rudder slowly
 }
@@ -3583,7 +3905,7 @@ function helmHum(dt) {
     } catch (e) { HELM.hum = { g: null }; return; }
   }
   const h = HELM.hum; if (!h.g) return;
-  const run = HELM.on || Math.abs(BW.v) > 0.3, a = Math.abs(BW.v) / VMAX, want = run && !BW.anchor ? 0.035 + 0.06 * a + 0.02 * Math.abs(HELM.thr || 0) : HELM.on ? 0.02 : 0;
+  const run = HELM.on || Math.abs(BW.v) > 0.3, a = Math.abs(BW.v) / vmax(), want = run && !BW.anchor ? 0.035 + 0.06 * a + 0.02 * Math.abs(HELM.thr || 0) : HELM.on ? 0.02 : 0;
   h.g.gain.value += (want - h.g.gain.value) * Math.min(1, dt * 3);
   const f = 34 + 26 * a + 8 * Math.abs(HELM.thr || 0); h.o1.frequency.value = f; h.o2.frequency.value = f * 2.01;
 }
@@ -3612,7 +3934,7 @@ function boatPeers(all, myUid) {
   if (best.q < BW.q || (best.q === BW.q && BW.src !== bu)) return;
   const fresh = BW.src !== bu || Math.hypot(best.x - BW.x, best.z - BW.z) > 60;
   BW.src = bu; BW.q = best.q;
-  F.x = clamp(best.x, -SEA_R, SEA_R); F.z = clamp(best.z, -SEA_R, SEA_R); F.yaw = best.h; F.v = clamp(best.v, -VREV, VMAX); F.w = clamp(best.w, -0.5, 0.5); F.an = !!best.an; F.t = performance.now();
+  F.x = clamp(best.x, -SEA_R, SEA_R); F.z = clamp(best.z, -SEA_R, SEA_R); F.yaw = best.h; F.v = clamp(best.v, -VREV, VMAXS[2]); F.w = clamp(best.w, -0.5, 0.5); F.an = !!best.an; F.t = performance.now();
   if (fresh && Math.hypot(F.x - BW.x, F.z - BW.z) > 60) { BW.x = F.x; BW.z = F.z; BW.yaw = F.yaw; BW.v = F.v; BW.w = F.w; BW.anchor = F.an; }
 }
 // HUD: speed, heading, anchor, the way to each fishing spot
@@ -3847,7 +4169,7 @@ function remoteGenBreak() { if (gen.broken) return; gen.broken = true; gen.prog 
 function remoteGenFix() { if (!gen.broken) return; gen.fixedAt = T; gen.broken = false; gen.repairing = false; gen.prog = 0; gen.check = null; if (rep === gen) $('skill').hidden = true; gen.t = rand(320, 620); lampsOn = true; lampText(); }
 function updateGen(dt) {
   if (!started || !lampsOn || night < 0.5 || gen.broken || S.fuel <= 0 || ISL.on) return;
-  gen.t -= dt * (hasCurse('gen') ? 3 : 1) * (DT.on ? 1.5 : 1); if (gen.t <= 0) { gen.broken = true; gen.prog = 0; lampText(); sfx('sputter'); toast('ไฟดับ! เครื่องปั่นไฟที่กราบซ้ายเสีย', 'bad'); netEmit('gen', {}); setTimeout(() => { if (gen.broken) crewSay('ไปซ่อมเครื่องปั่นไฟหน่อย กด E แล้วกดตอนเข็มเข้าโซนนะ'); }, 2500); }
+  gen.t -= dt * (hasCurse('gen') ? 3 : 1) * (DT.on ? 1.5 : 1) * (S.prog.hand === 'mechanic' ? 0.5 : 1); if (gen.t <= 0) { gen.broken = true; gen.prog = 0; lampText(); sfx('sputter'); toast('ไฟดับ! เครื่องปั่นไฟที่กราบซ้ายเสีย', 'bad'); netEmit('gen', {}); setTimeout(() => { if (gen.broken) crewSay('ไปซ่อมเครื่องปั่นไฟหน่อย กด E แล้วกดตอนเข็มเข้าโซนนะ'); }, 2500); }
 }
 
 // gull
@@ -4146,6 +4468,7 @@ function endNight() {
   $('sumEyebrow').textContent = `เช้าแล้ว · ${nightDate(true)} ตี 5:30 · เอาของไปขายที่เกาะ`; $('sumTitle').textContent = `จบคืนที่ ${S.night}`;
   $('sumCount').textContent = NIGHT.stats.count; $('sumKg').textContent = NIGHT.stats.kg.toFixed(2) + ' กก.'; $('sumSold').textContent = baht(sold);
   $('sumQuests').textContent = `ภารกิจสำเร็จ ${NIGHT.quests.filter((q) => q.done).length} จาก 3 · เงินตอนนี้ ${baht(S.money)}` + (S.freezer.length ? ` · ตู้แช่ ${S.freezer.length} ตัว` : '') + (S.tub.length ? ` · ของในถัง ${S.tub.length} ชิ้น` : '') + (S.curses.length ? ` · คำสาปค้าง ${S.curses.length}` : '') + (S.story.pages ? ` · บันทึก ${S.story.pages}/5 หน้า` : '') + (potN >= 0 ? ` · พี่ชัยกู้ลอบปูที่ค้างไว้ ได้ปู ${potN} ตัวใส่กล่อง` : '');
+  $('sumQuests').textContent += handWage();
   $('summary').hidden = false;
 }
 $('nextNight').addEventListener('click', () => dockIsland());
@@ -4260,6 +4583,7 @@ function renderMenu() {
       g.appendChild(it);
     }
     body.appendChild(g);
+    renderCustom(body);
   } else if (menuTab === 'lure') {
     body.appendChild(el('div', 'hint', `ซื้อครั้งเดียวใช้ได้ตลอด ถ้าสายขาดจะเสียค่าผูกเหยื่อใหม่ ${baht(LURE_COST)}`));
     const g = el('div', 'grid2');
@@ -4284,6 +4608,7 @@ function renderMenu() {
   } else if (menuTab === 'quest') {
     body.appendChild(el('div', 'hint', `ไต้ก๋งสมชายฝากงานไว้ ทำสำเร็จได้เงินทันที · คืนนี้${WX_NAME[NIGHT.weather]} ${NIGHT.moon}`));
     for (const q of NIGHT.quests) { const it = el('div', 'item'), top = el('div', 'top'); top.appendChild(el('b', '', q.t)); top.appendChild(el('span', 'lv', q.done ? 'สำเร็จแล้ว' : `รางวัล ${baht(q.rew)}`)); it.appendChild(top); it.appendChild(el('p', '', q.done ? 'รับรางวัลแล้ว' : q.k === 'big' ? 'ยังไม่ได้' : `ความคืบหน้า ${q.k === 'kg' ? q.prog.toFixed(1) : q.prog} / ${q.goal}`)); body.appendChild(it); }
+    renderCoop(body); renderWeekStory(body);
     body.appendChild(el('h3', '', 'เคล็ดลับ'));
     body.appendChild(el('div', 'hint', 'คืนเดือนมืดหมึกเข้าไฟดีกว่าคืนเดือนเพ็ญ ฝนตกหมึกก็กินดี หมึกสายต้องหย่อนเหยื่อให้ถึงพื้นที่กองหิน'));
     const qr = el('div', 'joinrow'); qr.appendChild(btn('ให้พี่ชัยสอนตกอีกครั้ง', () => { tut.on = true; tut.step = 0; closeMenu(); renderTut(); }));
@@ -4322,7 +4647,7 @@ function renderMenu() {
       g.appendChild(c);
     }
     body.appendChild(g);
-  } else if (menuTab === 'online') renderOnlineTab(body);
+  } else if (menuTab === 'online') { renderOnlineTab(body); renderBoard(body); }
   else if (menuTab === 'settings') {
     body.appendChild(el('h3', '', 'เสียง'));
     body.appendChild(el('div', 'hint', 'เลื่อนเพื่อปรับความดัง กด M ระหว่างเล่นเพื่อปิดหรือเปิดเสียงทั้งหมด'));
@@ -4352,6 +4677,7 @@ function renderMenu() {
 function afterUpgrade(k) {
   if (k === 'pots') { rebuildPotStack(); toast(`มีลอบปู ${POT_CAP[S.up.pots]} ใบแล้ว`, 'good'); }
   if (k === 'cat') { CAT.zone = 'hold'; CAT.path = []; CAT.moveT = rand(40, 90); catG.position.set(CAT_HOLD_SPOT.x, CAT_HOLD_SPOT.y, CAT_HOLD_SPOT.z); catG.rotation.y = -1.2; catG.visible = P.zone === 'hold' || hatchT > 0.01; toast('เจ้าส้มมาอยู่บนเรือแล้ว เดี๋ยวคงเดินขึ้นมาดาดฟ้าให้เห็นหน้าบ้าง', 'good'); }
+  if (k === 'engine') toast(`เครื่องยนต์แรงขึ้น ความเร็วสูงสุด ${knots(vmax()).toFixed(1)} นอต`, 'good');
   if (k === 'pump') toast('ติดตั้งปั๊มน้ำท้องเรือแล้ว จะช่วยสูบน้ำออกเองตอนมีไฟ', 'good');
   if (k === 'holder') { buildHolders(); toast('ติดตั้งที่ปักคันแล้ว ที่' + HOLDER_DEF[S.up.holder - 1].side, 'good'); }
   if (k === 'sonar') { $('sonarBox').hidden = false; document.body.classList.add('hasSonar'); }
@@ -4628,7 +4954,7 @@ function onBoatPeers(all, myUid) {
   for (const [uid, pr] of Object.entries(all)) {
     if (uid === myUid || typeof pr.x !== 'number') continue;
     const r = NET.remotes.get(uid) || addRemote(uid, pr);
-    r.name = pr.name || r.name; if (pr.col) r.col = pr.col; r.ti = typeof pr.ti === 'string' && titlesAll.has(pr.ti) ? pr.ti : '';
+    r.name = pr.name || r.name; if (pr.col) r.col = pr.col; r.ti = typeof pr.ti === 'string' && titlesAll.has(pr.ti) ? pr.ti : ''; r.aw = pr.aw === 1;
     r.tx = num(pr.x, -4, 4, 0); r.tz = num(pr.z, -12, 12, -6); r.ty = num(pr.y, -1, 6, 2); r.tyaw = num(pr.yaw, -1e4, 1e4, 0);
     r.s = ['idle', 'charge', 'flying', 'water', 'bite', 'fight', 'landing'].includes(pr.s) ? pr.s : 'idle';
     r.lx = num(pr.lx, -200, 200, 0); r.lz = num(pr.lz, -200, 200, 0); r.ld = num(pr.ld, 0, 50, 0); r.c = num(pr.c, 0, 999, 0);
@@ -4715,7 +5041,7 @@ function islandSync(on, who) {
 function renderPlayers() {
   const box = $('pList'); if (!box) return; box.textContent = '';
   const me = el('div', 'p'); const d0 = el('i', 'dot'); d0.style.background = 'var(--hull)'; me.appendChild(d0); me.appendChild(el('span', '', 'คุณ')); me.appendChild(el('span', '', `${NIGHT ? NIGHT.stats.count : 0} ตัว`)); box.appendChild(me);
-  for (const r of NET.remotes.values()) { const p = el('div', 'p'), d = el('i', 'dot'); d.style.background = r.col; p.appendChild(d); p.appendChild(el('span', '', r.name || 'เพื่อนร่วมเรือ')); p.appendChild(el('span', '', `${r.c} ตัว`)); box.appendChild(p); }
+  for (const r of NET.remotes.values()) { const p = el('div', 'p'), d = el('i', 'dot'); d.style.background = r.col; p.appendChild(d); p.appendChild(el('span', '', r.name || 'เพื่อนร่วมเรือ')); p.appendChild(el('span', '', `${r.aw ? '💤 ' : ''}${r.c} ตัว`)); box.appendChild(p); }
 }
 function renderOnlineTab(body) {
   if (!NET.fbUser) { body.appendChild(el('div', 'hint', 'เข้าสู่ระบบด้วย Google ก่อนเพื่อเล่นกับเพื่อน')); body.appendChild(btn('เข้าสู่ระบบด้วย Google', googleSignIn, 'btn pri')); return; }
@@ -4738,6 +5064,7 @@ function renderOnlineTab(body) {
     const inp = el('input'); inp.id = 'mCode'; inp.maxLength = 8; inp.placeholder = 'รหัส'; inp.autocomplete = 'off'; inp.setAttribute('aria-label', 'รหัสเรือ'); row.appendChild(inp);
     row.appendChild(btn('ขึ้นเรือ', () => joinBoat(inp.value))); body.appendChild(row);
   }
+  if (NET.code) renderCoop(body);
   body.appendChild(el('h3', '', 'เรือที่เปิดอยู่')); const bx = el('div', 'boats'); bx.id = 'boatsMenu'; body.appendChild(bx); renderBoats();
   body.appendChild(el('div', 'hint', 'เพื่อนเข้าเรือกลางเกมได้เลย ไม่ต้องรอเริ่มใหม่ แค่กดลิงก์ชวน ล็อกอินด้วย Google ของตัวเอง ไม่ต้องมีบัญชี Claude'));
 }
@@ -5183,7 +5510,7 @@ function crewAI(dt) {
   CREW.cool -= dt; if (CREW.cool > 0) return;
   if (S.fuel <= 0 && !gen.broken && fuelEmptyT > 40 && S.fuelStock > 0 && P.carry !== 'fuel') { crewSay('น้ำมันหมด เดี๋ยวพี่ไปเติมให้'); crewGo('fuel'); return; }
   if (gen.broken && genBrokenT > 45 && !gen.repairing) { crewSay('เดี๋ยวพี่ไปดูเครื่องปั่นไฟเอง'); crewGo('gen'); return; }
-  for (const h of holders) if (h.state === 'bite' && !h.claim && CREW.watch && (h.age >= HELP_CREW_AFTER || h.t < 5.5)) { h.claim = 'crew'; crewSay(h.age >= HELP_CREW_AFTER ? `คันปัก${h.def.side}กินอยู่นานแล้ว เดี๋ยวพี่เก็บให้` : `คันปัก${h.def.side}กิน! เดี๋ยวพี่เก็บให้`); crewGo('h' + h.idx); return; }
+  for (const h of holders) if (h.state === 'bite' && !h.claim && CREW.watch && (h.age >= (S.prog.rel >= 60 ? 15 : HELP_CREW_AFTER) || h.t < 5.5)) { h.claim = 'crew'; crewSay(h.age >= (S.prog.rel >= 60 ? 15 : HELP_CREW_AFTER) ? `คันปัก${h.def.side}กินอยู่นานแล้ว เดี๋ยวพี่เก็บให้` : `คันปัก${h.def.side}กิน! เดี๋ยวพี่เก็บให้`); crewGo('h' + h.idx); return; }
   if (S.tub.length >= TUB_CAP[S.up.tub] - 1 && S.freezer.length < FREEZE_CAP[S.up.freezer] && !CREW.tubDone) { CREW.tubDone = true; crewSay('ถังจะเต็มแล้ว เดี๋ยวพี่ย้ายเข้าตู้แช่ให้นะ'); crewGo('tub'); return; }
   if (gull.state === 'landed' && gull.t > 2.5 && toLocalDist(TUB) > 4 && !CREW.shooed) { CREW.shooed = true; CREW.waveT = 2; crewSay('ชู่ว! ไปๆ นกบ้า'); setTimeout(() => { if (Math.random() < 0.7) shooGull(true); CREW.shooed = false; }, 1500); CREW.cool = 3; return; }
   if (!measured() && night > 0.35 && !CREW.probeDone) { CREW.probeDone = true; crewSay('น้องยังไม่ได้วัดค่าน้ำเลย เดี๋ยวพี่วัดให้'); crewGo('probe'); return; }
@@ -5399,7 +5726,7 @@ const needWarn = { food: false, water: false, energy: false };
 let needSaveT = 0;
 function updateNeeds(dt) {
   if (!started || paused || nightOver || traveling || pageOpen || ISL.on) return;
-  const N = S.needs, hard = S.hard ? 1.4 : 1, tutK = tut.on ? 0.3 : 1;
+  const N = S.needs, hard = (S.hard ? 1.4 : 1) * (S.prog.hand === 'cook' ? 0.6 : 1), tutK = tut.on ? 0.3 : 1;
   N.food = Math.max(0, N.food - 0.065 * hard * tutK * dt);
   N.water = Math.max(0, N.water - 0.09 * hard * tutK * dt);
   let de = 0;
@@ -6535,7 +6862,7 @@ function fixEngine(remote) {
 function updateEngine(dt) {
   if (eng.broken && P.zone === 'hold' && Math.random() < dt * 5) { const s = new THREE.Sprite(smokeMat); s.position.set(rand(-0.2, 0.2), HOLD.floor + 1.35, -7.4 + rand(-0.4, 0.4)); s.scale.setScalar(0.3); s.userData.t = 0; boat.add(s); smokes.push(s); }
   if (!started || ISL.on || traveling || nightOver || eng.broken) return;
-  eng.t -= dt * (1 + 1.5 * FLOOD.lvl) * (NIGHT.weather === 'storm' ? 1.6 : 1);
+  eng.t -= dt * (1 + 1.5 * FLOOD.lvl) * (NIGHT.weather === 'storm' ? 1.6 : 1) * (S.prog.hand === 'mechanic' ? 0.5 : 1);
   if (eng.t <= 0) breakEngine(true);
 }
 
@@ -6900,7 +7227,7 @@ function resetBelowDeck() {
 function updateBelowDeck(dt) { updateEngine(dt); updateFlood(dt); updateRats(dt); updateCat(dt); updateContest(dt); }
 
 // =============== boot & loop ===============
-checkAch(true); setupNight(); resetSchool(); renderQuests(); buildHolders(); lampText();
+checkAch(true); try { applyPaint(); applyDecor(); handPlace(); } catch (e) { console.warn('boat custom', e); } setupNight(); resetSchool(); renderQuests(); buildHolders(); lampText();
 if (S.up.sonar) { $('sonarBox').hidden = false; document.body.classList.add('hasSonar'); }
 rebuildTub(); renderWater(); renderCurses(); rebuildCrate(); rebuildPotStack(); rebuildBuoys();
 const clock = new THREE.Clock(); let T = 0;
@@ -6942,7 +7269,7 @@ function frame() {
   safe('updateCrew', () => updateCrew(dt)); safe('updateVisuals', () => updateVisuals(dt)); safe('updateRepair', () => updateRepair(dt)); safe('updateSparks', () => updateSparks(dt));
   safe('updateNeeds', () => updateNeeds(dt)); safe('updateWater', () => updateWater(dt)); safe('updateEat', () => { updateEat(dt); updateBoil3D(dt); }); safe('updateCrate', () => { updateCrate(dt); updateStations(dt); updatePots(dt); updateFuel(dt); }); safe('updateBelowDeck', () => updateBelowDeck(dt));
   if (started) { safe('updateHUD', () => updateHUD(dt, ts)); HUDC.acc += dt; if (HUDC.acc >= 0.05) { const a = HUDC.acc; HUDC.acc = 0; safe('drawRadar', () => drawRadar(a)); safe('drawSonar', () => drawSonar(a)); } }
-  safe('exp', () => expTick(dt)); safe('lights', lightSlots); safe('anchor', updateAnchorLine); safe('ambience', () => ambience(dt));
+  safe('exp', () => { expTick(dt); relTick(dt); handTick(dt); lbTick(dt); coopTick(dt); }); safe('lights', lightSlots); safe('anchor', updateAnchorLine); safe('ambience', () => ambience(dt));
   HUDC.n++; renderer.shadowMap.needsUpdate = sunL.intensity > 0.02 && (qName !== 'low' || HUDC.n % 2 === 0);
   safe('render', () => { if (composer && !ERRS.has('composer')) { try { composer.render(); } catch (e) { ERRS.add('composer'); console.error(e); renderer.render(scene, camera); } } else renderer.render(scene, camera); });
 }
